@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
-import { MessageSquare, Calendar, CreditCard, Bot, ShieldCheck, ArrowRight } from 'lucide-react';
+import { MessageSquare, Calendar, CreditCard, Scale, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './CustomerDashboardPage.css';
 
@@ -46,10 +46,10 @@ const CustomerDashboardPage = () => {
             </div>
           </div>
           <div className="metric-card card">
-            <div className="metric-icon-box navy"><Bot size={22} /></div>
+            <div className="metric-icon-box navy"><Scale size={22} /></div>
             <div>
-              <h3>AI Ready</h3>
-              <p>Legal Assistant</p>
+              <h3>Verified</h3>
+              <p>Top Advocates</p>
             </div>
           </div>
         </div>
@@ -57,14 +57,14 @@ const CustomerDashboardPage = () => {
         {/* Quick Action Prompt */}
         <div className="ai-prompt-banner card">
           <div className="prompt-content">
-            <Bot size={28} className="prompt-bot-icon" />
+            <Scale size={28} className="prompt-bot-icon" />
             <div>
               <h3>Need Legal Advice Right Now?</h3>
-              <p>Describe your matter to Adalat AI Assistant to get instant category matching & verified lawyer recommendations.</p>
+              <p>Connect with top verified advocates across India for court litigation, legal advisory, and consultation.</p>
             </div>
           </div>
-          <Link to="/customer/legal-assistant" className="btn btn-gold">
-            Launch AI Assistant <ArrowRight size={16} />
+          <Link to="/find-lawyers" className="btn btn-gold">
+            Find Advocates <ArrowRight size={16} />
           </Link>
         </div>
 
@@ -79,7 +79,7 @@ const CustomerDashboardPage = () => {
               <EmptyState 
                 icon={MessageSquare}
                 title="No Active Consultations"
-                message="Use the AI Legal Assistant or Find Lawyers tab to book your first 10-minute free advocate consultation."
+                message="Visit the Find Advocates tab to book your direct consultation."
               />
             ) : (
               <div className="table-responsive">

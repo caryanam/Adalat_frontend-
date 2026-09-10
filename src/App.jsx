@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
@@ -24,7 +24,7 @@ import LawyerSignupPage from './pages/auth/LawyerSignupPage';
 import LawyerRegisterWizardPage from './pages/auth/LawyerRegisterWizardPage';
 
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
-import CustomerAIAssistantPage from './pages/customer/CustomerAIAssistantPage';
+import LegalAssistantPage from './pages/customer/LegalAssistantPage';
 import CustomerConsultationPage from './pages/customer/CustomerConsultationPage';
 import CustomerAppointmentsPage from './pages/customer/CustomerAppointmentsPage';
 import CustomerPaymentsPage from './pages/customer/CustomerPaymentsPage';
@@ -90,7 +90,7 @@ const AppLayout = () => {
 
           {/* Customer */}
           <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
-          <Route path="/customer/legal-assistant" element={<CustomerAIAssistantPage />} />
+          <Route path="/customer/legal-assistant" element={<LegalAssistantPage />} />
           <Route path="/customer/lawyers" element={<CustomerMyLawyersPage />} />
           <Route path="/customer/appointments" element={<CustomerAppointmentsPage />} />
           <Route path="/customer/consultations" element={<CustomerConsultationPage />} />

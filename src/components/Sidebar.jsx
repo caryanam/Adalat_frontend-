@@ -2,9 +2,9 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Bot, Users, UserCheck, Calendar, MessageSquare, 
+  LayoutDashboard, Users, UserCheck, Calendar, MessageSquare, 
   CreditCard, FileText, User, HelpCircle, Settings, LogOut, ShieldCheck,
-  TrendingUp, Scale
+  TrendingUp, Scale, Bot
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -19,7 +19,8 @@ const Sidebar = ({ portalType = 'customer' }) => {
 
   const customerLinks = [
     { to: '/customer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/customer/legal-assistant', label: 'AI Legal Assistant', icon: Bot },
+    { to: '/customer/legal-assistant', label: 'Legal Assistant', icon: Bot },
+    { to: '/find-lawyers', label: 'Find Advocates', icon: Scale },
     { to: '/customer/lawyers', label: 'My Lawyers', icon: Users },
     { to: '/customer/appointments', label: 'Appointments', icon: Calendar },
     { to: '/customer/consultations', label: 'Consultations', icon: MessageSquare },
@@ -32,7 +33,7 @@ const Sidebar = ({ portalType = 'customer' }) => {
     { to: '/lawyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/lawyer/requests', label: 'Consultation Requests', icon: MessageSquare },
     { to: '/lawyer/appointments', label: 'Appointments', icon: Calendar },
-    { to: '/lawyer/consultations', label: 'Active Consultations', icon: Bot },
+    { to: '/lawyer/consultations', label: 'Active Consultations', icon: MessageSquare },
     { to: '/lawyer/earnings', label: 'Earnings & Payments', icon: CreditCard },
     { to: '/lawyer/documents', label: 'My Verification Docs', icon: FileText },
     { to: '/lawyer/profile', label: 'Lawyer Profile', icon: User },

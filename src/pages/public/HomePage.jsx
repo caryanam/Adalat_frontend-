@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Scale, ShieldCheck, Clock, Users, ArrowRight, Bot, CheckCircle, 
+  Scale, ShieldCheck, Clock, Users, ArrowRight, CheckCircle, 
   Search, MessageSquare, CreditCard, Star, Award, ShieldAlert, Lock, 
   Briefcase, Building, Car, ShoppingBag, Zap, Globe, FileText, Phone, Mail, MapPin
 } from 'lucide-react';
@@ -14,7 +14,7 @@ const HomePage = () => {
 
   const handleStartConsultation = (e) => {
     e.preventDefault();
-    navigate(`/customer/legal-assistant?issue=${encodeURIComponent(selectedIssue)}`);
+    navigate('/find-lawyers');
   };
 
   const categories = [
@@ -112,7 +112,7 @@ const HomePage = () => {
           
           <div className="step-card-mockup">
             <span className="step-number-tag">03</span>
-            <div className="step-icon-purple"><Bot size={24} /></div>
+            <div className="step-icon-purple"><Users size={24} /></div>
             <h3>Consult Online</h3>
             <p>Connect via chat, call, or video and get expert legal advice.</p>
           </div>
