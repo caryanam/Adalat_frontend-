@@ -18,12 +18,17 @@ apiClient.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Interceptor to extract backend ApiResponseDTO data cleanly
 apiClient.interceptors.response.use((response) => {
   return response.data;
 }, (error) => {
+  if (error.response?.status === 401) {
+    sessionStorage.removeItem('adalat_token');
+    localStorage.removeItem('adalat_token');
+  }
   const errorMsg = error.response?.data?.message || error.response?.data || error.message || 'Server request failed';
-  return Promise.reject(new Error(errorMsg));
+  const err = new Error(errorMsg);
+  err.status = error.response?.status;
+  return Promise.reject(err);
 });
 
 export default apiClient;
