@@ -14,6 +14,7 @@ const LawyerRequestsPage = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedSummary, setExpandedSummary] = useState(null);
 
   const fetchRequests = () => {
     setLoading(true);
@@ -97,11 +98,28 @@ const LawyerRequestsPage = () => {
                       </td>
                       <td><span className="badge badge-gold">{req.category || 'General Consultation'}</span></td>
                       <td>
-                        <div className="request-msg-preview" style={{ fontSize: '0.82rem', color: '#1E293B', whiteSpace: 'pre-line', maxHeight: '80px', overflowY: 'auto' }}>
-                          <strong>AI Case Assessment:</strong>
-                          <p style={{ margin: '0.2rem 0 0 0', fontStyle: 'normal' }}>
-                            {req.caseSummary || req.summary || req.requestMessage || 'Legal case assessment attached.'}
+                        <div className="case-summary-preview">
+                          <strong>AI Case Brief:</strong>
+                          <p style={{ fontSize: '0.82rem', color: '#475569', margin: '4px 0' }}>
+                            {(req.caseSummary || '').substring(0, 120)}...
                           </p>
+                          <button
+                            className="btn btn-sm btn-outline"
+                            onClick={() => setExpandedSummary(expandedSummary === req.id ? null : req.id)}
+                            style={{ marginTop: '4px', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+                          >
+                            {expandedSummary === req.id ? '▲ Collapse' : '▼ View Full AI Brief'}
+                          </button>
+                          {expandedSummary === req.id && (
+                            <pre style={{
+                              marginTop: '8px', padding: '12px', background: '#F8FAFC',
+                              border: '1px solid #E2E8F0', borderRadius: '6px',
+                              fontSize: '0.78rem', whiteSpace: 'pre-wrap', maxHeight: '400px',
+                              overflowY: 'auto', fontFamily: 'monospace', color: '#1e293b'
+                            }}>
+                              {req.caseSummary}
+                            </pre>
+                          )}
                         </div>
                         {req.assignedDate && (
                           <div className="assigned-time-tag" style={{ marginTop: '0.4rem' }}>
