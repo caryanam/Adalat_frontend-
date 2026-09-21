@@ -62,6 +62,8 @@ const CustomerConsultationPage = () => {
           assignedDate: r.assignedDate || null,
           assignedTime: r.assignedTime || null,
           remainingSeconds: r.remainingSeconds || 120,
+          paymentStatus: r.paymentStatus,
+          isFreeChatTimeOver: r.isFreeChatTimeOver,
           messages: []
         }));
 
@@ -72,6 +74,7 @@ const CustomerConsultationPage = () => {
             : formatted[0];
           setActiveConsultation(selected);
           setMessages(getChatMessages(selected.id));
+          if (selected.isFreeChatTimeOver) setIsFreeExpired(true);
         }
         setLoading(false);
       })
@@ -98,7 +101,7 @@ const CustomerConsultationPage = () => {
   const handleSelectConsultation = (item) => {
     setActiveConsultation(item);
     setMessages(getChatMessages(item.id));
-    setIsFreeExpired(false);
+    setIsFreeExpired(item.isFreeChatTimeOver || false);
     setDismissedPaymentModal(false);
     setIsPaidActive(item.status === 'PAYMENT_COMPLETED' || item.paymentStatus === 'PAID');
     setSearchParams({ lawyerId: item.lawyerId });
@@ -143,7 +146,7 @@ const CustomerConsultationPage = () => {
   const handlePaymentSuccess = async (paymentRef) => {
     if (activeConsultation) {
       try {
-        await consultationApi.unlockPaidConsultation(activeConsultation.id, paymentRef.gatewayPaymentId);
+        await consultationApi.unlockPaidConsultation(activeConsultation.id, paymentRef?.gatewayPaymentId, paymentRef?.amount);
       } catch (err) {}
     }
     setIsPaidActive(true);
@@ -154,9 +157,17 @@ const CustomerConsultationPage = () => {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!activeConsultation) return;
+
+    if (isFreeExpired && !isPaidActive) {
+      setShowPaymentModal(true);
+      return;
+    }
+
+    if (isChatLocked(activeConsultation)) return;
+    
     let textToSend = inputMsg.trim();
     if (attachedFile) {
-      textToSend = (textToSend ? textToSend + '\n' : '') + `📎 [Attached Document: ${attachedFile.name}]`;
+      textToSend = (textToSend ? textToSend + '\n' : '') + `📄 [Attached Document: ${attachedFile.name}]`;
     }
     if (!textToSend) return;
 
@@ -306,7 +317,7 @@ const CustomerConsultationPage = () => {
                       {!isChatLocked(activeConsultation) ? (
                         <ConsultationTimer 
                           consultationId={activeConsultation.id}
-                          initialSeconds={activeConsultation.remainingSeconds || 120}
+                          initialSeconds={activeConsultation.remainingSeconds || 600}
                           onTimerExpired={handleTimerExpired}
                           isPaid={isPaidActive}
                         />
@@ -459,6 +470,12 @@ const CustomerConsultationPage = () => {
                   <label 
                     htmlFor="customer-chat-attachment-input" 
                     title="Attach File (Images, PDF, Word documents)"
+                    onClick={(e) => {
+                        if (isFreeExpired && !isPaidActive) {
+                            e.preventDefault();
+                            setShowPaymentModal(true);
+                        }
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -479,9 +496,13 @@ const CustomerConsultationPage = () => {
                     id="customer-chat-attachment-input"
                     type="file" 
                     accept="image/*,.pdf,.doc,.docx,.txt" 
-                    disabled={isChatLocked(activeConsultation) || (isFreeExpired && !isPaidActive)}
+                    disabled={isChatLocked(activeConsultation)}
                     onChange={(e) => {
                       if (e.target.files[0]) {
+                        if (isFreeExpired && !isPaidActive) {
+                            setShowPaymentModal(true);
+                            return;
+                        }
                         setAttachedFile(e.target.files[0]);
                         toast.success(`Attached file: ${e.target.files[0].name}`);
                       }
@@ -500,13 +521,14 @@ const CustomerConsultationPage = () => {
                     }
                     value={inputMsg}
                     onChange={(e) => setInputMsg(e.target.value)}
-                    disabled={isChatLocked(activeConsultation) || (isFreeExpired && !isPaidActive)}
+                    disabled={isChatLocked(activeConsultation)}
+                    onClick={() => { if (isFreeExpired && !isPaidActive) setShowPaymentModal(true); }}
                     style={{ flex: 1 }}
                   />
                   <button 
                     type="submit" 
                     className="btn btn-gold"
-                    disabled={isChatLocked(activeConsultation) || (isFreeExpired && !isPaidActive) || (!inputMsg.trim() && !attachedFile)}
+                    disabled={isChatLocked(activeConsultation) || (!inputMsg.trim() && !attachedFile && !(isFreeExpired && !isPaidActive))}
                   >
                     {isChatLocked(activeConsultation) || (isFreeExpired && !isPaidActive) ? <Lock size={16} /> : <Send size={16} />}
                   </button>

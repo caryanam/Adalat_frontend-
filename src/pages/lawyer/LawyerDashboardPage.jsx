@@ -7,26 +7,39 @@ import { useAuth } from '../../context/AuthContext';
 import { Clock, ShieldCheck, MessageSquare, Calendar, CreditCard, Star } from 'lucide-react';
 import { getLawyerRatingData } from '../../utils/ratingUtils';
 import { consultationApi } from '../../api/consultationApi';
+import { lawyerApi } from '../../api/lawyerApi';
 import './LawyerPortalPages.css';
 
 const LawyerDashboardPage = () => {
   const { user } = useAuth();
   const isApproved = user?.verificationStatus === 'APPROVED' || user?.accountStatus === 'ACTIVE';
   const [requests, setRequests] = useState([]);
-  const [scheduledCount, setScheduledCount] = useState(0);
+  const [totalEarnings, setTotalEarnings] = useState('₹0.00');
 
   useEffect(() => {
+    const lawyerId = user?.lawyerId || user?.id || 1;
     consultationApi.getLawyerRequests()
       .then(res => {
         const raw = res && res.data ? (res.data.data || res.data) : [];
         if (Array.isArray(raw)) {
           setRequests(raw);
-          const accepted = raw.filter(r => r.status === 'ACCEPTED' || r.status === 'ACTIVE' || r.status === 'COMPLETED');
-          setScheduledCount(accepted.length);
         }
       })
       .catch(() => setRequests([]));
-  }, []);
+
+    lawyerApi.getEarnings(lawyerId)
+      .then(res => {
+        const data = res && res.data ? (res.data.data || res.data) : null;
+        if (data) {
+          if (data.totalEarningsNum !== undefined && data.totalEarningsNum !== null) {
+            setTotalEarnings(`₹${Number(data.totalEarningsNum).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+          } else if (data.totalEarnings) {
+            setTotalEarnings(data.totalEarnings);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [user]);
 
   const ratingInfo = getLawyerRatingData(user?.lawyerId || user?.id || 1);
 
@@ -84,16 +97,9 @@ const LawyerDashboardPage = () => {
             </div>
           </div>
           <div className="metric-card card">
-            <div className="metric-icon-box navy"><Calendar size={22} /></div>
-            <div>
-              <h3>{scheduledCount}</h3>
-              <p>Scheduled Appointments</p>
-            </div>
-          </div>
-          <div className="metric-card card">
             <div className="metric-icon-box teal"><CreditCard size={22} /></div>
             <div>
-              <h3>₹0.00</h3>
+              <h3 style={{ color: '#0D9488' }}>{totalEarnings}</h3>
               <p>Total Earnings</p>
             </div>
           </div>

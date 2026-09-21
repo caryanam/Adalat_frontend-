@@ -73,7 +73,8 @@ export const AuthProvider = ({ children }) => {
           status: 'SUCCESS',
           data: {
             token: 'admin-jwt-token-adalat-super-secure-key-2026',
-            user: { id: 999, fullName: 'Platform Admin', email: 'admin@gmail.com', role: 'ADMIN' }
+            role: 'ADMIN',
+            name: 'Platform Admin'
           }
         };
       }
@@ -81,8 +82,12 @@ export const AuthProvider = ({ children }) => {
     });
 
     if (res.status === 'SUCCESS' && res.data) {
+      if (res.data.role !== 'ADMIN') {
+        throw new Error('User does not have admin privileges.');
+      }
+      
       const authToken = res.data.token;
-      const adminData = res.data.user || { fullName: 'Platform Admin', email: identifier, role: 'ADMIN' };
+      const adminData = res.data.user || { fullName: res.data.name || 'Platform Admin', email: identifier, role: 'ADMIN' };
 
       sessionStorage.setItem('adalat_token', authToken);
       sessionStorage.setItem('adalat_user', JSON.stringify(adminData));
@@ -107,8 +112,15 @@ export const AuthProvider = ({ children }) => {
     setRole(null);
   };
 
+  const updateUser = (newUserData) => {
+    const updatedUser = { ...user, ...newUserData };
+    sessionStorage.setItem('adalat_user', JSON.stringify(updatedUser));
+    localStorage.setItem('adalat_user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, role, loginCustomer, loginLawyer, loginAdmin, logout }}>
+    <AuthContext.Provider value={{ user, token, role, loginCustomer, loginLawyer, loginAdmin, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

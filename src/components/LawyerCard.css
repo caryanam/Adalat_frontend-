@@ -201,6 +201,8 @@
   font-size: 0.8rem;
   color: #64748B;
   line-height: 1.45;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .specializations-row {

@@ -8,48 +8,55 @@ export const lawyerApi = {
 
   // Get saved lawyer registration progress
   getLawyerById: (id) => {
-    return apiClient.get(`/api/lawyers/register/${id}`).catch(() => {
+    const validId = id || 1;
+    return apiClient.get(`/api/lawyers/register/${validId}`).catch(() => {
       return { status: 'FAIL', data: null, message: 'Lawyer record not found' };
     });
   },
 
   // Step 2: Professional details
   updateStep2: (lawyerId, profData) => {
-    return apiClient.put(`/api/lawyers/register/${lawyerId}/step2`, profData);
+    const validId = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/register/${validId}/step2`, profData);
   },
 
   // Step 3: Document Upload (multipart/form-data)
   uploadDocument: (lawyerId, documentType, file) => {
+    const validId = lawyerId || 1;
     const formData = new FormData();
     formData.append('documentType', documentType);
     formData.append('file', file);
-    return apiClient.post(`/api/lawyers/register/${lawyerId}/step3`, formData, {
+    return apiClient.post(`/api/lawyers/register/${validId}/step3`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
 
   // Step 4: Pricing setup (Accepts numeric amount or consultationRate enum)
   updateStep4: (lawyerId, amountOrRate) => {
+    const validId = lawyerId || 1;
     let payload = {};
     if (typeof amountOrRate === 'number' || (!isNaN(amountOrRate) && !String(amountOrRate).startsWith('RATE_'))) {
       payload = { amount: parseInt(amountOrRate, 10) || 99 };
     } else {
       payload = { consultationRate: amountOrRate || 'RATE_99' };
     }
-    return apiClient.put(`/api/lawyers/register/${lawyerId}/step4`, payload);
+    return apiClient.put(`/api/lawyers/register/${validId}/step4`, payload);
   },
 
   // Step 5: UPI payout setup
   updateStep5: (lawyerId, upiId) => {
-    return apiClient.put(`/api/lawyers/register/${lawyerId}/step5`, { upiId });
+    const validId = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/register/${validId}/step5`, { upiId });
   },
 
   // Final Step: Submit for admin verification
   submitApplication: (lawyerId) => {
-    return apiClient.put(`/api/lawyers/register/${lawyerId}/submit`);
+    const validId = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/register/${validId}/submit`);
   },
   submitForVerification: (lawyerId) => {
-    return apiClient.put(`/api/lawyers/register/${lawyerId}/submit`);
+    const validId = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/register/${validId}/submit`);
   },
 
   // Lawyer Login
@@ -61,6 +68,91 @@ export const lawyerApi = {
   getApprovedLawyers: () => {
     return apiClient.get('/api/lawyers/register/directory').catch(() => {
       return { status: 'SUCCESS', data: [] };
+    });
+  },
+
+  // ─── PROFILE & ACCOUNT MANAGEMENT ──────────────────────────────────────────
+  
+  // Get full lawyer profile
+  getProfile: (lawyerId) => {
+    const id = lawyerId || 1;
+    return apiClient.get(`/api/lawyers/${id}/profile`).catch(() => {
+      return apiClient.get('/api/lawyers/profile/me');
+    });
+  },
+
+  // Update full lawyer profile
+  updateProfile: (lawyerId, profileData) => {
+    const id = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/${id}/profile`, profileData);
+  },
+
+  // Upload lawyer profile photo
+  uploadProfilePhoto: (lawyerId, file) => {
+    const id = lawyerId || 1;
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post(`/api/lawyers/${id}/profile-photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // Email Change: Send OTP to new email
+  sendEmailChangeOtp: (lawyerId, newEmail) => {
+    const id = lawyerId || 1;
+    return apiClient.post(`/api/lawyers/${id}/email/send-otp`, { newEmail });
+  },
+
+  // Email Change: Verify OTP and commit email update
+  verifyAndUpdateEmail: (lawyerId, newEmail, otp) => {
+    const id = lawyerId || 1;
+    return apiClient.post(`/api/lawyers/${id}/email/verify-update`, { newEmail, otp });
+  },
+
+  // Change Password & send security email alert
+  changePassword: (lawyerId, passwordData) => {
+    const id = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/${id}/change-password`, passwordData);
+  },
+
+  // Reset Password with Email OTP (Forgot Password flow)
+  resetPasswordWithOtp: (email, newPassword, confirmPassword) => {
+    return apiClient.post('/api/lawyers/forgot-password/reset', { email, newPassword, confirmPassword });
+  },
+
+  // Modular Updates
+  updatePricing: (lawyerId, consultationFee) => {
+    const id = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/${id}/pricing`, { consultationFee });
+  },
+
+  updateCategories: (lawyerId, practiceAreas) => {
+    const id = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/${id}/categories`, practiceAreas);
+  },
+
+  updateLanguages: (lawyerId, languages) => {
+    const id = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/${id}/languages`, languages);
+  },
+
+  updateUpi: (lawyerId, upiId) => {
+    const id = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/${id}/upi`, { upiId });
+  },
+
+  updateOverview: (lawyerId, bio) => {
+    const id = lawyerId || 1;
+    return apiClient.put(`/api/lawyers/${id}/overview`, { bio });
+  },
+
+  // Get advocate earnings summary & payout transactions
+  getEarnings: (lawyerId) => {
+    const id = lawyerId || 1;
+    return apiClient.get(`/api/lawyers/${id}/earnings`).catch(() => {
+      return apiClient.get('/api/lawyers/earnings/me').catch(() => {
+        return { status: 'SUCCESS', data: { totalEarnings: '₹0.00', todayEarnings: '₹0.00', completedConsultations: 0, transactions: [] } };
+      });
     });
   }
 };

@@ -3,7 +3,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { customerApi } from '../../api/customerApi';
 import { lawyerApi } from '../../api/lawyerApi';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../api/apiClient';
 import PaymentModal from '../../components/PaymentModal';
+import OtpModal from '../../components/OtpModal';
 import { toast } from 'react-toastify';
 import { Scale, Lock, Mail, User, Phone, ShieldCheck, ArrowRight, Eye, EyeOff, Award } from 'lucide-react';
 import customerRegBg from '../../assets/customer_reg_bg.png';
@@ -31,6 +33,9 @@ const CustomerRegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [policyModalContent, setPolicyModalContent] = useState(null);
 
   const { loginCustomer, loginLawyer } = useAuth();
@@ -83,13 +88,41 @@ const CustomerRegisterPage = () => {
       toast.error('You must accept the Terms & Conditions and Privacy Policy.');
       return;
     }
+    if (!isEmailVerified) {
+      toast.error('Please verify your email address before proceeding.');
+      return;
+    }
 
     if (role === 'customer') {
-      // Customer registration requires ₹99 platform activation
-      setShowPaymentModal(true);
+      handleCustomerRegisterInitial();
     } else {
       // Lawyer registration
       handleLawyerSubmit();
+    }
+  };
+
+  const handleCustomerRegisterInitial = async () => {
+    setLoading(true);
+    try {
+      // Register without payment
+      const res = await customerApi.register({
+        fullName: formData.fullName,
+        email: formData.email,
+        mobileNumber: formData.mobileNumber,
+        password: formData.password,
+        confirmPassword: formData.password,
+        termsAccepted: true,
+        privacyPolicyAccepted: true
+      });
+      
+      if (res.status === 'SUCCESS' && res.data) {
+        localStorage.setItem('adalat_customer_id', res.data.customerId); // Temporary store
+        setShowPaymentModal(true);
+      }
+    } catch (err) {
+      toast.error(err.message || 'Registration failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,7 +142,6 @@ const CustomerRegisterPage = () => {
       if (res.status === 'SUCCESS' && res.data) {
         const lawyerId = res.data.lawyerId;
         localStorage.setItem('adalat_lawyer_id', lawyerId);
-        toast.success('Advocate Account Created! Proceeding to Onboarding Wizard...');
         try {
           await loginLawyer(formData.email, formData.password);
         } catch (err) {}
@@ -122,32 +154,54 @@ const CustomerRegisterPage = () => {
     }
   };
 
+  const handleSendOtpInline = async () => {
+    if (!formData.email) {
+      toast.error("Please enter an email address first.");
+      return;
+    }
+    setOtpSending(true);
+    try {
+        const res = await apiClient.post('/api/auth/email/resend-otp', {
+            email: formData.email,
+            role: role === 'lawyer' ? 'LAWYER' : 'CUSTOMER'
+        });
+        if (res.success || res.status === 'SUCCESS') {
+            toast.success("Verification code sent to your email.");
+            setShowOtpModal(true);
+        }
+    } catch (err) {
+        toast.error(err.message || "Failed to send verification code.");
+    } finally {
+        setOtpSending(false);
+    }
+  };
+
+  const handleOtpSuccess = async () => {
+    setShowOtpModal(false);
+    setIsEmailVerified(true);
+  };
+
   const handlePaymentSuccess = async (paymentRef) => {
     setLoading(true);
 
     try {
       const transactionId = paymentRef?.gatewayPaymentId || ('PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase());
+      const customerId = localStorage.getItem('adalat_customer_id');
 
-      // Fire Customer Registration API with payment transaction ID (saves Customer & PaymentTransaction in MySQL DB)
-      const res = await customerApi.register({
-        fullName: formData.fullName,
-        email: formData.email,
-        mobileNumber: formData.mobileNumber,
-        password: formData.password,
-        confirmPassword: formData.password,
-        termsAccepted: true,
-        privacyPolicyAccepted: true,
-        paymentTransactionId: transactionId
+      // Verify payment in backend
+      const res = await customerApi.verifyPayment({
+        customerId: customerId,
+        gatewayPaymentId: transactionId
       });
 
-      if (res.status === 'SUCCESS') {
-        toast.success('Payment verified & account registration successful!');
-        // 3. THIRD API CALL: Fire Customer Login API endpoint
+      if (res.status === 'SUCCESS' || res.success) {
+        toast.success('Payment verified & account registration fully complete!');
+        // Fire Customer Login API endpoint
         await loginCustomer(formData.email, formData.password);
-        navigate('/customer/dashboard');
+        navigate('/customer/legal-assistant');
       }
     } catch (err) {
-      toast.error(err.message || 'Registration failed after payment.');
+      toast.error(err.message || 'Payment verification failed.');
     } finally {
       setLoading(false);
     }
@@ -236,16 +290,39 @@ const CustomerRegisterPage = () => {
 
               <div className="form-group-custom">
                 <label className="form-label-full">Email Address <span className="required">*</span></label>
-                <div className="input-with-icon-full">
-                  <Mail size={17} className="input-icon-full" />
-                  <input 
-                    type="email"
-                    className="input-full"
-                    placeholder={role === 'customer' ? 'e.g. customer@gmail.com' : 'e.g. advocate@adalat.legal'}
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                  />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="input-with-icon-full" style={{ flex: 1, marginBottom: 0 }}>
+                    <Mail size={17} className="input-icon-full" />
+                    <input 
+                      type="email"
+                      className="input-full"
+                      placeholder={role === 'customer' ? 'e.g. customer@gmail.com' : 'e.g. advocate@adalat.legal'}
+                      value={formData.email}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        setIsEmailVerified(false);
+                      }}
+                      required
+                      disabled={isEmailVerified}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSendOtpInline}
+                    disabled={isEmailVerified || otpSending || !formData.email}
+                    style={{
+                      padding: '0 16px',
+                      background: isEmailVerified ? '#10B981' : '#1e3a8a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: (isEmailVerified || otpSending || !formData.email) ? 'not-allowed' : 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {otpSending ? 'Sending...' : isEmailVerified ? 'Verified' : 'Verify'}
+                  </button>
                 </div>
               </div>
 
@@ -317,6 +394,14 @@ const CustomerRegisterPage = () => {
           </div>
         </div>
       </div>
+
+      <OtpModal 
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        email={formData.email}
+        role={role === 'lawyer' ? 'LAWYER' : 'CUSTOMER'}
+        onSuccess={handleOtpSuccess}
+      />
 
       <PaymentModal 
         isOpen={showPaymentModal}

@@ -52,7 +52,7 @@ const ConsultationTimer = ({ consultationId, initialSeconds = 120, onTimerExpire
     <div className={`timer-badge ${timeLeft < 30 ? 'urgent' : 'normal'}`}>
       {isExpired ? (
         <>
-          <Lock size={16} /> <span>{isLawyer ? 'Free 2m Expired — Awaiting Customer Extension' : 'Free 2m Expired — Pay to Unlock'}</span>
+          <Lock size={16} /> <span>{isLawyer ? 'Free 2m Expired - Awaiting Customer Extension' : 'Free 2m Expired - Pay to Unlock'}</span>
         </>
       ) : (
         <>

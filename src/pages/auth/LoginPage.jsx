@@ -27,10 +27,17 @@ const LoginPage = () => {
       const customerData = await loginCustomer(identifier, password);
       if (customerData) {
         toast.success('Welcome back! Signed in to Customer Portal.');
-        navigate('/customer/dashboard');
+        navigate('/customer/legal-assistant');
         return;
       }
-    } catch (err) {}
+    } catch (err) {
+      if (err.status && err.status !== 401 && err.status !== 404) {
+        setError(err.message || 'Customer login failed.');
+        toast.error(err.message || 'Customer login failed.');
+        setLoading(false);
+        return;
+      }
+    }
 
     // 2. Try Lawyer Login
     try {
@@ -50,7 +57,14 @@ const LoginPage = () => {
         }
         return;
       }
-    } catch (err) {}
+    } catch (err) {
+      if (err.status && err.status !== 401 && err.status !== 404) {
+        setError(err.message || 'Lawyer login failed.');
+        toast.error(err.message || 'Lawyer login failed.');
+        setLoading(false);
+        return;
+      }
+    }
 
     // 3. Try Admin Login
     try {
@@ -60,7 +74,16 @@ const LoginPage = () => {
         navigate('/admin/dashboard');
         return;
       }
-    } catch (err) {}
+    } catch (err) {
+      // For Admin, it's the last attempt. If it fails, let it fall through to generic error,
+      // UNLESS it's an explicit error from our new check.
+      if (err.message && err.message !== 'Invalid Admin credentials.' && err.message !== 'User does not have admin privileges.') {
+        setError(err.message);
+        toast.error(err.message);
+        setLoading(false);
+        return;
+      }
+    }
 
     // 4. If credentials failed across all roles
     const msg = 'Invalid email address, mobile number, or password. Please verify your credentials.';

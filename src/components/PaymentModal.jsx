@@ -51,12 +51,35 @@ const PaymentModal = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('QR'); // 'QR' or 'SUCCESS'
+  const [qrSrcIndex, setQrSrcIndex] = useState(0);
 
-  if (!isOpen) return null;
+  const effectiveUpiId = (lawyerUpiId && typeof lawyerUpiId === 'string' && lawyerUpiId.trim()) 
+    ? lawyerUpiId.trim() 
+    : 'advocate@upi';
+  const effectiveLawyerName = (lawyerName && typeof lawyerName === 'string' && lawyerName.trim()) 
+    ? lawyerName.trim() 
+    : 'Advocate';
 
   const baseNum = parseFloat(amount) || 99.00;
   const gstNum = Math.round((baseNum * 0.18) * 100) / 100;
   const totalNum = Math.round((baseNum + gstNum) * 100) / 100;
+
+  const upiPayload = `upi://pay?pa=${effectiveUpiId}&pn=${encodeURIComponent(effectiveLawyerName)}&am=${totalNum.toFixed(2)}&cu=INR&tn=Consultation%20Fee`;
+  const qrSources = [
+    `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiPayload)}`,
+    `https://quickchart.io/qr?size=220&text=${encodeURIComponent(upiPayload)}`,
+    `https://chart.googleapis.com/chart?chs=220x220&cht=qr&chl=${encodeURIComponent(upiPayload)}`
+  ];
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setStep('QR');
+      setLoading(false);
+      setQrSrcIndex(0);
+    }
+  }, [isOpen, lawyerUpiId, amount]);
+
+  if (!isOpen) return null;
 
   const handleSimulatePayment = async () => {
     setLoading(true);
@@ -65,7 +88,7 @@ const PaymentModal = ({
       amount: totalNum.toFixed(2),
       baseAmount: baseNum.toFixed(2),
       gstAmount: gstNum.toFixed(2),
-      lawyerName: lawyerName
+      lawyerName: effectiveLawyerName
     };
 
     if (onPaymentSuccess) {
@@ -120,8 +143,8 @@ const PaymentModal = ({
                 </div>
                 <p className="amount-payout-text" style={{ marginTop: '10px' }}>
                   Direct settlement to:<br />
-                  <strong>{lawyerName}</strong><br />
-                  <span className="upi-handle">(UPI: {lawyerUpiId})</span>
+                  <strong>{effectiveLawyerName}</strong><br />
+                  <span className="upi-handle">(UPI: {effectiveUpiId})</span>
                 </p>
               </div>
             </div>
@@ -133,9 +156,14 @@ const PaymentModal = ({
               <div className="qr-and-apps-row">
                 <div className="qr-box">
                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`upi://pay?pa=${lawyerUpiId}&pn=${lawyerName}&am=${totalNum.toFixed(2)}&cu=INR&tn=Consultation%20Fee`)}`}
+                    src={qrSources[qrSrcIndex] || qrSources[0]}
                     alt="UPI QR Code"
                     className="qr-image" 
+                    onError={() => {
+                      if (qrSrcIndex < qrSources.length - 1) {
+                        setQrSrcIndex(prev => prev + 1);
+                      }
+                    }}
                   />
                   {/* Center Emblem on QR Code */}
                   <div className="qr-center-emblem">

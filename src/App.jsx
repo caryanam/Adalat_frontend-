@@ -22,6 +22,7 @@ import LoginPage from './pages/auth/LoginPage';
 import CustomerRegisterPage from './pages/auth/CustomerRegisterPage';
 import LawyerSignupPage from './pages/auth/LawyerSignupPage';
 import LawyerRegisterWizardPage from './pages/auth/LawyerRegisterWizardPage';
+import EmailVerificationPage from './pages/auth/EmailVerificationPage';
 
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
 import LegalAssistantPage from './pages/customer/LegalAssistantPage';
@@ -29,11 +30,10 @@ import CustomerConsultationPage from './pages/customer/CustomerConsultationPage'
 import CustomerAppointmentsPage from './pages/customer/CustomerAppointmentsPage';
 import CustomerPaymentsPage from './pages/customer/CustomerPaymentsPage';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage';
-import CustomerMyLawyersPage from './pages/customer/CustomerMyLawyersPage';
+import CustomerFindLawyersPage from './pages/customer/CustomerFindLawyersPage';
 
 import LawyerDashboardPage from './pages/lawyer/LawyerDashboardPage';
 import LawyerRequestsPage from './pages/lawyer/LawyerRequestsPage';
-import LawyerConsultationsPage from './pages/lawyer/LawyerConsultationsPage';
 import LawyerEarningsPage from './pages/lawyer/LawyerEarningsPage';
 import LawyerDocumentsPage from './pages/lawyer/LawyerDocumentsPage';
 import LawyerProfilePage from './pages/lawyer/LawyerProfilePage';
@@ -54,6 +54,7 @@ const AppLayout = () => {
   const isRegisterRoute = location.pathname === '/register' || 
                            location.pathname === '/lawyer/register' ||
                            location.pathname.startsWith('/register') ||
+                           location.pathname === '/verify-email' ||
                            location.pathname === '/login';
 
   const hideNavbarFooter = isDashboardRoute || isRegisterRoute;
@@ -68,6 +69,7 @@ const AppLayout = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/find-lawyer" element={<FindLawyerPage />} />
+          <Route path="/find-lawyers" element={<FindLawyerPage />} />
           <Route path="/lawyers" element={<FindLawyerPage />} />
           <Route path="/lawyers/:id" element={<FindLawyerPage />} />
           <Route path="/legal-categories" element={<LegalCategoriesPage />} />
@@ -83,6 +85,7 @@ const AppLayout = () => {
           {/* Auth */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<CustomerRegisterPage />} />
+          <Route path="/verify-email" element={<EmailVerificationPage />} />
           <Route path="/lawyer/register" element={<LawyerSignupPage />} />
           <Route path="/lawyer/onboarding" element={<LawyerRegisterWizardPage />} />
           <Route path="/lawyer/login" element={<LoginPage />} />
@@ -91,7 +94,7 @@ const AppLayout = () => {
           {/* Customer */}
           <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
           <Route path="/customer/legal-assistant" element={<LegalAssistantPage />} />
-          <Route path="/customer/lawyers" element={<CustomerMyLawyersPage />} />
+          <Route path="/customer/find-lawyers" element={<CustomerFindLawyersPage />} />
           <Route path="/customer/appointments" element={<CustomerAppointmentsPage />} />
           <Route path="/customer/consultations" element={<CustomerConsultationPage />} />
           <Route path="/customer/payments" element={<CustomerPaymentsPage />} />
@@ -100,12 +103,9 @@ const AppLayout = () => {
           {/* Lawyer */}
           <Route path="/lawyer/dashboard" element={<LawyerDashboardPage />} />
           <Route path="/lawyer/requests" element={<LawyerRequestsPage />} />
-          <Route path="/lawyer/appointments" element={<LawyerConsultationsPage />} />
-          <Route path="/lawyer/consultations" element={<LawyerConsultationsPage />} />
           <Route path="/lawyer/earnings" element={<LawyerEarningsPage />} />
           <Route path="/lawyer/documents" element={<LawyerDocumentsPage />} />
           <Route path="/lawyer/profile" element={<LawyerProfilePage />} />
-          <Route path="/lawyer/settings" element={<LawyerProfilePage />} />
 
           {/* Admin */}
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />

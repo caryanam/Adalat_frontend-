@@ -36,7 +36,7 @@ const Navbar = () => {
     if (!user) return '/';
     if (user.role === 'LAWYER') return '/lawyer/dashboard';
     if (user.role === 'ADMIN') return '/admin/dashboard';
-    return '/customer/dashboard';
+    return '/customer/legal-assistant';
   };
 
   const handleLogout = () => {
@@ -45,6 +45,9 @@ const Navbar = () => {
   };
 
   const isActive = (path) => {
+    if (path === '/find-lawyer' && (location.pathname === '/find-lawyers' || location.pathname.startsWith('/lawyers'))) {
+      return 'active';
+    }
     return location.pathname === path ? 'active' : '';
   };
 

@@ -1,14 +1,18 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ShieldCheck, MapPin, Award, Languages, MessageSquare, Clock, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, MapPin, Award, Languages, MessageSquare, Clock, Star, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { getLawyerRatingData } from '../utils/ratingUtils';
+import apiClient from '../api/apiClient';
 import './LawyerCard.css';
 
 const LawyerCard = ({ lawyer }) => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   const ratingInfo = getLawyerRatingData(lawyer.lawyerId || lawyer.id || 1);
 
   const practiceAreasStr = Array.isArray(lawyer.practiceAreas)
-    ? lawyer.practiceAreas.map(p => typeof p === 'string' ? p.replace(/_/g, ' ') : p).join(' • ')
+    ? lawyer.practiceAreas.map(p => typeof p === 'string' ? p.replace(/_/g, ' ') : p).join(' â€¢ ')
     : 'General Practice';
 
   const languagesStr = Array.isArray(lawyer.languages)
@@ -19,11 +23,28 @@ const LawyerCard = ({ lawyer }) => {
                      (typeof lawyer.consultationRate === 'object' ? lawyer.consultationRate?.amount : null) || 
                      (typeof lawyer.consultationRate === 'string' ? lawyer.consultationRate.replace('RATE_', '') : '99');
 
-  const rateDisplay = `₹${rateAmount} / 10 min`;
+  const rateDisplay = `â‚¹${rateAmount} / 10 min`;
 
   const primaryCategoryLabel = Array.isArray(lawyer.practiceAreas) && lawyer.practiceAreas.length > 0
     ? String(lawyer.practiceAreas[0]).replace(/_/g, ' ')
     : 'LEGAL SPECIALIST';
+
+  const handleConsult = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await apiClient.post('/api/customer/consultations', {
+        lawyerId: lawyer.lawyerId || lawyer.id || 1,
+        caseSummary: 'Consultation requested from lawyer directory'
+      });
+      navigate('/customer/consultations');
+    } catch (err) {
+      console.error('Failed to create consultation request:', err);
+      navigate(`/customer/consultations?lawyerId=${lawyer.lawyerId || lawyer.id || 1}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="premium-lawyer-card card">
@@ -103,12 +124,15 @@ const LawyerCard = ({ lawyer }) => {
             </div>
           </div>
 
-          <Link 
-            to={`/customer/consultations?lawyerId=${lawyer.lawyerId || lawyer.id || 1}`} 
+          <button 
+            onClick={handleConsult}
+            disabled={loading}
             className="btn btn-gold consult-now-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
-            Consult Now <ArrowRight size={14} />
-          </Link>
+            {loading ? <Loader2 size={14} className="animate-spin" /> : 'Consult Now'} 
+            {!loading && <ArrowRight size={14} />}
+          </button>
         </div>
       </div>
     </div>

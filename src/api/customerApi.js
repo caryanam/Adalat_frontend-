@@ -19,5 +19,13 @@ export const customerApi = {
 
   getProfile: (id) => {
     return apiClient.get(`/api/customer/${id}`);
+  },
+
+  updateProfile: (profileData) => {
+    return apiClient.put('/api/customer/profile', profileData);
+  },
+
+  changePassword: (passwordData) => {
+    return apiClient.put('/api/customer/change-password', passwordData);
   }
 };

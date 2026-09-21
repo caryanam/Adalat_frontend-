@@ -31,8 +31,8 @@ export const consultationApi = {
     return apiClient.post(`/api/customer/consultations/${requestId}/payment/verify`, verifyData);
   },
 
-  unlockPaidConsultation: (consultationId, paymentId) => {
-    return apiClient.post(`/api/customer/consultations/${consultationId}/unlock`, { paymentId });
+  unlockPaidConsultation: (consultationId, paymentId, amount) => {
+    return apiClient.post(`/api/customer/consultations/${consultationId}/unlock`, { paymentId, amount });
   },
 
   // 5. Complete Consultation
