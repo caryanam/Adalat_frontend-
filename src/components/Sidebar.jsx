@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  LayoutDashboard, Users, UserCheck, Calendar, MessageSquare, 
+import {
+  LayoutDashboard, Users, UserCheck, Calendar, MessageSquare,
   CreditCard, User, LogOut, ShieldCheck,
   TrendingUp, Scale, Bot, FileText, ChevronRight, Sparkles, X
 } from 'lucide-react';
@@ -48,7 +48,7 @@ const Sidebar = ({ portalType = 'customer' }) => {
     { to: '/lawyer/dashboard', label: 'Dashboard', icon: LayoutDashboard, shortLabel: 'Dashboard' },
     { to: '/lawyer/requests', label: 'Consultation Requests', icon: MessageSquare, shortLabel: 'Requests' },
     { to: '/lawyer/appointments', label: 'Appointments', icon: Calendar, shortLabel: 'Bookings' },
-    { to: '/lawyer/consultations', label: 'Active Consultations', icon: MessageSquare, shortLabel: 'Chat' },
+    // { to: '/lawyer/consultations', label: 'Active Consultations', icon: MessageSquare, shortLabel: 'Chat' },
     { to: '/lawyer/earnings', label: 'Earnings & Payments', icon: CreditCard, shortLabel: 'Earnings' },
     { to: '/lawyer/documents', label: 'Verification Docs', icon: FileText, shortLabel: 'Docs' },
     { to: '/lawyer/profile', label: 'Lawyer Profile', icon: User, shortLabel: 'Profile' },
@@ -59,10 +59,9 @@ const Sidebar = ({ portalType = 'customer' }) => {
     { to: '/admin/verifications', label: 'Lawyer Approvals', icon: UserCheck },
     { to: '/admin/lawyers', label: 'Lawyer Management', icon: ShieldCheck },
     { to: '/admin/customers', label: 'Customer Management', icon: Users },
-    { to: '/admin/appointments', label: 'Appointments', icon: Calendar },
-    { to: '/admin/consultations', label: 'Consultation History', icon: MessageSquare },
+
     { to: '/admin/payments', label: 'Payment Audit', icon: CreditCard },
-    { to: '/admin/reports', label: 'Analytics & Reports', icon: TrendingUp },
+    // { to: '/admin/reports', label: 'Analytics & Reports', icon: TrendingUp },
   ];
 
   const getLinks = () => {
@@ -97,31 +96,31 @@ const Sidebar = ({ portalType = 'customer' }) => {
     <>
       {/* Top Section: Brand Header */}
       <div className="p-5 border-b border-slate-800/80 bg-[#0d1322]/50 flex items-center justify-between">
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           onClick={() => isMobile && setIsMobileDrawerOpen(false)}
           className="flex items-center gap-3 group min-w-0"
         >
           {/* Adalat Official Brand Logo */}
-          <div 
+          <div
             className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#172033] to-[#0f172a] border border-slate-700/80 p-1.5 flex items-center justify-center shadow-lg shadow-black/40 group-hover:border-indigo-500/60 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.25)] transition-all shrink-0"
             style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px', maxWidth: '40px', maxHeight: '40px', overflow: 'hidden' }}
           >
             {logoError ? (
               <Scale size={22} className="text-amber-400 group-hover:text-amber-300 transition-colors" />
             ) : (
-              <img 
-                src={logoImg} 
-                alt="Adalat" 
+              <img
+                src={logoImg}
+                alt="Adalat"
                 onError={() => setLogoError(true)}
-                className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105" 
-                style={{ 
+                className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                style={{
                   width: '100%',
                   height: '100%',
                   maxWidth: '28px',
                   maxHeight: '28px',
                   objectFit: 'contain',
-                  filter: 'brightness(0) invert(1) drop-shadow(0 0 4px rgba(165, 180, 252, 0.45))' 
+                  filter: 'brightness(0) invert(1) drop-shadow(0 0 4px rgba(165, 180, 252, 0.45))'
                 }}
               />
             )}
@@ -162,10 +161,9 @@ const Sidebar = ({ portalType = 'customer' }) => {
               to={link.to}
               onClick={() => isMobile && setIsMobileDrawerOpen(false)}
               className={({ isActive }) =>
-                `group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-all duration-150 border ${
-                  isActive
-                    ? 'bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-600/30 border-indigo-500/50'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60 font-medium border-transparent'
+                `group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-all duration-150 border ${isActive
+                  ? 'bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-600/30 border-indigo-500/50'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60 font-medium border-transparent'
                 }`
               }
             >
@@ -174,11 +172,10 @@ const Sidebar = ({ portalType = 'customer' }) => {
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon
                       size={18}
-                      className={`shrink-0 transition-colors duration-150 ${
-                        isActive
-                          ? 'text-white'
-                          : 'text-slate-400 group-hover:text-indigo-400'
-                      }`}
+                      className={`shrink-0 transition-colors duration-150 ${isActive
+                        ? 'text-white'
+                        : 'text-slate-400 group-hover:text-indigo-400'
+                        }`}
                     />
                     <span className="truncate">{link.label}</span>
                   </div>
@@ -204,7 +201,7 @@ const Sidebar = ({ portalType = 'customer' }) => {
       {/* Bottom Section: Unified Account Card & Actions */}
       <div className="p-3 border-t border-slate-800/80 bg-[#090d16]/80 backdrop-blur-md">
         <div className="p-3 rounded-2xl bg-[#111726] border border-slate-800/90 shadow-xl">
-          
+
           {/* Top Bar: Portal Name & Live Status */}
           <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-800">
             <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
@@ -251,7 +248,7 @@ const Sidebar = ({ portalType = 'customer' }) => {
   return (
     <>
       {/* 1. DESKTOP PERMANENT SIDEBAR: Hidden on mobile (<1024px) */}
-      <aside className="hidden lg:flex flex-col justify-between w-64 min-w-[16rem] max-w-[16rem] h-screen sticky top-0 bg-[#0b0f19] text-slate-200 border-r border-slate-800/80 shadow-2xl z-30 select-none shrink-0 font-['Outfit',sans-serif]">
+      <aside className="hidden lg:flex flex-col justify-between w-64 min-w-[16rem] max-w-[16rem] h-screen sticky top-0 left-0 bg-[#0b0f19] text-slate-200 border-r border-slate-800/80 shadow-2xl z-30 select-none shrink-0 font-['Outfit',sans-serif] overflow-hidden">
         {renderSidebarContent(false)}
       </aside>
 
@@ -259,7 +256,7 @@ const Sidebar = ({ portalType = 'customer' }) => {
       {isMobileDrawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           {/* Backdrop Overlay */}
-          <div 
+          <div
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
             onClick={() => setIsMobileDrawerOpen(false)}
           />
@@ -271,32 +268,39 @@ const Sidebar = ({ portalType = 'customer' }) => {
         </div>
       )}
 
-      {/* 3. MOBILE APP BOTTOM NAVIGATION BAR (App view for Customer Portal) */}
-      {portalType === 'customer' && (
-        <nav 
+      {/* 3. MOBILE APP BOTTOM NAVIGATION BAR (App view for Customer & Lawyer Portals) */}
+      {(portalType === 'customer' || portalType === 'lawyer') && (
+        <nav
           aria-label="Mobile App Navigation"
           className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-around font-['Outfit',sans-serif] safe-area-pb"
         >
-          {customerLinks.map((item) => {
+          {(portalType === 'lawyer' ? [
+            { to: '/lawyer/dashboard', label: 'Dashboard', icon: LayoutDashboard, shortLabel: 'Dashboard' },
+            { to: '/lawyer/requests', label: 'Requests', icon: MessageSquare, shortLabel: 'Requests' },
+            { to: '/lawyer/appointments', label: 'Appointments', icon: Calendar, shortLabel: 'Bookings' },
+            { to: '/lawyer/earnings', label: 'Earnings', icon: CreditCard, shortLabel: 'Earnings' },
+            { to: '/lawyer/profile', label: 'Profile', icon: User, shortLabel: 'Profile' },
+          ] : customerLinks).map((item) => {
             const Icon = item.icon;
+            const isLawyer = portalType === 'lawyer';
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-150 min-w-[58px] ${
-                    isActive 
-                      ? 'text-indigo-600 font-bold' 
-                      : 'text-slate-500 hover:text-slate-900 font-medium'
+                  `flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-150 min-w-[58px] ${isActive
+                    ? (isLawyer ? 'text-amber-600 font-bold' : 'text-indigo-600 font-bold')
+                    : 'text-slate-500 hover:text-slate-900 font-medium'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`relative p-1 rounded-xl transition-all ${
-                      isActive ? 'bg-indigo-50 text-indigo-600 shadow-2xs' : 'text-slate-500'
-                    }`}>
-                      <Icon size={19} className={isActive ? 'text-indigo-600' : 'text-slate-500'} />
+                    <div className={`relative p-1 rounded-xl transition-all ${isActive
+                      ? (isLawyer ? 'bg-amber-50 text-amber-600 shadow-2xs' : 'bg-indigo-50 text-indigo-600 shadow-2xs')
+                      : 'text-slate-500'
+                      }`}>
+                      <Icon size={19} className={isActive ? (isLawyer ? 'text-amber-600' : 'text-indigo-600') : 'text-slate-500'} />
                       {item.badge && (
                         <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white" />
                       )}
@@ -305,7 +309,7 @@ const Sidebar = ({ portalType = 'customer' }) => {
                       {item.shortLabel || item.label}
                     </span>
                     {isActive && (
-                      <span className="w-1 h-1 rounded-full bg-indigo-600 mt-0.5" />
+                      <span className={`w-1 h-1 rounded-full mt-0.5 ${isLawyer ? 'bg-amber-500' : 'bg-indigo-600'}`} />
                     )}
                   </>
                 )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import LawyerHeader from '../../components/LawyerHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
@@ -13,7 +14,6 @@ import {
   Upload, 
   FileCheck 
 } from 'lucide-react';
-import './LawyerPortalPages.css';
 
 const LawyerDocumentsPage = () => {
   const { user } = useAuth();
@@ -92,154 +92,185 @@ const LawyerDocumentsPage = () => {
   };
 
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="lawyer" />
 
-      <main className="portal-main-content">
-        <div className="portal-header">
-          <div className="header-title-row">
-            <h1>My Verification Documents</h1>
-            <StatusBadge status={advocate?.verificationStatus || user?.verificationStatus || 'PENDING'} />
-          </div>
-          <p>Manage and review your uploaded Bar Council Enrollment certificates, Identity proof, and academic credentials.</p>
-        </div>
+      <main className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#f8fafc] relative">
+        <LawyerHeader 
+          title="Verification Documents"
+          subtitle="Manage and review your uploaded Bar Council Enrollment certificates, Identity proof, and credentials."
+          badge={{ 
+            text: advocate?.verificationStatus || user?.verificationStatus || 'PENDING', 
+            variant: isApproved ? 'success' : 'amber',
+            icon: isApproved ? ShieldCheck : Clock
+          }}
+        />
 
-        {/* Verification Status Banner */}
-        {isApproved ? (
-          <div className="verification-banner success card" style={{ marginBottom: '1.5rem' }}>
-            <div className="banner-content">
-              <ShieldCheck size={28} className="banner-icon-success" />
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {/* Verification Status Banner */}
+          {isApproved ? (
+            <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200 p-4 sm:p-5 shadow-sm flex items-start sm:items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                <ShieldCheck size={22} />
+              </div>
               <div>
-                <h3>Credentials Verified & Approved</h3>
-                <p>All your Bar Council and legal practice verification documents have been verified by Adalat Admins.</p>
+                <h3 className="text-sm sm:text-base font-bold text-emerald-900 leading-tight">
+                  Credentials Verified & Approved
+                </h3>
+                <p className="text-xs sm:text-sm text-emerald-800/90 mt-0.5 font-normal">
+                  All your Bar Council and legal practice verification documents have been verified by Adalat Admins.
+                </p>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="verification-banner warning card" style={{ marginBottom: '1.5rem' }}>
-            <div className="banner-content">
-              <Clock size={28} className="banner-icon-warning" />
-              <div>
-                <h3>Verification In Progress</h3>
-                <p>Your uploaded documents are currently under manual review by the Adalat verification team. You can upload additional supporting documents below if requested.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Upload New Document Card */}
-        <div className="section-card card" style={{ marginBottom: '1.5rem' }}>
-          <div className="card-header-row" style={{ marginBottom: '1rem' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#102A43' }}>
-              <Upload size={18} style={{ color: '#5C5C99' }} /> Upload Supporting Verification Document
-            </h3>
-          </div>
-
-          <form onSubmit={handleUpload} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', alignItems: 'end' }}>
-            <div>
-              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.35rem', display: 'block' }}>
-                Document Category
-              </label>
-              <select 
-                className="form-control"
-                value={documentType}
-                onChange={(e) => setDocumentType(e.target.value)}
-                style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.9rem' }}
-              >
-                <option value="BAR_COUNCIL_CERTIFICATE">Bar Council Enrollment Certificate (Sanad)</option>
-                <option value="ENROLLMENT_CERTIFICATE">Bar Enrollment Certificate</option>
-                <option value="DEGREE_CERTIFICATE">LL.B / Law Degree Certificate</option>
-                <option value="ID_PROOF">Identity Proof (Aadhar / PAN Card)</option>
-                <option value="ADDRESS_PROOF">Address Proof</option>
-                <option value="PROFESSIONAL_DOCUMENT">Bar Association Membership ID / Document</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.35rem', display: 'block' }}>
-                Select File (PDF, PNG, JPG up to 10MB)
-              </label>
-              <input 
-                id="lawyer-doc-upload-input"
-                type="file" 
-                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                onChange={handleFileChange}
-                className="form-control"
-                style={{ width: '100%', padding: '0.45rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-              />
-            </div>
-
-            <div>
-              <button 
-                type="submit" 
-                className="btn btn-gold" 
-                disabled={uploading || !selectedFile}
-                style={{ width: '100%', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                {uploading ? (
-                  <span>Uploading...</span>
-                ) : (
-                  <>
-                    <Upload size={16} /> Upload Document
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Uploaded Documents List */}
-        <div className="section-card card">
-          <div className="card-header-row" style={{ marginBottom: '1.25rem' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#102A43' }}>
-              <FileCheck size={18} style={{ color: '#5C5C99' }} /> Uploaded Credentials & Proofs ({docs.length})
-            </h3>
-          </div>
-
-          {loading ? (
-            <LoadingState message="Loading verification documents..." />
-          ) : docs.length === 0 ? (
-            <EmptyState 
-              icon={FileText}
-              title="No Verification Documents Found"
-              message="Please upload your Bar Council Enrollment certificate and law credentials using the form above."
-            />
           ) : (
-            <div className="table-responsive">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Document Category</th>
-                    <th>File Name</th>
-                    <th>Uploaded Date</th>
-                    <th>Verification Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {docs.map((doc, idx) => (
-                    <tr key={idx}>
-                      <td>
-                        <span className="badge badge-gold" style={{ textTransform: 'capitalize' }}>
-                          {formatDocType(doc.documentType)}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: '#102A43' }}>
-                          <FileText size={16} style={{ color: '#5C5C99' }} /> {doc.originalFileName || doc.fileName || 'Bar_Certificate.pdf'}
-                        </span>
-                      </td>
-                      <td>
-                        {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : 'Verified on Registration'}
-                      </td>
-                      <td>
-                        <StatusBadge status={advocate?.verificationStatus || user?.verificationStatus || 'PENDING'} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="rounded-2xl bg-amber-50/80 border border-amber-200 p-4 sm:p-5 shadow-sm flex items-start sm:items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                <Clock size={22} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-amber-900 leading-tight">
+                  Verification In Progress
+                </h3>
+                <p className="text-xs sm:text-sm text-amber-800/90 mt-0.5 font-normal">
+                  Your uploaded documents are currently under manual review by the Adalat verification team. You can upload additional supporting documents below if requested.
+                </p>
+              </div>
             </div>
           )}
+
+          {/* Upload New Document Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-6">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                <Upload size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                  Upload Supporting Verification Document
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Submit Bar certificates, degrees, or government identity proofs
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpload} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="block font-semibold text-xs text-slate-700 mb-1.5">
+                  Document Category
+                </label>
+                <select 
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs sm:text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-medium"
+                >
+                  <option value="BAR_COUNCIL_CERTIFICATE">Bar Council Enrollment Certificate (Sanad)</option>
+                  <option value="ENROLLMENT_CERTIFICATE">Bar Enrollment Certificate</option>
+                  <option value="DEGREE_CERTIFICATE">LL.B / Law Degree Certificate</option>
+                  <option value="ID_PROOF">Identity Proof (Aadhar / PAN Card)</option>
+                  <option value="ADDRESS_PROOF">Address Proof</option>
+                  <option value="PROFESSIONAL_DOCUMENT">Bar Association Membership ID / Document</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-xs text-slate-700 mb-1.5">
+                  Select File (PDF, PNG, JPG up to 10MB)
+                </label>
+                <input 
+                  id="lawyer-doc-upload-input"
+                  type="file" 
+                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                  onChange={handleFileChange}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs bg-slate-50 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <button 
+                  type="submit" 
+                  disabled={uploading || !selectedFile}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:from-slate-200 disabled:to-slate-200 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 disabled:shadow-none cursor-pointer"
+                >
+                  {uploading ? (
+                    <span>Uploading...</span>
+                  ) : (
+                    <>
+                      <Upload size={15} />
+                      <span>Upload Document</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Uploaded Documents List */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                <FileCheck size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                  Uploaded Credentials & Proofs ({docs.length})
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Your submitted proof files registered with your advocate ID
+                </p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="py-12">
+                <LoadingState message="Loading verification documents..." />
+              </div>
+            ) : docs.length === 0 ? (
+              <div className="py-12 px-4">
+                <EmptyState 
+                  icon={FileText}
+                  title="No Verification Documents Found"
+                  message="Please upload your Bar Council Enrollment certificate and law credentials using the form above."
+                />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-500 uppercase tracking-wider text-[11px] font-semibold">
+                      <th className="py-3.5 px-5">Document Category</th>
+                      <th className="py-3.5 px-4">File Name</th>
+                      <th className="py-3.5 px-4">Uploaded Date</th>
+                      <th className="py-3.5 px-5 text-right">Verification Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {docs.map((doc, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-5 font-semibold text-slate-900">
+                          <span className="inline-block px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-semibold capitalize">
+                            {formatDocType(doc.documentType)}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-slate-900">
+                          <span className="inline-flex items-center gap-1.5 text-slate-800">
+                            <FileText size={15} className="text-indigo-600 shrink-0" />
+                            <span>{doc.originalFileName || doc.fileName || 'Bar_Certificate.pdf'}</span>
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-500 text-xs">
+                          {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : 'Verified on Registration'}
+                        </td>
+                        <td className="py-3.5 px-5 text-right">
+                          <StatusBadge status={advocate?.verificationStatus || user?.verificationStatus || 'PENDING'} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

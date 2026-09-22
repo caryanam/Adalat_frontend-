@@ -63,7 +63,7 @@ const CustomerHeader = ({
   };
 
   return (
-    <header className="w-full h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2.5 sm:gap-4 sticky top-0 z-30 shadow-2xs shrink-0 font-['Outfit',sans-serif]">
+    <header className="w-full min-h-[4.25rem] bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 sm:gap-4 sticky top-0 z-30 shadow-xs shrink-0 font-['Outfit',sans-serif] select-none">
       {/* Mobile Hamburger Drawer Trigger */}
       <button
         type="button"
@@ -76,17 +76,18 @@ const CustomerHeader = ({
       </button>
 
       {/* Left: Clean Title, Subtitle, and Badge */}
-      <div className="min-w-0 flex-1 flex flex-col justify-center">
+      <div className="min-w-0 flex-1 flex flex-col justify-center py-1">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <h1 
             style={{ 
-              fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important",
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '1.125rem',
               margin: 0,
               padding: 0,
-              lineHeight: 1.2,
+              lineHeight: 1.25,
               textTransform: 'none'
             }}
-            className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-tight truncate !font-['Outfit',sans-serif] !m-0 !p-0 !text-slate-900"
+            className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-tight truncate m-0 p-0 text-slate-900"
           >
             {title}
           </h1>
@@ -95,7 +96,7 @@ const CustomerHeader = ({
         {subtitle && (
           <p 
             style={{ margin: 0, padding: 0 }}
-            className="hidden sm:block text-[11px] sm:text-xs text-slate-500 font-normal mt-0.5 leading-tight truncate max-w-2xl !m-0 !p-0"
+            className="hidden sm:block text-[11px] sm:text-xs text-slate-500 font-normal mt-0.5 leading-tight truncate max-w-2xl m-0 p-0"
           >
             {subtitle}
           </p>
@@ -103,7 +104,7 @@ const CustomerHeader = ({
       </div>
 
       {/* Right: Actions, Notifications & Profile */}
-      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {actions && (
           <div className="flex items-center gap-2 shrink-0">
             {actions}
@@ -116,7 +117,7 @@ const CustomerHeader = ({
         <Link 
           to="/customer/consultations" 
           title="Notifications & Activity"
-          className="relative w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-indigo-600 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
+          className="relative w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-indigo-600 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer shadow-xs hover:border-indigo-200 active:scale-95 shrink-0"
         >
           <Bell size={16} />
           <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
@@ -126,9 +127,9 @@ const CustomerHeader = ({
         <Link 
           to="/customer/profile" 
           title="View Customer Profile"
-          className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/80 py-1.5 pl-1.5 pr-3 rounded-xl cursor-pointer transition-all shadow-2xs group shrink-0 active:scale-95"
+          className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 py-1.5 pl-1.5 pr-3 rounded-xl cursor-pointer transition-all shadow-xs hover:border-indigo-200 group shrink-0 active:scale-95"
         >
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold flex items-center justify-center text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold flex items-center justify-center text-xs shadow-xs group-hover:scale-105 transition-transform shrink-0">
             {initial}
           </div>
           <div className="hidden md:flex flex-col text-left leading-none">

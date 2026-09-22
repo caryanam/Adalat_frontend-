@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import LawyerHeader from '../../components/LawyerHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 import { lawyerApi } from '../../api/lawyerApi';
 import { CreditCard, TrendingUp, CheckCircle, RefreshCw, IndianRupee, User, ShieldCheck } from 'lucide-react';
-import './LawyerPortalPages.css';
 
 const LawyerEarningsPage = () => {
   const { user } = useAuth();
@@ -62,144 +62,183 @@ const LawyerEarningsPage = () => {
   };
 
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="lawyer" />
 
-      <main className="portal-main-content">
-        <div className="portal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <h1>Earnings & UPI Payouts</h1>
-            <p>Track direct customer consultation payments received to your registered UPI ID.</p>
-          </div>
-          <button 
-            className="btn btn-outline-gold btn-sm" 
-            onClick={() => fetchEarnings(true)} 
-            disabled={loading || refreshing}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-          >
-            <RefreshCw size={14} className={refreshing ? 'spin' : ''} />
-            {refreshing ? 'Refreshing...' : 'Refresh Payouts'}
-          </button>
-        </div>
+      <main className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#f8fafc] relative">
+        <LawyerHeader 
+          title="Earnings & UPI Payouts"
+          subtitle="Track direct customer consultation payments received to your registered UPI ID."
+          badge={{ 
+            text: "Direct Settlement", 
+            variant: "emerald",
+            icon: ShieldCheck 
+          }}
+          actions={
+            <button 
+              onClick={() => fetchEarnings(true)} 
+              disabled={loading || refreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-50"
+              title="Refresh payout transactions"
+            >
+              <RefreshCw size={13} className={refreshing ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
+              <span>{refreshing ? 'Refreshing...' : 'Refresh Payouts'}</span>
+            </button>
+          }
+        />
 
-        {/* UPI Settlement Payout Account Info Banner */}
-        <div className="verification-banner success card" style={{ marginBottom: '1.5rem', background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-          <div className="banner-content">
-            <ShieldCheck size={28} style={{ color: '#16A34A', flexShrink: 0 }} />
-            <div>
-              <h3 style={{ color: '#15803D', margin: '0 0 0.25rem 0', fontSize: '0.95rem' }}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {/* UPI Settlement Payout Account Info Banner */}
+          <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200 p-4 sm:p-5 shadow-sm flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <ShieldCheck size={22} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm sm:text-base font-bold text-emerald-900 leading-tight">
                 Direct UPI Instant Settlement Account
               </h3>
-              <p style={{ color: '#166534', margin: 0, fontSize: '0.84rem' }}>
-                Customer fees are paid directly to your UPI handle: <strong>{earnings.lawyerUpiId || 'advocate@upi'}</strong> (Registered Name: <strong>{earnings.lawyerName}</strong>).
+              <p className="text-xs sm:text-sm text-emerald-800/90 mt-0.5 font-normal">
+                Customer fees are paid directly to your registered UPI handle: <strong className="font-semibold text-emerald-950 font-mono">{earnings.lawyerUpiId || 'advocate@upi'}</strong> (Registered Name: <strong className="font-semibold text-emerald-950">{earnings.lawyerName}</strong>).
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Metrics Grid */}
-        <div className="metrics-grid">
-          <div className="metric-card card">
-            <div className="metric-icon-box teal"><IndianRupee size={22} /></div>
-            <div>
-              <h3 style={{ color: '#0D9488' }}>
-                {loading ? '...' : formatRupees(earnings.totalEarningsNum, earnings.totalEarnings)}
-              </h3>
-              <p>Total Earnings</p>
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            {/* Metric 1: Total Earnings */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all duration-200 flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Total Earnings
+                </p>
+                <div className="text-2xl font-bold text-teal-700 tracking-tight font-['Outfit',sans-serif]">
+                  {loading ? '...' : formatRupees(earnings.totalEarningsNum, earnings.totalEarnings)}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-teal-600 font-medium pt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
+                  <span>Cumulative consultation fees</span>
+                </div>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shadow-xs shrink-0">
+                <IndianRupee size={22} />
+              </div>
             </div>
-          </div>
-          <div className="metric-card card">
-            <div className="metric-icon-box gold"><TrendingUp size={22} /></div>
-            <div>
-              <h3 style={{ color: '#D97706' }}>
-                {loading ? '...' : formatRupees(earnings.todayEarningsNum, earnings.todayEarnings)}
-              </h3>
-              <p>Today's Earnings</p>
-            </div>
-          </div>
-          <div className="metric-card card">
-            <div className="metric-icon-box navy"><CreditCard size={22} /></div>
-            <div>
-              <h3 style={{ color: '#1E293B' }}>{loading ? '...' : earnings.completedConsultations}</h3>
-              <p>Completed Consultations</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Transaction History Section */}
-        <div className="section-card card">
-          <div className="card-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#102A43' }}>
-              Transaction History ({earnings.transactions.length})
-            </h3>
+            {/* Metric 2: Today's Earnings */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-200 flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Today's Earnings
+                </p>
+                <div className="text-2xl font-bold text-amber-600 tracking-tight font-['Outfit',sans-serif]">
+                  {loading ? '...' : formatRupees(earnings.todayEarningsNum, earnings.todayEarnings)}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-amber-600 font-medium pt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>Settled in past 24 hours</span>
+                </div>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shadow-xs shrink-0">
+                <TrendingUp size={22} />
+              </div>
+            </div>
+
+            {/* Metric 3: Completed Consultations */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Completed Consultations
+                </p>
+                <div className="text-2xl font-bold text-slate-900 tracking-tight font-['Outfit',sans-serif]">
+                  {loading ? '...' : earnings.completedConsultations}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-indigo-600 font-medium pt-0.5">
+                  <CheckCircle size={12} className="text-indigo-600" />
+                  <span>Delivered sessions</span>
+                </div>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs shrink-0">
+                <CreditCard size={22} />
+              </div>
+            </div>
           </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748B' }}>
-              <RefreshCw size={24} className="spin" style={{ margin: '0 auto 0.75rem auto', display: 'block', color: '#5C5C99' }} />
-              <p>Loading consultation payout transactions...</p>
+          {/* Transaction History Section */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                  Transaction History ({earnings.transactions.length})
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Records of direct customer fees credited to your UPI VPA
+                </p>
+              </div>
             </div>
-          ) : earnings.transactions.length === 0 ? (
-            <div style={{ marginTop: '0.5rem' }}>
-              <EmptyState 
-                icon={CreditCard}
-                title="No Earnings Received Yet"
-                message="When customers book and pay for legal consultations with you, payment transaction receipts will appear in this history."
-              />
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Ref ID</th>
-                    <th>Customer Name</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Date & Time</th>
-                    <th>Payout Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {earnings.transactions.map((tx, idx) => (
-                    <tr key={tx.id || idx}>
-                      <td>
-                        <code style={{ background: '#F1F5F9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.78rem', color: '#334155' }}>
-                          {tx.id}
-                        </code>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <strong style={{ color: '#1E293B', fontSize: '0.88rem' }}>{tx.customerName || 'Registered Client'}</strong>
-                          {tx.customerEmail && (
-                            <span style={{ fontSize: '0.75rem', color: '#64748B' }}>{tx.customerEmail}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
-                          {tx.category ? tx.category.replace(/_/g, ' ') : 'Legal Consultation'}
-                        </span>
-                      </td>
-                      <td>
-                        <strong style={{ color: '#059669', fontSize: '0.92rem', fontWeight: 700 }}>
-                          {formatRupees(tx.amountNum, tx.amount)}
-                        </strong>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: '0.82rem', color: '#64748B' }}>
-                          {tx.date}
-                        </span>
-                      </td>
-                      <td>
-                        <StatusBadge status={tx.status || 'PAID'} />
-                      </td>
+
+            {loading ? (
+              <div className="py-12">
+                <RefreshCw size={24} className="animate-spin mx-auto text-indigo-600 mb-2" />
+                <p className="text-center text-xs text-slate-500">Loading consultation payout transactions...</p>
+              </div>
+            ) : earnings.transactions.length === 0 ? (
+              <div className="py-12 px-4">
+                <EmptyState 
+                  icon={CreditCard}
+                  title="No Earnings Received Yet"
+                  message="When customers book and pay for legal consultations with you, payment transaction receipts will appear in this history."
+                />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-500 uppercase tracking-wider text-[11px] font-semibold">
+                      <th className="py-3.5 px-5">Ref ID</th>
+                      <th className="py-3.5 px-4">Customer Name</th>
+                      <th className="py-3.5 px-4">Legal Category</th>
+                      <th className="py-3.5 px-4">Amount</th>
+                      <th className="py-3.5 px-4">Date & Time</th>
+                      <th className="py-3.5 px-5 text-right">Payout Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {earnings.transactions.map((tx, idx) => (
+                      <tr key={tx.id || idx} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-5 font-mono text-slate-500 text-[11px]">
+                          <span className="bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                            {tx.id}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-slate-900">
+                          <div className="flex flex-col">
+                            <span>{tx.customerName || 'Registered Client'}</span>
+                            {tx.customerEmail && (
+                              <span className="text-[11px] text-slate-400 font-normal">{tx.customerEmail}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-medium">
+                            {tx.category ? tx.category.replace(/_/g, ' ') : 'Legal Consultation'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-emerald-700 text-sm">
+                          {formatRupees(tx.amountNum, tx.amount)}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-500 text-xs">
+                          {tx.date}
+                        </td>
+                        <td className="py-3.5 px-5 text-right">
+                          <StatusBadge status={tx.status || 'PAID'} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

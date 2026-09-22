@@ -17,18 +17,18 @@ const CustomerPaymentsPage = () => {
   ]);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50 overflow-x-hidden font-['Outfit',sans-serif]">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="customer" />
 
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 min-h-screen relative">
+      <main className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#f8fafc] relative">
         <CustomerHeader 
           title="Payment History"
           subtitle="Audit log of account activation fees & extended advocate consultation payments."
           badge={{ text: "Verified Invoices", variant: "indigo" }}
         />
 
-        <div className="p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8">
-          <div className="section-card card">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
           {payments.length === 0 ? (
             <EmptyState 
               icon={CreditCard}

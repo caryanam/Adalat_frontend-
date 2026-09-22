@@ -159,7 +159,7 @@ const CustomerAppointmentsPage = () => {
           actions={
             <Link
               to="/customer/find-lawyers"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs hover:shadow-indigo-500/20 active:scale-95 transition-all shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-sm shadow-indigo-600/20 hover:shadow-md hover:shadow-indigo-600/30 active:scale-95 transition-all shrink-0 cursor-pointer"
             >
               <Plus size={14} />
               <span>Book New Advocate</span>
@@ -173,7 +173,7 @@ const CustomerAppointmentsPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             
             {/* KPI 1: Total Appointments */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:shadow-sm transition-all duration-200 flex items-center justify-between">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Total Bookings
@@ -185,13 +185,13 @@ const CustomerAppointmentsPage = () => {
                   <span>Recorded sessions</span>
                 </div>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs shrink-0">
                 <Calendar size={22} />
               </div>
             </div>
 
             {/* KPI 2: Active / Upcoming Sessions */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:shadow-sm transition-all duration-200 flex items-center justify-between">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Upcoming & Active
@@ -204,13 +204,13 @@ const CustomerAppointmentsPage = () => {
                   <span>Ready to join</span>
                 </div>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-2xs shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-xs shrink-0">
                 <Clock size={22} />
               </div>
             </div>
 
             {/* KPI 3: Completed Consultations */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:shadow-sm transition-all duration-200 flex items-center justify-between">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Completed Sessions
@@ -222,13 +222,13 @@ const CustomerAppointmentsPage = () => {
                   <span>Concluded consultations</span>
                 </div>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shadow-2xs shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shadow-xs shrink-0">
                 <CheckCircle2 size={22} />
               </div>
             </div>
 
             {/* KPI 4: Advocates Consulted */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:shadow-sm transition-all duration-200 flex items-center justify-between">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Advocates Network
@@ -240,7 +240,7 @@ const CustomerAppointmentsPage = () => {
                   <span>Verified advocates</span>
                 </div>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shadow-2xs shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shadow-xs shrink-0">
                 <Scale size={22} />
               </div>
             </div>

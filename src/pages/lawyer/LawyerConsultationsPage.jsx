@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import LawyerHeader from '../../components/LawyerHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
@@ -15,14 +16,16 @@ import {
   Send, 
   X, 
   FileText, 
-  User, 
   AlertCircle, 
   Paperclip, 
   CheckSquare,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  RefreshCw
 } from 'lucide-react';
-import './LawyerPortalPages.css';
 
 const LawyerConsultationsPage = () => {
   const completeMutation = useCompleteConsultation(true);
@@ -123,141 +126,200 @@ const LawyerConsultationsPage = () => {
   };
 
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="lawyer" />
 
-      <main className="portal-main-content">
-        <div className="portal-header">
-          <h1>Active Consultations & Scheduled Appointments</h1>
-          <p>View confirmed appointment history, scheduled consultation dates & times, and live chat sessions.</p>
-        </div>
+      <main className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#f8fafc] relative">
+        <LawyerHeader 
+          title="Active Consultations"
+          subtitle="Confirmed appointments, client case briefs, and live advisory chat sessions."
+          badge={{ 
+            text: `${consultations.length} Active Sessions`, 
+            variant: "indigo",
+            icon: Calendar 
+          }}
+          actions={
+            <button 
+              onClick={fetchLawyerConsultations}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-50"
+              title="Refresh consultations"
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin text-indigo-600" : "text-slate-500"} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          }
+        />
 
-        {/* Pending Requests Alert Banner */}
-        {pendingRequests.length > 0 && (
-          <div className="section-card card" style={{ background: '#FFFBEB', border: '2px solid #F59E0B', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F59E0B', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <AlertCircle size={22} />
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {/* Pending Requests Alert Banner */}
+          {pendingRequests.length > 0 && (
+            <div className="rounded-2xl bg-amber-50 border border-amber-300/80 p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                  <AlertCircle size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', color: '#92400E' }}>
-                    {pendingRequests.length} New Incoming Consultation Request{pendingRequests.length > 1 ? 's' : ''}!
+                  <h3 className="text-sm sm:text-base font-bold text-amber-900 leading-tight">
+                    {pendingRequests.length} New Consultation Request{pendingRequests.length > 1 ? 's' : ''}!
                   </h3>
-                  <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: '#B45309' }}>
-                    Customer {pendingRequests[0].customerName || 'Client'} has requested a consultation with your profile. Accept and assign a date & time to schedule.
+                  <p className="text-xs sm:text-sm text-amber-800/90 mt-0.5 font-normal">
+                    Client {pendingRequests[0].customerName || 'Customer'} is awaiting your availability schedule.
                   </p>
                 </div>
               </div>
-              <button className="btn btn-gold btn-sm" onClick={() => handleOpenAssignModal(pendingRequests[0])} style={{ flexShrink: 0 }}>
-                <Calendar size={14} /> Accept & Schedule Now
+              <button 
+                onClick={() => handleOpenAssignModal(pendingRequests[0])} 
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-sm shadow-amber-500/25 active:scale-95 transition-all cursor-pointer shrink-0"
+              >
+                <Calendar size={13} />
+                <span>Accept & Schedule Now</span>
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="section-card card">
-          {loading ? (
-            <LoadingState message="Loading scheduled appointments history..." />
-          ) : consultations.length === 0 ? (
-            <EmptyState 
-              icon={Calendar}
-              title="No Scheduled Appointments"
-              message="When you accept customer consultation requests and assign a date/time, your scheduled appointments will appear here."
-            />
-          ) : (
-            <div className="table-responsive">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Legal Category</th>
-                    <th>Scheduled Date & Time</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {consultations.map((item) => (
-                    <tr key={item.id || item.requestId}>
-                      <td>
-                        <strong>{item.customerName || 'Client'}</strong>
-                        <div className="sub-text">Ref: #{item.id || item.requestId}</div>
-                      </td>
-                      <td>
-                        <span className="badge badge-gold" style={{ display: 'inline-block', marginBottom: '0.35rem' }}>
-                          {item.categoryDisplayName || item.category || 'General Consultation'}
-                        </span>
-                        {item.caseSummary && (
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline"
-                              onClick={() => setExpandedSummary(expandedSummary === item.id ? null : item.id)}
-                              style={{ padding: '0.15rem 0.45rem', fontSize: '0.72rem' }}
-                            >
-                              {expandedSummary === item.id ? '▲ Hide AI Brief' : '▼ View AI Brief'}
-                            </button>
-                            {expandedSummary === item.id && (
-                              <div style={{
-                                marginTop: '6px', padding: '10px', background: '#F8FAFC',
-                                border: '1px solid #E2E8F0', borderRadius: '6px',
-                                fontSize: '0.78rem', whiteSpace: 'pre-wrap', maxHeight: '200px',
-                                overflowY: 'auto', color: '#1e293b'
-                              }}>
-                                {item.caseSummary}
+          {/* Appointments Table Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+            {loading ? (
+              <div className="py-12">
+                <LoadingState message="Loading scheduled appointments history..." />
+              </div>
+            ) : consultations.length === 0 ? (
+              <div className="py-12 px-4">
+                <EmptyState 
+                  icon={Calendar}
+                  title="No Scheduled Appointments"
+                  message="When you accept customer consultation requests and assign a date/time, your scheduled appointments will appear here."
+                />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-500 uppercase tracking-wider text-[11px] font-semibold">
+                      <th className="py-3.5 px-5">Customer</th>
+                      <th className="py-3.5 px-4">Legal Category & AI Brief</th>
+                      <th className="py-3.5 px-4">Scheduled Slot</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {consultations.map((item) => {
+                      const itemId = item.id || item.requestId;
+                      const isExpanded = expandedSummary === itemId;
+                      return (
+                        <tr key={itemId} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-4 px-5 align-top">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+                                {item.customerName ? item.customerName.charAt(0).toUpperCase() : 'C'}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                                  {item.customerName || 'Client'}
+                                </div>
+                                <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                                  Ref: #{itemId}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-4 px-4 align-top max-w-sm">
+                            <div className="space-y-1.5">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs">
+                                {item.categoryDisplayName || item.category || 'General Consultation'}
+                              </span>
+
+                              {item.caseSummary && (
+                                <div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedSummary(isExpanded ? null : itemId)}
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        <ChevronUp size={12} />
+                                        <span>Hide Brief</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown size={12} />
+                                        <span>View AI Brief</span>
+                                      </>
+                                    )}
+                                  </button>
+                                  {isExpanded && (
+                                    <div className="mt-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200/90 text-slate-700 text-xs leading-relaxed whitespace-pre-wrap font-sans max-h-52 overflow-y-auto shadow-inner">
+                                      {item.caseSummary}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="py-4 px-4 align-top">
+                            {item.assignedDate ? (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                                <Calendar size={13} className="text-emerald-600" />
+                                <span>{item.assignedDate} at {item.assignedTime}</span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200/80">
+                                <Clock size={13} className="text-amber-600" />
+                                <span>Time Pending</span>
                               </div>
                             )}
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        {item.assignedDate ? (
-                          <div className="assigned-time-tag">
-                            <Calendar size={13} /> {item.assignedDate} at {item.assignedTime}
-                          </div>
-                        ) : (
-                          <span className="text-muted-sm"><Clock size={13} /> Time Pending</span>
-                        )}
-                      </td>
-                      <td>
-                        <StatusBadge status={item.status || 'ACCEPTED'} />
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-gold btn-sm"
-                          onClick={() => handleOpenChatModal(item)}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-                        >
-                          <MessageSquare size={13} /> Join Consultation Chat
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          </td>
+
+                          <td className="py-4 px-4 align-top">
+                            <StatusBadge status={item.status || 'ACCEPTED'} />
+                          </td>
+
+                          <td className="py-4 px-5 align-top text-right">
+                            <button
+                              onClick={() => handleOpenChatModal(item)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
+                            >
+                              <MessageSquare size={13} />
+                              <span>Join Live Chat</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* LIVE CHAT MODAL FOR ADVOCATE */}
         {activeChatConsultation && (
-          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 19, 31, 0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-            <div style={{ background: '#FFFFFF', borderRadius: '16px', maxWidth: '680px', width: '100%', height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', border: '2px solid #5C5C99', overflow: 'hidden' }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden font-['Outfit',sans-serif]">
               
               {/* Header Bar */}
-              <div style={{ padding: '1rem 1.25rem', background: '#102A43', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#5C5C99', color: '#102A43', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between gap-3 border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
                     {activeChatConsultation.customerName ? activeChatConsultation.customerName.charAt(0).toUpperCase() : 'C'}
                   </div>
-                  <div>
-                    <h4 style={{ margin: 0, color: '#FFFFFF', fontSize: '1rem' }}>{activeChatConsultation.customerName || 'Customer'}</h4>
-                    <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}>Category: {activeChatConsultation.categoryDisplayName || activeChatConsultation.category || 'Legal Consultation'}</span>
+                  <div className="min-w-0">
+                    <h4 className="text-sm sm:text-base font-bold text-white truncate">
+                      {activeChatConsultation.customerName || 'Customer'}
+                    </h4>
+                    <span className="text-[11px] text-slate-300 block truncate">
+                      Category: {activeChatConsultation.categoryDisplayName || activeChatConsultation.category || 'Legal Consultation'}
+                    </span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div className="flex items-center gap-2 shrink-0">
                   <ConsultationTimer 
                     consultationId={activeChatConsultation.id || activeChatConsultation.requestId}
                     initialSeconds={120} 
@@ -265,6 +327,7 @@ const LawyerConsultationsPage = () => {
                     isPaid={activeChatConsultation.status === 'ACTIVE' || activeChatConsultation.status === 'PAYMENT_COMPLETED'} 
                     isLawyer={true}
                   />
+                  
                   <button
                     type="button"
                     onClick={() => {
@@ -277,30 +340,37 @@ const LawyerConsultationsPage = () => {
                         });
                       }
                     }}
-                    className="btn btn-secondary btn-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                     disabled={completeMutation.isPending || activeChatConsultation?.status === 'COMPLETED'}
-                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, background: '#DC2626', color: '#FFF', border: 'none', borderRadius: '8px' }}
                   >
-                    <CheckSquare size={14} /> {completeMutation.isPending ? 'Ending...' : 'End Consultation'}
+                    <CheckSquare size={13} />
+                    <span>{completeMutation.isPending ? 'Ending...' : 'End Session'}</span>
                   </button>
-                  <button onClick={() => setActiveChatConsultation(null)} style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer' }}>
-                    <X size={22} />
+
+                  <button 
+                    onClick={() => setActiveChatConsultation(null)} 
+                    className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <X size={18} />
                   </button>
                 </div>
               </div>
 
-              {/* AI Case Assessment Attached Info Bar */}
-              <div style={{ background: '#FEF3C7', padding: '0.5rem 1.25rem', borderBottom: '1px solid #FDE68A', fontSize: '0.78rem', color: '#92400E', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <FileText size={14} /> Attached AI Case Assessment Report: <strong>{activeChatConsultation.caseSummary || activeChatConsultation.summary || 'Legal summary attached by customer.'}</strong>
+              {/* Case Summary Bar */}
+              <div className="bg-amber-50 px-4 py-2 border-b border-amber-200/80 text-[11px] sm:text-xs text-amber-900 flex items-center gap-2 shrink-0">
+                <FileText size={13} className="text-amber-700 shrink-0" />
+                <span className="truncate">
+                  Brief: <strong>{activeChatConsultation.caseSummary || activeChatConsultation.summary || 'Legal summary attached by customer.'}</strong>
+                </span>
               </div>
 
               {/* Chat Messages Body */}
-              <div style={{ flex: 1, padding: '1rem', overflowY: 'auto', background: '#F8FAFC', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
                 {chatMessages.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#64748B', margin: 'auto' }}>
-                    <MessageSquare size={36} style={{ color: '#CBD5E1', marginBottom: '0.5rem' }} />
-                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Real-time Advocate Consultation Room</p>
-                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem' }}>Send a message to greet your client and begin the consultation session.</p>
+                  <div className="text-center text-slate-400 my-auto py-8">
+                    <MessageSquare size={36} className="mx-auto text-slate-300 mb-2" />
+                    <p className="text-sm font-bold text-slate-700">Real-time Consultation Room</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Send a greeting message to begin the legal consultation.</p>
                   </div>
                 ) : (
                   chatMessages.map((msg, index) => {
@@ -308,45 +378,30 @@ const LawyerConsultationsPage = () => {
                     return (
                       <div 
                         key={msg.id || index}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: isLawyerMsg ? 'flex-end' : 'flex-start'
-                        }}
+                        className={`flex flex-col ${isLawyerMsg ? 'items-end' : 'items-start'}`}
                       >
-                        <div style={{
-                          maxWidth: '75%',
-                          padding: '0.75rem 1rem',
-                          borderRadius: isLawyerMsg ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                          background: isLawyerMsg ? 'linear-gradient(135deg, #102A43 0%, #1E3A5F 100%)' : '#FFFFFF',
-                          color: isLawyerMsg ? '#FFFFFF' : '#102A43',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                          border: isLawyerMsg ? 'none' : '1px solid #E2E8F0',
-                          fontSize: '0.9rem',
-                          lineHeight: 1.4
-                        }}>
+                        <div 
+                          className={`max-w-[82%] sm:max-w-[75%] px-4 py-3 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                            isLawyerMsg 
+                              ? 'bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl rounded-tr-xs shadow-sm font-normal' 
+                              : 'bg-white text-slate-800 border border-slate-200/90 rounded-2xl rounded-tl-xs shadow-xs'
+                          }`}
+                        >
                           {msg.text || msg.message}
                           {msg.attachedFileName && (
-                            <div 
+                            <button 
+                              type="button"
                               onClick={() => openDocumentViewer(msg.attachedFileName)}
-                              style={{
-                                marginTop: '0.5rem',
-                                padding: '0.4rem 0.6rem',
-                                background: isLawyerMsg ? 'rgba(255,255,255,0.15)' : '#F1F5F9',
-                                borderRadius: '6px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem',
-                                color: isLawyerMsg ? '#5C5C99' : '#102A43'
-                              }}
+                              className={`mt-2 p-2 rounded-xl flex items-center gap-2 text-xs font-semibold w-full text-left transition-colors cursor-pointer ${
+                                isLawyerMsg ? 'bg-white/15 text-indigo-200 hover:bg-white/25' : 'bg-slate-100 text-indigo-700 hover:bg-slate-200'
+                              }`}
                             >
-                              <FileText size={14} /> {msg.attachedFileName}
-                            </div>
+                              <FileText size={14} />
+                              <span className="truncate">{msg.attachedFileName}</span>
+                            </button>
                           )}
                         </div>
-                        <span style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                        <span className="text-[10px] text-slate-400 mt-1 px-1">
                           {msg.time || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now')}
                         </span>
                       </div>
@@ -356,11 +411,11 @@ const LawyerConsultationsPage = () => {
               </div>
 
               {/* Chat Input Bar */}
-              <form onSubmit={handleSendLawyerMessage} style={{ padding: '0.75rem 1rem', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <form onSubmit={handleSendLawyerMessage} className="p-3 sm:p-4 bg-white border-t border-slate-200/90 flex items-center gap-2 shrink-0">
                 <input
                   type="file"
                   id="lawyer-file-input"
-                  style={{ display: 'none' }}
+                  className="hidden"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       setAttachedLawyerFile(e.target.files[0]);
@@ -371,7 +426,7 @@ const LawyerConsultationsPage = () => {
                 <button
                   type="button"
                   onClick={() => document.getElementById('lawyer-file-input').click()}
-                  style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 border border-slate-200/80 transition-colors cursor-pointer shrink-0 shadow-2xs"
                   title="Attach Legal Document"
                 >
                   <Paperclip size={18} />
@@ -382,41 +437,45 @@ const LawyerConsultationsPage = () => {
                   value={lawyerInput}
                   onChange={(e) => setLawyerInput(e.target.value)}
                   placeholder="Type your legal advice or response here..."
-                  style={{ flex: 1, padding: '0.65rem 1rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.9rem', outline: 'none' }}
+                  className="flex-1 bg-slate-50 text-slate-900 placeholder-slate-400 text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-200/90 focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 font-medium transition-all"
                 />
 
                 <button
                   type="submit"
                   disabled={!lawyerInput.trim() && !attachedLawyerFile}
-                  className="btn btn-gold"
-                  style={{ padding: '0.65rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:from-slate-200 disabled:to-slate-200 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-sm shadow-amber-500/20 active:scale-95 disabled:shadow-none cursor-pointer shrink-0"
                 >
-                  <Send size={15} /> Send
+                  <Send size={14} />
+                  <span>Send</span>
                 </button>
               </form>
-
             </div>
           </div>
         )}
 
         {/* Document Viewer Modal */}
         {showPdfModal && (
-          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', maxWidth: '600px', width: '100%', padding: '1.5rem', margin: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#102A43' }}>
-                  <FileText size={20} style={{ color: '#5C5C99' }} /> Document Preview
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-slate-800">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                  <FileText size={18} className="text-indigo-600" />
+                  <span>Document Preview</span>
                 </h3>
-                <button onClick={() => setShowPdfModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                  <X size={20} />
+                <button onClick={() => setShowPdfModal(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 transition-colors cursor-pointer">
+                  <X size={18} />
                 </button>
               </div>
-              <div style={{ background: '#F8FAFC', padding: '2rem', borderRadius: '8px', textAlign: 'center', border: '1px dashed #CBD5E1' }}>
-                <FileText size={48} style={{ color: '#5C5C99', margin: '0 auto 1rem auto' }} />
-                <p style={{ fontWeight: 600, color: '#102A43', margin: 0 }}>{viewingPdfName}</p>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0.3rem 0 1rem 0' }}>Legally secure client uploaded case evidence document.</p>
-                <button className="btn btn-gold btn-sm" onClick={() => toast.success('Document downloaded for offline review.')}>
-                  Download Document
+              <div className="bg-slate-50 p-6 rounded-xl text-center border border-dashed border-slate-300">
+                <FileText size={48} className="text-indigo-600 mx-auto mb-3" />
+                <p className="font-bold text-sm text-slate-900">{viewingPdfName}</p>
+                <p className="text-xs text-slate-500 mt-1 mb-4">Legally secure client uploaded case evidence document.</p>
+                <button 
+                  onClick={() => toast.success('Document downloaded for offline review.')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs transition-all active:scale-95 cursor-pointer"
+                >
+                  <Download size={13} />
+                  <span>Download Document</span>
                 </button>
               </div>
             </div>
@@ -429,7 +488,6 @@ const LawyerConsultationsPage = () => {
           consultation={selectedPendingRequest}
           onAssignSuccess={handleAssignSuccess}
         />
-
       </main>
     </div>
   );

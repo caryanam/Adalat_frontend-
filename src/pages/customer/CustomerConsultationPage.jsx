@@ -320,7 +320,7 @@ const CustomerConsultationPage = () => {
           actions={
             <Link
               to="/customer/find-lawyers"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs hover:shadow-indigo-500/20 active:scale-95 transition-all shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-sm shadow-indigo-600/20 hover:shadow-md hover:shadow-indigo-600/30 active:scale-95 transition-all shrink-0 cursor-pointer"
             >
               <Plus size={14} />
               <span>Book Advocate</span>
@@ -329,7 +329,7 @@ const CustomerConsultationPage = () => {
         />
 
         <div className="flex-1 p-2 sm:p-5 lg:p-6 pb-20 md:pb-6 flex flex-col min-h-0 overflow-hidden">
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
             
             {/* LEFT CONSULTATIONS LIST PANEL: Hidden on mobile when activeConsultation is open */}
             <div className={`w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-slate-200/80 bg-slate-50/50 flex-col shrink-0 min-h-0 ${

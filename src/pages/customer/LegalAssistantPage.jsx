@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../components/Sidebar';
 import CustomerHeader from '../../components/CustomerHeader';
 import apiClient from '../../api/apiClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Bot, 
   Send, 
@@ -47,7 +47,9 @@ const LegalAssistantPage = () => {
   const [error, setError] = useState(null);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const messagesEndRef = useRef(null);
+  const chatScrollContainerRef = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const initializePage = async () => {
     await fetchSessionsList();
@@ -78,7 +80,19 @@ const LegalAssistantPage = () => {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const q = searchParams.get('query');
+    if (q) {
+      setInputValue(q);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (chatScrollContainerRef.current) {
+      chatScrollContainerRef.current.scrollTo({
+        top: chatScrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages, isTyping]);
 
   const fetchSessionsList = async (autoLoadId = null) => {
@@ -387,9 +401,7 @@ const LegalAssistantPage = () => {
       // Fallback: just navigate and let the user handle it
       navigate(`/customer/consultations?lawyerId=${lawyer.lawyerId || lawyer.id}`);
     }
-  };
-
-  const renderMessages = () => {
+  };  const renderMessages = () => {
     return messages.map((msg, index) => {
       const isAI = msg.senderType === 'AI';
       if (isSummaryMode && !isEditing && isAI && msg.message && (msg.message.startsWith('Case Category:') || msg.message.includes('Based on your description, here are the key facts'))) {
@@ -399,20 +411,29 @@ const LegalAssistantPage = () => {
       return (
         <div 
           key={msg.id || index} 
-          className={`flex w-full mb-4 ${isAI ? 'justify-start' : 'justify-end'}`}
+          className={`flex w-full mb-5 ${isAI ? 'justify-start' : 'justify-end'}`}
         >
           {isAI ? (
-            <div className="flex items-start gap-2.5 max-w-[88%] sm:max-w-[80%]">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                <Bot size={16} />
+            <div className="flex items-start gap-3 max-w-[92%] sm:max-w-[85%]">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-700 text-white flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/20 mt-0.5 border border-indigo-400/20">
+                <Bot size={17} />
               </div>
-              <div className="bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
-                {msg.message}
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <div className="flex items-center gap-2 pl-1">
+                  <span className="text-xs font-bold text-slate-800">Adalat Legal AI</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                    <Sparkles size={10} className="text-amber-500" />
+                    <span>Indian Law (BNS & IPC)</span>
+                  </span>
+                </div>
+                <div className="bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-sm p-4 sm:p-5 shadow-sm text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                  {msg.message}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="flex items-start justify-end gap-2.5 max-w-[88%] sm:max-w-[80%]">
-              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl rounded-tr-xs px-4 py-3 shadow-xs shadow-indigo-600/20 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words font-medium">
+            <div className="flex items-start justify-end gap-2.5 max-w-[92%] sm:max-w-[85%]">
+              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl rounded-tr-sm px-4 sm:px-5 py-3 sm:py-3.5 shadow-sm shadow-indigo-600/25 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words font-medium">
                 {msg.message}
               </div>
             </div>
@@ -438,7 +459,7 @@ const LegalAssistantPage = () => {
               <button
                 onClick={() => setIsHistoryOpen(prev => !prev)}
                 title={isHistoryOpen ? "Collapse chat history" : "Open chat history"}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0 ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer active:scale-95 shadow-xs shrink-0 ${
                   isHistoryOpen
                     ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                     : 'bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 border-slate-200'
@@ -447,7 +468,7 @@ const LegalAssistantPage = () => {
                 <PanelLeft size={13} className={isHistoryOpen ? 'text-indigo-600' : 'text-slate-500'} />
                 <span>History</span>
                 {sessionsList.length > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
                     {sessionsList.length}
                   </span>
                 )}
@@ -457,7 +478,7 @@ const LegalAssistantPage = () => {
                 onClick={handleStartNew} 
                 disabled={loading}
                 title="Start new consultation"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-sm shadow-indigo-600/20 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shrink-0"
               >
                 {loading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
                 <span className="hidden sm:inline">New Chat</span>
@@ -472,18 +493,18 @@ const LegalAssistantPage = () => {
           {/* CHATGPT-STYLE CHAT HISTORY SIDEBAR: Absolute overlay on mobile, relative on sm */}
           <aside 
             className={`${
-              isHistoryOpen ? 'w-64 max-w-[80vw] border-r border-slate-200/80' : 'w-0 border-r-0'
-            } transition-all duration-300 ease-in-out bg-white flex flex-col shrink-0 overflow-hidden absolute sm:relative inset-y-0 left-0 shadow-xl sm:shadow-2xs z-30 sm:z-20`}
+              isHistoryOpen ? 'w-72 sm:w-76 max-w-[85vw] border-r border-slate-200/90' : 'w-0 border-r-0'
+            } transition-all duration-300 ease-in-out bg-slate-50/80 backdrop-blur-sm flex flex-col shrink-0 overflow-hidden absolute sm:relative inset-y-0 left-0 shadow-xl sm:shadow-none z-30 sm:z-20`}
           >
             {/* Sidebar Header with Title, Counter and Collapse Close Button */}
-            <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <History size={12} className="text-indigo-600 shrink-0" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 truncate">
-                  Chat History
+            <div className="px-4 py-3.5 border-b border-slate-200/80 flex items-center justify-between bg-white/80">
+              <div className="flex items-center gap-2 min-w-0">
+                <History size={15} className="text-indigo-600 shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800 truncate">
+                  Consultations
                 </span>
                 {sessionsList.length > 0 && (
-                  <span className="text-[9px] font-bold text-slate-500 bg-slate-200/70 px-1.5 py-0.2 rounded-full shrink-0">
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-full shrink-0">
                     {sessionsList.length}
                   </span>
                 )}
@@ -491,35 +512,35 @@ const LegalAssistantPage = () => {
               <button 
                 onClick={() => setIsHistoryOpen(false)}
                 title="Collapse sidebar"
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
               >
-                <PanelLeftClose size={13} />
+                <PanelLeftClose size={15} />
               </button>
             </div>
 
             {/* New Chat CTA button inside Sidebar */}
-            <div className="p-2 border-b border-slate-100">
+            <div className="p-3 border-b border-slate-200/70 bg-white/40">
               <button 
                 onClick={handleStartNew} 
                 disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-sm shadow-indigo-600/25 hover:shadow-md hover:shadow-indigo-600/35 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
-                {loading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+                {loading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={14} />}
                 <span>New Consultation</span>
               </button>
             </div>
 
             {/* Vertical Sessions List with compact spacing */}
-            <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
               {sidebarLoading && sessionsList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-slate-400 gap-1.5">
-                  <Loader2 className="animate-spin text-indigo-600" size={16} />
-                  <span className="text-[11px]">Loading chats...</span>
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+                  <Loader2 className="animate-spin text-indigo-600" size={20} />
+                  <span className="text-xs font-medium">Loading history...</span>
                 </div>
               ) : sessionsList.length === 0 ? (
-                <div className="text-center py-8 px-2 text-slate-400">
-                  <MessageSquare size={20} className="mx-auto mb-1.5 text-slate-300" />
-                  <p className="text-xs font-medium text-slate-600">No previous chats</p>
+                <div className="text-center py-10 px-3 text-slate-400">
+                  <MessageSquare size={24} className="mx-auto mb-2 text-slate-300" />
+                  <p className="text-xs font-bold text-slate-600">No previous chats</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">Click New to begin</p>
                 </div>
               ) : (
@@ -531,26 +552,25 @@ const LegalAssistantPage = () => {
                       key={s.sessionId}
                       onClick={() => loadSession(s.sessionId)}
                       title={s.summary || displayTitle}
-                      className={`group relative flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg border text-left cursor-pointer transition-all duration-150 ${
+                      className={`group relative flex items-center justify-between gap-2.5 p-3 rounded-xl border text-left cursor-pointer transition-all duration-150 ${
                         isSelected
-                          ? 'bg-indigo-50/90 border-indigo-200/80 text-indigo-950 font-semibold shadow-2xs'
-                          : 'bg-transparent hover:bg-slate-100/70 border-transparent hover:border-slate-200/60 text-slate-700 font-normal'
+                          ? 'bg-white border-slate-200 text-indigo-950 font-bold shadow-sm border-l-4 border-l-indigo-600'
+                          : 'bg-white/50 hover:bg-white border-slate-200/60 hover:border-slate-300 text-slate-700 font-medium hover:shadow-xs'
                       }`}
                     >
                       {/* Left: Icon with active indicator dot */}
                       <div className="relative shrink-0 flex items-center justify-center">
-                        <MessageSquare 
-                          size={13} 
-                          className={`shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`} 
-                        />
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isSelected ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
+                          <Scale size={14} />
+                        </div>
                         {s.status === 'ACTIVE' && (
-                          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-white" />
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" />
                         )}
                       </div>
 
                       {/* Center: Truncated Title on single line */}
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs truncate leading-none">
+                        <p className="text-xs truncate leading-snug">
                           {displayTitle}
                         </p>
                       </div>
@@ -563,9 +583,9 @@ const LegalAssistantPage = () => {
                         <button
                           onClick={(e) => handleDeleteSession(e, s.sessionId)}
                           title="Delete consultation"
-                          className="hidden group-hover:flex items-center justify-center p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          className="hidden group-hover:flex items-center justify-center p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
@@ -596,10 +616,13 @@ const LegalAssistantPage = () => {
             )}
             
             {/* SCROLLABLE CONVERSATION / WELCOME HERO */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col items-center [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div 
+              ref={chatScrollContainerRef}
+              className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col items-center [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+            >
               
               {(!session && messages.length === 0) ? (
-                // MODERN WELCOME HERO
+                // MODERN WELCOME HERO (Full Hero view when no session/messages)
                 <div className="max-w-2xl w-full flex flex-col items-center my-auto py-6 px-4 text-center">
                   
                   {/* AI Companion Avatar with Ambient Glow */}
@@ -614,7 +637,7 @@ const LegalAssistantPage = () => {
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 mb-3 shadow-2xs">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/90 mb-3 shadow-xs">
                     <Sparkles size={12} className="text-amber-500" />
                     <span>24/7 Intelligent Legal Companion</span>
                   </div>
@@ -622,27 +645,27 @@ const LegalAssistantPage = () => {
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-2">
                     How can Adalat Legal Assistant help you today?
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mb-8">
+                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mb-8 font-normal">
                     Ask legal questions, explore procedural roadmaps under Indian Law, or connect directly with Bar Council verified advocates.
                   </p>
 
                   {/* 4 Quick Starter Prompt Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-left">
                     {[
-                      { icon: MessageSquare, label: 'I have a legal question', desc: 'Ask about rights, notices, or civil laws' },
-                      { icon: FileText, label: 'Guide me step by step', desc: 'Procedural roadmap for your legal issue' },
-                      { icon: Users, label: 'Connect with a lawyer', desc: 'Find verified specialized advocates' },
-                      { icon: Calendar, label: 'Book a consultation', desc: 'Schedule advice with top legal counsel' }
+                      { icon: MessageSquare, label: 'Property & Eviction Notice', desc: 'Tenancy rights, illegal possession, or vacation notices' },
+                      { icon: FileText, label: 'Cheque Bounce (Sec 138 NI Act)', desc: 'Statutory 30-day notice & filing criminal complaint' },
+                      { icon: Users, label: 'Employment & Unpaid Salary', desc: 'Wrongful termination, dues recovery, or employment contract' },
+                      { icon: Calendar, label: 'Book Verified Advocate', desc: 'Schedule confidential advisory with specialized counsel' }
                     ].map((item, idx) => {
                       const Icon = item.icon;
                       return (
                         <button 
                           key={idx} 
-                          onClick={() => setInputValue(item.label)} 
-                          className="group p-4 rounded-xl bg-white hover:bg-slate-50/80 border border-slate-200/80 hover:border-indigo-300 hover:shadow-sm transition-all duration-200 shadow-2xs cursor-pointer flex items-center justify-between"
+                          onClick={() => setInputValue(`I need legal guidance regarding ${item.label}. What are the procedural steps?`)} 
+                          className="group p-4 rounded-2xl bg-white hover:bg-slate-50/90 border border-slate-200/90 hover:border-indigo-400 hover:shadow-md transition-all duration-200 shadow-xs cursor-pointer flex items-center justify-between text-left"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 shadow-2xs">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/90 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 shadow-xs">
                               <Icon size={18} />
                             </div>
                             <div className="min-w-0">
@@ -670,6 +693,50 @@ const LegalAssistantPage = () => {
                       </div>
                     ) : (
                       renderMessages()
+                    )}
+
+                    {/* QUICK STARTER PROMPT CARDS (Always visible when conversation is in initial greeting state) */}
+                    {messages.length <= 1 && (
+                      <div className="w-full mt-3 mb-6 pt-2">
+                        <div className="flex items-center gap-2 mb-3 px-1">
+                          <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            Suggested Legal Inquiries • Click to Ask
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                          {[
+                            { icon: FileText, label: 'Property & Eviction Notice', desc: 'Tenancy rights, illegal possession, or vacation notices' },
+                            { icon: Scale, label: 'Cheque Bounce (Sec 138 NI Act)', desc: 'Statutory 30-day notice & filing criminal complaint' },
+                            { icon: Users, label: 'Employment & Unpaid Dues', desc: 'Wrongful termination, unpaid salary, or contract breach' },
+                            { icon: ShieldCheck, label: 'Consumer Forum Dispute', desc: 'Filing complaints for defective products or refund claims' }
+                          ].map((item, idx) => {
+                            const Icon = item.icon;
+                            return (
+                              <button 
+                                key={idx} 
+                                onClick={() => setInputValue(`I need legal advice regarding ${item.label}. What are the procedural steps under Indian Law?`)} 
+                                className="group p-4 rounded-2xl bg-white hover:bg-indigo-50/40 border border-slate-200/90 hover:border-indigo-400 hover:shadow-md transition-all duration-200 shadow-xs cursor-pointer flex items-center justify-between text-left"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/90 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 shadow-xs">
+                                    <Icon size={18} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors truncate">
+                                      {item.label}
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                      {item.desc}
+                                    </p>
+                                  </div>
+                                </div>
+                                <ChevronRight size={15} className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     )}
                     
                     {isTyping && (
@@ -915,38 +982,53 @@ const LegalAssistantPage = () => {
             </div>
 
             {/* DOCKED CHAT COMPOSER: Clears mobile bottom navigation with pb-20 */}
-            <div className="p-3 sm:p-4 pb-20 lg:pb-4 bg-white border-t border-slate-200/80 shrink-0 flex flex-col items-center shadow-xs">
+            <div className="p-3 sm:p-4 pb-20 lg:pb-4 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shrink-0 flex flex-col items-center shadow-sm">
               <div className="max-w-3xl w-full">
                 {error && (
-                  <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2 rounded-xl mb-2.5 text-center flex items-center justify-center gap-1.5">
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2 rounded-xl mb-2.5 text-center flex items-center justify-center gap-1.5 shadow-xs">
                     <HelpCircle size={14} />
                     <span>{error}</span>
                   </div>
                 )}
                 
-                <div className="flex items-center gap-2 p-1.5 pl-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100 shadow-2xs transition-all">
+                <div className="flex items-center gap-2 p-2 pl-4 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 shadow-md shadow-slate-200/40 transition-all">
                   <input
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={isEditing ? "Tell me what you'd like to change or add..." : (isReadOnly ? "This consultation is completed." : "Type your legal matter or question here...")}
+                    placeholder={isEditing ? "Tell me what you'd like to change or add..." : (isReadOnly ? "This consultation is completed." : "Describe your legal matter or question (e.g., notice, property dispute)...")}
                     disabled={isTyping || actionLoading || isReadOnly}
-                    className="flex-1 bg-transparent text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none py-1.5 disabled:cursor-not-allowed"
+                    className="flex-1 bg-transparent text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none py-1.5 disabled:cursor-not-allowed font-medium"
                   />
                   
+                  {inputValue && !isTyping && (
+                    <button
+                      type="button"
+                      onClick={() => setInputValue('')}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                      title="Clear input"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+
                   <button 
                     onClick={handleSend}
                     disabled={!inputValue.trim() || isTyping || actionLoading || isReadOnly}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white flex items-center justify-center transition-all shadow-xs cursor-pointer shrink-0 active:scale-95"
+                    className="h-10 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-md shadow-indigo-600/25 cursor-pointer shrink-0 active:scale-95 disabled:shadow-none"
                   >
-                    {isTyping ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} className="translate-x-0.5" />}
+                    {isTyping ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}
+                    <span className="hidden sm:inline">Send</span>
                   </button>
                 </div>
 
-                <p className="text-center text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
-                  Adalat AI provides guidance based on Indian Law. Please confirm critical decisions with verified counsel.
-                </p>
+                <div className="flex items-center justify-center gap-1.5 mt-2.5 text-center">
+                  <Scale size={11} className="text-amber-500 shrink-0" />
+                  <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+                    Adalat AI provides procedural guidance under Indian Law. Critical decisions should be verified with registered counsel.
+                  </p>
+                </div>
               </div>
             </div>
 

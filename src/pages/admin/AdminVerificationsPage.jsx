@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import AdminHeader from '../../components/AdminHeader';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingState from '../../components/LoadingState';
 import EmptyState from '../../components/EmptyState';
 import { adminApi } from '../../api/adminApi';
-import { UserCheck, ShieldCheck, FileText, CheckCircle, XCircle, Eye, X, Award, MapPin, Briefcase, DollarSign, Globe, BookOpen } from 'lucide-react';
+import { UserCheck, ShieldCheck, FileText, CheckCircle, XCircle, Eye, X, Award, MapPin, Briefcase, DollarSign, Globe, BookOpen, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import './AdminPortalPages.css';
 
@@ -168,13 +169,27 @@ const AdminVerificationsPage = () => {
       <Sidebar portalType="admin" />
 
       <main className="portal-main-content">
-        <div className="portal-header">
-          <div className="header-badge-row">
-            <span className="badge badge-gold"><UserCheck size={13} /> Admin Panel</span>
-          </div>
-          <h1>Lawyer Verification Management</h1>
-          <p>Review advocate Bar Council certificates, credentials, bio, and approve accounts for customer consultation listing.</p>
-        </div>
+        <AdminHeader 
+          title="Lawyer Verification Management"
+          subtitle="Review advocate Bar Council certificates, credentials, bio, and approve accounts for customer listing."
+          badge={{
+            text: `${pendingLawyers.length} Pending Review`,
+            variant: pendingLawyers.length > 0 ? 'amber' : 'emerald',
+            icon: UserCheck
+          }}
+          actions={
+            <button
+              type="button"
+              onClick={fetchPending}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-50"
+              title="Refresh verifications"
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin text-purple-600" : "text-slate-500"} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          }
+        />
 
         {msg && (
           <div className="admin-alert-banner card" style={{ marginBottom: '1.25rem' }}>
