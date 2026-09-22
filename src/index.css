@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
 
 :root {
   /* User Custom Color Palette Palette Swatch */
@@ -124,13 +125,13 @@ body {
   flex-direction: column;
 }
 
-a {
+a:not([class]) {
   color: var(--accent-gold);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
-a:hover {
+a:not([class]):hover {
   color: var(--accent-gold-hover);
 }
 
@@ -602,6 +603,13 @@ p {
   display: flex;
   min-height: 100vh;
   background-color: var(--bg-ivory);
+}
+
+@media (max-width: 1023px) {
+  .portal-layout {
+    flex-direction: column;
+    overflow-x: hidden;
+  }
 }
 
 .portal-sidebar {

@@ -42,21 +42,31 @@ const ConsultationTimer = ({ consultationId, initialSeconds = 120, onTimerExpire
 
   if (isPaid) {
     return (
-      <div className="timer-badge paid">
-        <CheckCircle2 size={16} /> <span>Extended Consultation Unlocked</span>
+      <div className="timer-badge paid" title="Extended Consultation Unlocked">
+        <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+        <span>Unlocked</span>
       </div>
     );
   }
 
   return (
-    <div className={`timer-badge ${timeLeft < 30 ? 'urgent' : 'normal'}`}>
+    <div 
+      className={`timer-badge ${timeLeft < 30 ? 'urgent' : 'normal'}`}
+      title={
+        isExpired 
+          ? (isLawyer ? 'Free 2m Expired - Awaiting Customer Extension' : 'Free 2m Expired - Pay to Unlock') 
+          : `2m Free Consultation - ${formatTime(timeLeft)} remaining`
+      }
+    >
       {isExpired ? (
         <>
-          <Lock size={16} /> <span>{isLawyer ? 'Free 2m Expired - Awaiting Customer Extension' : 'Free 2m Expired - Pay to Unlock'}</span>
+          <Lock size={13} className="shrink-0" />
+          <span>{isLawyer ? 'Expired' : 'Free Expired'}</span>
         </>
       ) : (
         <>
-          <Clock size={16} /> <span>2m Free Chat: <strong>{formatTime(timeLeft)}</strong></span>
+          <Clock size={13} className="shrink-0" />
+          <span>Free: <strong className="font-mono tracking-tight font-bold">{formatTime(timeLeft)}</strong></span>
         </>
       )}
     </div>

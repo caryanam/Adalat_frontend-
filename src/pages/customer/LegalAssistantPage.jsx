@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../components/Sidebar';
-import { useAuth } from '../../context/AuthContext';
+import CustomerHeader from '../../components/CustomerHeader';
 import apiClient from '../../api/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -8,21 +8,34 @@ import {
   Send, 
   UserCheck, 
   FileText, 
-  MessageSquare,
-  Users,
-  Calendar,
-  RefreshCcw,
-  Loader2,
-  Bell,
-  Clock,
-  Trash2
+  MessageSquare, 
+  Users, 
+  Calendar, 
+  Loader2, 
+  Trash2, 
+  Sparkles, 
+  Scale, 
+  X, 
+  ChevronRight, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Star, 
+  MapPin, 
+  Languages, 
+  GraduationCap, 
+  Award, 
+  Edit3, 
+  HelpCircle,
+  History,
+  Plus,
+  PanelLeft,
+  PanelLeftClose
 } from 'lucide-react';
-import './LegalAssistantPage.css';
 
 const LegalAssistantPage = () => {
-  const { user } = useAuth();
   const [sessionsList, setSessionsList] = useState([]);
   const [sidebarLoading, setSidebarLoading] = useState(true);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -35,10 +48,6 @@ const LegalAssistantPage = () => {
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    initializePage();
-  }, []);
 
   const initializePage = async () => {
     await fetchSessionsList();
@@ -63,6 +72,10 @@ const LegalAssistantPage = () => {
       console.error('Failed to auto-initialize session', err);
     }
   };
+
+  useEffect(() => {
+    initializePage();
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -186,7 +199,7 @@ const LegalAssistantPage = () => {
         activeSessionId = currentSession.sessionId;
         await fetchSessionsList(); // update sidebar
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError('Failed to initialize session.');
         setLoading(false);
         return;
@@ -313,13 +326,51 @@ const LegalAssistantPage = () => {
   // Hide input if the session is closed/assigned
   const isReadOnly = session && ['ASSIGNED', 'AI_ONLY_COMPLETED', 'CLOSED'].includes(session.status);
 
+  const getSessionDisplayTitle = (s, index) => {
+    if (s?.title && s.title.trim()) {
+      return s.title.trim();
+    }
+    if (s?.summary && s.summary.trim()) {
+      const firstLine = s.summary.trim().split('\n')[0];
+      return firstLine.length > 28 ? firstLine.substring(0, 28) + '...' : firstLine;
+    }
+    if (s?.createdAt) {
+      try {
+        const d = new Date(s.createdAt);
+        const isToday = new Date().toDateString() === d.toDateString();
+        if (isToday) {
+          return `Chat · ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        return `Chat · ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+      } catch {
+        // fallback
+      }
+    }
+    return `Consultation #${sessionsList.length - index}`;
+  };
+
   const getStatusBadge = (status) => {
     if (!status) return null;
     const s = status.toUpperCase();
-    if (s === 'ACTIVE') return <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', borderRadius: '1rem', background: '#eef2ff', color: '#4f46e5', fontWeight: 600 }}>Active</span>;
-    if (s === 'SUMMARY_READY' || s === 'AWAITING_NEXT_STEP') return <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', borderRadius: '1rem', background: '#fef3c7', color: '#d97706', fontWeight: 600 }}>Action Needed</span>;
-    if (s === 'ASSIGNED' || s === 'AI_ONLY_COMPLETED' || s === 'CLOSED') return <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', borderRadius: '1rem', background: '#ecfdf5', color: '#10b981', fontWeight: 600 }}>Closed</span>;
-    return <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', borderRadius: '1rem', background: '#f3f4f6', color: '#4b5563', fontWeight: 600 }}>{s}</span>;
+    if (s === 'ACTIVE') {
+      return (
+        <span className="inline-flex items-center text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full leading-none">
+          Active
+        </span>
+      );
+    }
+    if (s === 'SUMMARY_READY' || s === 'AWAITING_NEXT_STEP') {
+      return (
+        <span className="inline-flex items-center text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-full leading-none">
+          Action
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-normal text-slate-400 leading-none">
+        Closed
+      </span>
+    );
   };
 
   const handleConsultLawyer = async (lawyer) => {
@@ -345,212 +396,416 @@ const LegalAssistantPage = () => {
         return null;
       }
 
-      const wrapperStyle = {
-        display: 'flex',
-        width: '100%',
-        marginBottom: '12px',
-        justifyContent: isAI ? 'flex-start' : 'flex-end',
-      };
-
-      const bubbleStyle = {
-        maxWidth: '70%',
-        padding: '10px 15px',
-        borderRadius: isAI ? '18px 18px 18px 4px' : '18px 18px 4px 18px',
-        fontSize: '0.95rem',
-        lineHeight: '1.5',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        background: isAI ? '#f1f3f4' : '#4f46e5',
-        color: isAI ? '#1f2937' : '#ffffff',
-        wordBreak: 'break-word',
-        whiteSpace: 'pre-wrap',
-        fontFamily: 'inherit',
-      };
-
       return (
-        <div key={msg.id || index} style={wrapperStyle}>
-          <div style={bubbleStyle}>{msg.message}</div>
+        <div 
+          key={msg.id || index} 
+          className={`flex w-full mb-4 ${isAI ? 'justify-start' : 'justify-end'}`}
+        >
+          {isAI ? (
+            <div className="flex items-start gap-2.5 max-w-[88%] sm:max-w-[80%]">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                <Bot size={16} />
+              </div>
+              <div className="bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                {msg.message}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start justify-end gap-2.5 max-w-[88%] sm:max-w-[80%]">
+              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl rounded-tr-xs px-4 py-3 shadow-xs shadow-indigo-600/20 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words font-medium">
+                {msg.message}
+              </div>
+            </div>
+          )}
         </div>
       );
     });
   };
 
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="customer" />
 
-      <main className="portal-main-content" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', padding: 0 }}>
+      <main className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#f8fafc] relative">
         
-        {/* HEADER */}
-        <div className="portal-header-custom" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 2rem', background: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e3a8a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              Welcome, {user?.fullName || 'Customer'}
-            </h1>
-            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', marginTop: '0.15rem' }}>
-              Your legal companion is assisting you.
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <div style={{ position: 'relative', color: '#1e3a8a', cursor: 'pointer' }}>
-              <Bell size={20} />
-              <span style={{ position: 'absolute', top: -2, right: -2, background: '#ef4444', borderRadius: '50%', width: 8, height: 8 }}></span>
+        {/* COMPACT CUSTOMER HEADER */}
+        <CustomerHeader 
+          title="Legal Assistant" 
+          subtitle="Your 24/7 intelligent legal companion for procedural guidance & advocate matching."
+          badge={{ text: "AI Live", variant: "indigo" }}
+          actions={
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => setIsHistoryOpen(prev => !prev)}
+                title={isHistoryOpen ? "Collapse chat history" : "Open chat history"}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0 ${
+                  isHistoryOpen
+                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 border-slate-200'
+                }`}
+              >
+                <PanelLeft size={13} className={isHistoryOpen ? 'text-indigo-600' : 'text-slate-500'} />
+                <span>History</span>
+                {sessionsList.length > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600">
+                    {sessionsList.length}
+                  </span>
+                )}
+              </button>
+              
+              <button 
+                onClick={handleStartNew} 
+                disabled={loading}
+                title="Start new consultation"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                {loading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+                <span className="hidden sm:inline">New Chat</span>
+              </button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.35rem 0.75rem', borderRadius: '2rem', color: '#1e3a8a', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
-              <div style={{ width: 24, height: 24, background: '#1e3a8a', color: 'white', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-              </div>
-            </div>
-          </div>
-        </div>
+          }
+        />
 
-        {/* TOP HISTORY BAR */}
-        <div className="no-scrollbar" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 2rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', gap: '1rem', overflowX: 'auto', whiteSpace: 'nowrap' }}>
-            <button 
-               onClick={handleStartNew} 
-               style={{ padding: '0.5rem 1rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', flexShrink: 0, fontSize: '0.875rem' }}
-            >
-              <RefreshCcw size={14} /> New Chat
-            </button>
-            <div style={{ width: '1px', height: '24px', background: '#cbd5e1', margin: '0 0.25rem', flexShrink: 0 }}></div>
-            {sidebarLoading && sessionsList.length === 0 ? (
-               <Loader2 className="animate-spin text-primary-600" size={18} />
-            ) : sessionsList.length === 0 ? (
-               <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>No previous chats</span>
-            ) : (
-               sessionsList.map(s => (
-                  <div 
-                    key={s.sessionId}
-                    onClick={() => loadSession(s.sessionId)}
-                    style={{ 
-                      padding: '0.5rem 0.75rem 0.5rem 1rem', borderRadius: '2rem', border: '1px solid #e2e8f0', 
-                      background: session?.sessionId === s.sessionId ? '#eef2ff' : 'white',
-                      borderColor: session?.sessionId === s.sessionId ? '#c7d2fe' : '#e2e8f0',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0
-                    }}
-                  >
-                     <div style={{ fontSize: '0.875rem', fontWeight: session?.sessionId === s.sessionId ? 700 : 600, color: session?.sessionId === s.sessionId ? '#4f46e5' : '#374151', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {s.summary ? s.summary.split('\n')[0] : 'Consultation'}
-                     </div>
-                     {getStatusBadge(s.status)}
-                     <button
-                        onClick={(e) => handleDeleteSession(e, s.sessionId)}
-                        title="Delete chat"
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#9ca3af',
-                          cursor: 'pointer',
-                          padding: '2px 4px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'color 0.2s',
-                          marginLeft: '0.25rem'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
-                     >
-                        <Trash2 size={14} />
-                     </button>
-                  </div>
-               ))
-            )}
-        </div>
-
-        {/* MAIN CHAT AREA */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', background: 'white' }}>
+        {/* WORKSPACE: LEFT CHATGPT SESSIONS SIDEBAR + RIGHT CHAT CONTAINER */}
+        <div className="flex-1 flex min-h-0 overflow-hidden relative">
           
-          {/* CHAT/EMPTY STATE CONTAINER */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* CHATGPT-STYLE CHAT HISTORY SIDEBAR: Absolute overlay on mobile, relative on sm */}
+          <aside 
+            className={`${
+              isHistoryOpen ? 'w-64 max-w-[80vw] border-r border-slate-200/80' : 'w-0 border-r-0'
+            } transition-all duration-300 ease-in-out bg-white flex flex-col shrink-0 overflow-hidden absolute sm:relative inset-y-0 left-0 shadow-xl sm:shadow-2xs z-30 sm:z-20`}
+          >
+            {/* Sidebar Header with Title, Counter and Collapse Close Button */}
+            <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <History size={12} className="text-indigo-600 shrink-0" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 truncate">
+                  Chat History
+                </span>
+                {sessionsList.length > 0 && (
+                  <span className="text-[9px] font-bold text-slate-500 bg-slate-200/70 px-1.5 py-0.2 rounded-full shrink-0">
+                    {sessionsList.length}
+                  </span>
+                )}
+              </div>
+              <button 
+                onClick={() => setIsHistoryOpen(false)}
+                title="Collapse sidebar"
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
+              >
+                <PanelLeftClose size={13} />
+              </button>
+            </div>
+
+            {/* New Chat CTA button inside Sidebar */}
+            <div className="p-2 border-b border-slate-100">
+              <button 
+                onClick={handleStartNew} 
+                disabled={loading}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                {loading ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+                <span>New Consultation</span>
+              </button>
+            </div>
+
+            {/* Vertical Sessions List with compact spacing */}
+            <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+              {sidebarLoading && sessionsList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-slate-400 gap-1.5">
+                  <Loader2 className="animate-spin text-indigo-600" size={16} />
+                  <span className="text-[11px]">Loading chats...</span>
+                </div>
+              ) : sessionsList.length === 0 ? (
+                <div className="text-center py-8 px-2 text-slate-400">
+                  <MessageSquare size={20} className="mx-auto mb-1.5 text-slate-300" />
+                  <p className="text-xs font-medium text-slate-600">No previous chats</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Click New to begin</p>
+                </div>
+              ) : (
+                sessionsList.map((s, idx) => {
+                  const isSelected = session?.sessionId === s.sessionId;
+                  const displayTitle = getSessionDisplayTitle(s, idx);
+                  return (
+                    <div 
+                      key={s.sessionId}
+                      onClick={() => loadSession(s.sessionId)}
+                      title={s.summary || displayTitle}
+                      className={`group relative flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg border text-left cursor-pointer transition-all duration-150 ${
+                        isSelected
+                          ? 'bg-indigo-50/90 border-indigo-200/80 text-indigo-950 font-semibold shadow-2xs'
+                          : 'bg-transparent hover:bg-slate-100/70 border-transparent hover:border-slate-200/60 text-slate-700 font-normal'
+                      }`}
+                    >
+                      {/* Left: Icon with active indicator dot */}
+                      <div className="relative shrink-0 flex items-center justify-center">
+                        <MessageSquare 
+                          size={13} 
+                          className={`shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`} 
+                        />
+                        {s.status === 'ACTIVE' && (
+                          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-white" />
+                        )}
+                      </div>
+
+                      {/* Center: Truncated Title on single line */}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs truncate leading-none">
+                          {displayTitle}
+                        </p>
+                      </div>
+
+                      {/* Right: Inline Micro Status or Delete Button on Hover */}
+                      <div className="shrink-0 flex items-center gap-1">
+                        <div className="group-hover:hidden flex items-center">
+                          {getStatusBadge(s.status)}
+                        </div>
+                        <button
+                          onClick={(e) => handleDeleteSession(e, s.sessionId)}
+                          title="Delete consultation"
+                          className="hidden group-hover:flex items-center justify-center p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </aside>
+
+          {/* MAIN CHAT WORKSPACE (RIGHT SIDE) */}
+          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative bg-[#f8fafc]">
             
-            {(!session && messages.length === 0) ? (
-              // EMPTY STATE
-              <div style={{ maxWidth: '800px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '2rem' }}>
-                
-                <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                  <div style={{ width: 120, height: 120, background: 'radial-gradient(circle, #e0e7ff 0%, #f8fafc 70%)', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <Bot size={64} style={{ color: '#4f46e5' }} />
+            {/* Quick history toggle button when collapsed */}
+            {!isHistoryOpen && (
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                title="Open chat history"
+                className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/90 backdrop-blur-xs hover:bg-white text-slate-700 hover:text-indigo-600 border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all cursor-pointer group"
+              >
+                <PanelLeft size={13} className="text-slate-400 group-hover:text-indigo-600" />
+                <span className="text-[11px] font-semibold">History</span>
+                {sessionsList.length > 0 && (
+                  <span className="text-[9px] font-bold bg-slate-100 text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 px-1 py-0.2 rounded-full">
+                    {sessionsList.length}
+                  </span>
+                )}
+              </button>
+            )}
+            
+            {/* SCROLLABLE CONVERSATION / WELCOME HERO */}
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col items-center [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+              
+              {(!session && messages.length === 0) ? (
+                // MODERN WELCOME HERO
+                <div className="max-w-2xl w-full flex flex-col items-center my-auto py-6 px-4 text-center">
+                  
+                  {/* AI Companion Avatar with Ambient Glow */}
+                  <div className="relative mb-5">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-purple-500/20 to-amber-500/20 rounded-3xl blur-xl" />
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-white border border-slate-200/80 shadow-md flex items-center justify-center">
+                      <Bot size={36} className="text-indigo-600" />
+                      <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500 border-2 border-white"></span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 mb-3 shadow-2xs">
+                    <Sparkles size={12} className="text-amber-500" />
+                    <span>24/7 Intelligent Legal Companion</span>
+                  </div>
+
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-2">
+                    How can Adalat Legal Assistant help you today?
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mb-8">
+                    Ask legal questions, explore procedural roadmaps under Indian Law, or connect directly with Bar Council verified advocates.
+                  </p>
+
+                  {/* 4 Quick Starter Prompt Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-left">
+                    {[
+                      { icon: MessageSquare, label: 'I have a legal question', desc: 'Ask about rights, notices, or civil laws' },
+                      { icon: FileText, label: 'Guide me step by step', desc: 'Procedural roadmap for your legal issue' },
+                      { icon: Users, label: 'Connect with a lawyer', desc: 'Find verified specialized advocates' },
+                      { icon: Calendar, label: 'Book a consultation', desc: 'Schedule advice with top legal counsel' }
+                    ].map((item, idx) => {
+                      const Icon = item.icon;
+                      return (
+                        <button 
+                          key={idx} 
+                          onClick={() => setInputValue(item.label)} 
+                          className="group p-4 rounded-xl bg-white hover:bg-slate-50/80 border border-slate-200/80 hover:border-indigo-300 hover:shadow-sm transition-all duration-200 shadow-2xs cursor-pointer flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0 shadow-2xs">
+                              <Icon size={18} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors truncate">
+                                {item.label}
+                              </p>
+                              <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                {item.desc}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronRight size={15} className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-  
-                <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#1e3a8a', marginBottom: '0.75rem', textAlign: 'center' }}>Adalat Legal Assistant</h2>
-                <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '3rem', lineHeight: 1.6, fontSize: '1rem', maxWidth: '500px' }}>
-                  Ask your legal questions, get step-by-step guidance, or connect with verified advocates.
-                </p>
-  
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', width: '100%' }}>
-                  {[
-                    { icon: MessageSquare, label: 'I have a legal question' },
-                    { icon: FileText, label: 'Guide me step by step' },
-                    { icon: Users, label: 'Connect with a lawyer' },
-                    { icon: Calendar, label: 'Book a consultation' }
-                  ].map((item, idx) => (
-                    <button key={idx} onClick={() => setInputValue(item.label)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.25rem 1rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)', cursor: 'pointer', transition: 'all 0.2s', color: '#374151', fontWeight: 600, fontSize: '0.875rem' }} className="hover:shadow-md hover:border-indigo-300">
-                      <div style={{ color: '#4f46e5', background: '#eef2ff', padding: '0.5rem', borderRadius: '0.5rem', display: 'flex' }}>
-                        <item.icon size={20} />
+              ) : (
+                // ACTIVE CHAT STREAM
+                <div className="max-w-3xl w-full flex flex-col flex-1 pb-4">
+                  <div className="flex flex-col">
+                    {messages.length === 0 && loading ? (
+                      <div className="flex justify-center items-center py-12">
+                        <Loader2 className="animate-spin text-indigo-600" size={30} />
                       </div>
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              // CHAT VIEW
-              <div style={{ maxWidth: '800px', width: '100%', display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: '2rem' }}>
-                <div className="chat-messages" style={{ display: 'flex', flexDirection: 'column' }}>
-                  {messages.length === 0 && loading ? (
-                    <div className="flex justify-center items-center py-10">
-                      <Loader2 className="animate-spin text-primary-600" size={32} />
-                    </div>
-                  ) : (
-                    renderMessages()
-                  )}
-                  {isTyping && (
-                    <div className="chat-message message-ai">
-                      <div className="message-bubble typing-indicator">
-                        <span></span><span></span><span></span>
+                    ) : (
+                      renderMessages()
+                    )}
+                    
+                    {isTyping && (
+                      <div className="flex items-start gap-2.5 max-w-[85%] sm:max-w-[80%] mb-4">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                          <Bot size={16} />
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.3s]" />
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.15s]" />
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {session?.summary && isSummaryMode && (
-                    <div className="summary-card bg-yellow-50 border-yellow-200 mt-4 p-4 rounded-lg">
-                      <h4 className="font-bold text-yellow-900 mb-2">Case Summary Ready</h4>
-                      <div className="text-yellow-800 text-sm whitespace-pre-wrap">{session.summary}</div>
-                      
-                      {!isEditing && (
-                        <div className="mt-4 flex gap-3">
-                          <button className="btn btn-primary" onClick={() => handleConfirmSummary()} disabled={actionLoading}>
-                            {actionLoading ? <Loader2 className="animate-spin" size={16} /> : 'Confirm & Proceed'}
+                    {/* CASE SUMMARY DOSSIER CARD */}
+                    {session?.summary && isSummaryMode && (
+                      <div className="mt-4 p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-amber-100/40 border border-amber-200/90 shadow-xs">
+                        <div className="flex items-center justify-between gap-2 mb-2.5">
+                          <div className="flex items-center gap-2 text-amber-900">
+                            <div className="w-6 h-6 rounded-md bg-amber-500/15 flex items-center justify-center text-amber-700">
+                              <Sparkles size={14} />
+                            </div>
+                            <h4 className="font-bold text-xs uppercase tracking-wider text-amber-900">Case Summary Generated</h4>
+                          </div>
+                          <span className="text-[10px] font-semibold bg-amber-500/10 text-amber-800 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                            Action Needed
+                          </span>
+                        </div>
+
+                        <div className="text-amber-950 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap bg-white/95 p-4 rounded-xl border border-amber-200/80 mb-4 shadow-2xs font-normal">
+                          {session.summary}
+                        </div>
+                        
+                        {!isEditing && (
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <button 
+                              onClick={() => handleConfirmSummary()} 
+                              disabled={actionLoading}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {actionLoading ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
+                              <span>Confirm & Proceed</span>
+                            </button>
+                            <button 
+                              onClick={() => setIsEditing(true)} 
+                              disabled={actionLoading}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              <Edit3 size={13} />
+                              <span>Change / Add Information</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* NEXT STEP SELECTION CARDS */}
+                    {session?.nextActionRequired && session?.availableActions && (
+                      <div className="mt-4 p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200/90 shadow-xs">
+                        <div className="flex items-center gap-2 mb-1.5 text-indigo-900">
+                          <div className="w-6 h-6 rounded-md bg-indigo-600/10 flex items-center justify-center text-indigo-600">
+                            <Bot size={14} />
+                          </div>
+                          <h4 className="font-bold text-xs uppercase tracking-wider text-indigo-900">Choose Your Next Step</h4>
+                        </div>
+                        <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+                          Would you like to connect with a verified advocate for direct consultation or continue with AI guidance only?
+                        </p>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button 
+                            onClick={() => handleNextStep('CONNECT_LAWYER')} 
+                            disabled={actionLoading}
+                            className="group p-4 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-400 shadow-xs transition-all text-left flex flex-col justify-between cursor-pointer active:scale-98 disabled:opacity-50"
+                          >
+                            <div>
+                              <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-2.5 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-2xs">
+                                <UserCheck size={18} />
+                              </div>
+                              <h5 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                Connect with Verified Advocate
+                              </h5>
+                              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                                Direct confidential consultation and representation from Bar Council verified lawyers.
+                              </p>
+                            </div>
+                            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 mt-3 pt-2 border-t border-slate-100 w-full justify-between">
+                              <span>Select Option</span>
+                              <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                            </div>
                           </button>
-                          <button className="btn btn-outline" onClick={() => setIsEditing(true)} disabled={actionLoading}>
-                            Change / Add Information
+
+                          <button 
+                            onClick={() => handleNextStep('AI_ONLY')} 
+                            disabled={actionLoading}
+                            className="group p-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-300 shadow-xs transition-all text-left flex flex-col justify-between cursor-pointer active:scale-98 disabled:opacity-50"
+                          >
+                            <div>
+                              <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 mb-2.5 group-hover:bg-slate-800 group-hover:text-white transition-all shadow-2xs">
+                                <Bot size={18} />
+                              </div>
+                              <h5 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                Continue with AI Guidance Only
+                              </h5>
+                              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                                Receive automated legal roadmaps, step-by-step procedural steps, and law citations.
+                              </p>
+                            </div>
+                            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 mt-3 pt-2 border-t border-slate-100 w-full justify-between">
+                              <span>Select Option</span>
+                              <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                            </div>
                           </button>
                         </div>
-                      )}
-                    </div>
-                  )}
-
-                  {session?.nextActionRequired && session?.availableActions && (
-                    <div className="summary-card bg-indigo-50 border-indigo-200 mt-4 p-4 rounded-lg">
-                      <h4 className="font-bold text-indigo-900 mb-2">Next Step Choice</h4>
-                      <p className="text-indigo-800 text-sm mb-4">Would you like to connect with a verified advocate or use AI guidance only?</p>
-                      <div className="flex gap-3">
-                        <button className="btn btn-primary flex items-center gap-2" onClick={() => handleNextStep('CONNECT_LAWYER')} disabled={actionLoading}>
-                          <UserCheck size={16} /> Connect with Advocate
-                        </button>
-                        <button className="btn btn-outline flex items-center gap-2" onClick={() => handleNextStep('AI_ONLY')} disabled={actionLoading}>
-                          <Bot size={16} /> AI Guidance Only
-                        </button>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {session?.suggestedLawyers?.length > 0 && !session?.matchedLawyer && (
-                      <div style={{ marginTop: '1rem', padding: '1.25rem', background: '#eff6ff', borderRadius: '0.75rem', border: '1px solid #bfdbfe' }}>
-                        <h4 style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: '1rem', fontSize: '1rem' }}>🏛️ Advocates Matching Your Case</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* MATCHING ADVOCATES DIRECTORY */}
+                    {session?.suggestedLawyers?.length > 0 && !session?.matchedLawyer && (
+                      <div className="mt-5 p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                            <Scale size={16} />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm sm:text-base text-slate-900 tracking-tight leading-tight">
+                              Advocates Matching Your Matter
+                            </h4>
+                            <p className="text-[11px] text-slate-500">
+                              Verified legal counsel specialized in your case requirements
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3.5">
                           {session.suggestedLawyers.map(lawyer => {
                             const practiceStr = Array.isArray(lawyer.practiceAreas)
                               ? lawyer.practiceAreas.map(p => typeof p === 'string' ? p.replace(/_/g, ' ') : p).join(', ')
@@ -559,63 +814,90 @@ const LegalAssistantPage = () => {
                               ? lawyer.languages.join(', ')
                               : 'English, Hindi';
                             return (
-                              <div key={lawyer.lawyerId} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid #dbeafe', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                              <div 
+                                key={lawyer.lawyerId} 
+                                className="bg-slate-50/70 hover:bg-white rounded-xl p-4 sm:p-5 border border-slate-200/80 hover:border-indigo-300 shadow-2xs hover:shadow-xs transition-all duration-200"
+                              >
                                 {/* Top row: avatar + name + badge */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                                  <div style={{ width: 50, height: 50, borderRadius: '50%', background: '#4f46e5', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.25rem', fontWeight: 700, flexShrink: 0 }}>
-                                    {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
-                                  </div>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                      <span style={{ fontWeight: 700, color: '#1e3a8a', fontSize: '1rem' }}>{lawyer.fullName}</span>
-                                      <span style={{ background: '#ecfdf5', color: '#059669', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '1rem', fontWeight: 600 }}>✓ Verified</span>
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center text-base font-bold shrink-0 shadow-2xs">
+                                      {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem', fontSize: '0.8rem', color: '#6b7280' }}>
-                                      <span>⭐ {lawyer.rating ? lawyer.rating.toFixed(1) : '4.8'}</span>
-                                      <span>•</span>
-                                      <span>{lawyer.yearsOfExperience || 5}+ yrs exp</span>
-                                      <span>•</span>
-                                      <span>{lawyer.totalConsultations || 0} consultations</span>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-bold text-slate-900 text-sm sm:text-base truncate">{lawyer.fullName}</span>
+                                        <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                                          <ShieldCheck size={11} /> Verified
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
+                                        <span className="text-amber-500 font-semibold flex items-center gap-1">
+                                          <Star size={12} className="fill-amber-400" />
+                                          {lawyer.rating ? lawyer.rating.toFixed(1) : '4.8'}
+                                        </span>
+                                        <span>•</span>
+                                        <span>{lawyer.yearsOfExperience || 5}+ yrs exp</span>
+                                        <span>•</span>
+                                        <span>{lawyer.totalConsultations || 0} consultations</span>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ fontWeight: 700, color: '#059669', fontSize: '1.1rem' }}>₹{lawyer.consultationFee || 99}</div>
-                                    <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>per consultation</div>
+
+                                  <div className="text-right shrink-0">
+                                    <div className="font-bold text-emerald-700 text-base">₹{lawyer.consultationFee || 99}</div>
+                                    <div className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">per session</div>
                                   </div>
                                 </div>
 
                                 {/* Details chips */}
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                  <span style={{ background: '#f1f5f9', padding: '0.25rem 0.65rem', borderRadius: '1rem', fontSize: '0.75rem', color: '#334155' }}>📍 {lawyer.location || 'India'}</span>
-                                  <span style={{ background: '#f1f5f9', padding: '0.25rem 0.65rem', borderRadius: '1rem', fontSize: '0.75rem', color: '#334155' }}>🗣️ {langStr}</span>
-                                  {lawyer.education && <span style={{ background: '#f1f5f9', padding: '0.25rem 0.65rem', borderRadius: '1rem', fontSize: '0.75rem', color: '#334155' }}>🎓 {lawyer.education}</span>}
-                                  {lawyer.barEnrollmentNumber && <span style={{ background: '#f1f5f9', padding: '0.25rem 0.65rem', borderRadius: '1rem', fontSize: '0.75rem', color: '#334155' }}>Bar: {lawyer.barEnrollmentNumber}</span>}
+                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                  <span className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-0.5 rounded-md text-[11px] text-slate-700 shadow-2xs">
+                                    <MapPin size={11} className="text-indigo-600" />
+                                    {lawyer.location || 'India'}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-0.5 rounded-md text-[11px] text-slate-700 shadow-2xs">
+                                    <Languages size={11} className="text-indigo-600" />
+                                    {langStr}
+                                  </span>
+                                  {lawyer.education && (
+                                    <span className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-0.5 rounded-md text-[11px] text-slate-700 shadow-2xs">
+                                      <GraduationCap size={11} className="text-indigo-600" />
+                                      {lawyer.education}
+                                    </span>
+                                  )}
+                                  {lawyer.barEnrollmentNumber && (
+                                    <span className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2.5 py-0.5 rounded-md text-[11px] text-slate-700 shadow-2xs">
+                                      <Award size={11} className="text-indigo-600" />
+                                      Bar: {lawyer.barEnrollmentNumber}
+                                    </span>
+                                  )}
                                 </div>
 
                                 {/* Practice areas */}
-                                <div style={{ marginBottom: '0.75rem' }}>
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>Practice Areas: </span>
-                                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{practiceStr}</span>
+                                <div className="mb-2 text-xs">
+                                  <span className="font-semibold text-slate-700">Practice Areas: </span>
+                                  <span className="text-slate-600">{practiceStr}</span>
                                 </div>
 
                                 {/* Bio */}
                                 {lawyer.bio && (
-                                  <p style={{ fontSize: '0.8rem', color: '#4b5563', marginBottom: '0.75rem', lineHeight: 1.5 }}>
-                                    {lawyer.bio.length > 150 ? lawyer.bio.substring(0, 150) + '...' : lawyer.bio}
+                                  <p className="text-xs text-slate-600 mb-3.5 line-clamp-2 leading-relaxed">
+                                    {lawyer.bio}
                                   </p>
                                 )}
 
                                 {/* Action buttons */}
-                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                <div className="flex items-center gap-2 pt-1">
                                   <button
                                     onClick={() => setSelectedLawyer(lawyer)}
-                                    style={{ flex: 1, padding: '0.6rem', background: 'white', color: '#4f46e5', border: '1.5px solid #4f46e5', borderRadius: '0.5rem', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}
+                                    className="flex-1 py-1.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 font-semibold text-xs transition-all cursor-pointer active:scale-95 shadow-2xs"
                                   >
                                     View Profile
                                   </button>
                                   <button
                                     onClick={() => handleConsultLawyer(lawyer)}
-                                    style={{ flex: 1, padding: '0.6rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}
+                                    className="flex-1 py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
                                   >
                                     Consult Now
                                   </button>
@@ -626,128 +908,161 @@ const LegalAssistantPage = () => {
                         </div>
                       </div>
                     )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* BOTTOM INPUT BAR */}
-          <div style={{ padding: '1rem 2rem 1.5rem', background: 'white', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ maxWidth: '800px', width: '100%', position: 'relative' }}>
-              {error && (
-                <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.5rem 1rem', borderRadius: '0.5rem', marginBottom: '0.75rem', fontSize: '0.875rem', textAlign: 'center' }}>
-                  {error}
+                    <div ref={messagesEndRef} />
+                  </div>
                 </div>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '2rem', padding: '0.5rem', gap: '0.5rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={isEditing ? "Tell me what you'd like to change or add..." : (isReadOnly ? "This consultation is completed." : "Type your legal question here...")}
-                  disabled={isTyping || actionLoading || isReadOnly}
-                  style={{ flex: 1, border: 'none', outline: 'none', padding: '0.5rem 1rem', background: 'transparent', color: '#111827', fontSize: '1rem' }}
-                />
+            </div>
+
+            {/* DOCKED CHAT COMPOSER: Clears mobile bottom navigation with pb-20 */}
+            <div className="p-3 sm:p-4 pb-20 lg:pb-4 bg-white border-t border-slate-200/80 shrink-0 flex flex-col items-center shadow-xs">
+              <div className="max-w-3xl w-full">
+                {error && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3.5 py-2 rounded-xl mb-2.5 text-center flex items-center justify-center gap-1.5">
+                    <HelpCircle size={14} />
+                    <span>{error}</span>
+                  </div>
+                )}
                 
-                <button 
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || isTyping || actionLoading || isReadOnly}
-                  style={{ background: '#4f46e5', color: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: (!inputValue.trim() || isTyping || actionLoading || isReadOnly) ? 'not-allowed' : 'pointer', opacity: (!inputValue.trim() || isTyping || actionLoading || isReadOnly) ? 0.5 : 1, transition: 'all 0.2s' }}
-                  className={(!inputValue.trim() || isTyping || actionLoading || isReadOnly) ? "" : "hover:bg-indigo-700"}
-                >
-                  {isTyping ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} style={{ marginLeft: '2px' }} />}
-                </button>
-              </div>
-              <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.75rem' }}>
-                Adalat Legal Assistant can make mistakes. Consider verifying important legal information.
+                <div className="flex items-center gap-2 p-1.5 pl-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100 shadow-2xs transition-all">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={isEditing ? "Tell me what you'd like to change or add..." : (isReadOnly ? "This consultation is completed." : "Type your legal matter or question here...")}
+                    disabled={isTyping || actionLoading || isReadOnly}
+                    className="flex-1 bg-transparent text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none py-1.5 disabled:cursor-not-allowed"
+                  />
+                  
+                  <button 
+                    onClick={handleSend}
+                    disabled={!inputValue.trim() || isTyping || actionLoading || isReadOnly}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white flex items-center justify-center transition-all shadow-xs cursor-pointer shrink-0 active:scale-95"
+                  >
+                    {isTyping ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} className="translate-x-0.5" />}
+                  </button>
+                </div>
+
+                <p className="text-center text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
+                  Adalat AI provides guidance based on Indian Law. Please confirm critical decisions with verified counsel.
+                </p>
               </div>
             </div>
-          </div>
 
+          </div>
         </div>
       </main>
 
       {/* LAWYER PROFILE MODAL */}
       {selectedLawyer && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.5)' }} onClick={() => setSelectedLawyer(null)}>
-          <div style={{ background: 'white', borderRadius: '1rem', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', position: 'relative', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setSelectedLawyer(null)}
+        >
+          <div 
+            className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 sm:p-6 relative shadow-2xl text-slate-800 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded"
+            onClick={e => e.stopPropagation()}
+          >
             {/* Close button */}
-            <button onClick={() => setSelectedLawyer(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#f3f4f6', border: 'none', borderRadius: '50%', width: 32, height: 32, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>✕</button>
+            <button 
+              onClick={() => setSelectedLawyer(null)} 
+              className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <X size={16} />
+            </button>
 
             {/* Avatar + Name */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#4f46e5', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.5rem', fontWeight: 700, flexShrink: 0 }}>
+            <div className="flex items-center gap-3.5 mb-5 pr-8">
+              <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-md">
                 {selectedLawyer.fullName ? selectedLawyer.fullName.charAt(0).toUpperCase() : 'A'}
               </div>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e3a8a' }}>{selectedLawyer.fullName}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
-                  <span style={{ background: '#ecfdf5', color: '#059669', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '1rem', fontWeight: 600 }}>✓ Verified</span>
-                  {selectedLawyer.available && <span style={{ background: '#dbeafe', color: '#2563eb', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '1rem', fontWeight: 600 }}>🟢 Available</span>}
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">{selectedLawyer.fullName}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                    <ShieldCheck size={11} /> Verified
+                  </span>
+                  {selectedLawyer.available && (
+                    <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Available
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Stats row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ textAlign: 'center', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e3a8a' }}>⭐ {selectedLawyer.rating ? selectedLawyer.rating.toFixed(1) : '4.8'}</div>
-                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Rating</div>
+            <div className="grid grid-cols-3 gap-2.5 mb-4">
+              <div className="text-center bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+                <div className="text-sm sm:text-base font-bold text-amber-500 flex items-center justify-center gap-1">
+                  <Star size={13} className="fill-amber-400" />
+                  {selectedLawyer.rating ? selectedLawyer.rating.toFixed(1) : '4.8'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5 font-semibold">Rating</div>
               </div>
-              <div style={{ textAlign: 'center', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e3a8a' }}>{selectedLawyer.yearsOfExperience || 5}+</div>
-                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Years Exp</div>
+              <div className="text-center bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+                <div className="text-sm sm:text-base font-bold text-slate-900">
+                  {selectedLawyer.yearsOfExperience || 5}+
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5 font-semibold">Years Exp</div>
               </div>
-              <div style={{ textAlign: 'center', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e3a8a' }}>{selectedLawyer.totalConsultations || 0}</div>
-                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Consultations</div>
+              <div className="text-center bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+                <div className="text-sm sm:text-base font-bold text-slate-900">
+                  {selectedLawyer.totalConsultations || 0}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5 font-semibold">Consultations</div>
               </div>
             </div>
 
             {/* Details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <span style={{ fontWeight: 600, color: '#374151', minWidth: '120px', fontSize: '0.875rem' }}>📍 Location:</span>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{selectedLawyer.location || 'India'}</span>
+            <div className="space-y-2 mb-4 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">📍 Location:</span>
+                <span className="text-slate-800 font-semibold">{selectedLawyer.location || 'India'}</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <span style={{ fontWeight: 600, color: '#374151', minWidth: '120px', fontSize: '0.875rem' }}>🎓 Education:</span>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{selectedLawyer.education || 'LLB'}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">🎓 Education:</span>
+                <span className="text-slate-800 font-semibold">{selectedLawyer.education || 'LLB'}</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <span style={{ fontWeight: 600, color: '#374151', minWidth: '120px', fontSize: '0.875rem' }}>🗣️ Languages:</span>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{Array.isArray(selectedLawyer.languages) ? selectedLawyer.languages.join(', ') : 'English, Hindi'}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">🗣️ Languages:</span>
+                <span className="text-slate-800 font-semibold truncate max-w-[200px]">
+                  {Array.isArray(selectedLawyer.languages) ? selectedLawyer.languages.join(', ') : 'English, Hindi'}
+                </span>
               </div>
               {selectedLawyer.barEnrollmentNumber && (
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <span style={{ fontWeight: 600, color: '#374151', minWidth: '120px', fontSize: '0.875rem' }}>📋 Bar Number:</span>
-                  <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{selectedLawyer.barEnrollmentNumber}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">📋 Bar Number:</span>
+                  <span className="text-slate-800 font-semibold">{selectedLawyer.barEnrollmentNumber}</span>
                 </div>
               )}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <span style={{ fontWeight: 600, color: '#374151', minWidth: '120px', fontSize: '0.875rem' }}>💼 Practice:</span>
-                <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>{Array.isArray(selectedLawyer.practiceAreas) ? selectedLawyer.practiceAreas.map(p => typeof p === 'string' ? p.replace(/_/g, ' ') : p).join(', ') : 'General'}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">💼 Practice:</span>
+                <span className="text-slate-800 font-semibold truncate max-w-[200px]">
+                  {Array.isArray(selectedLawyer.practiceAreas) ? selectedLawyer.practiceAreas.map(p => typeof p === 'string' ? p.replace(/_/g, ' ') : p).join(', ') : 'General'}
+                </span>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <span style={{ fontWeight: 600, color: '#374151', minWidth: '120px', fontSize: '0.875rem' }}>💰 Fee:</span>
-                <span style={{ color: '#059669', fontWeight: 700, fontSize: '0.875rem' }}>₹{selectedLawyer.consultationFee || 99} per consultation</span>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                <span className="text-slate-500 font-medium">💰 Fee:</span>
+                <span className="text-emerald-700 font-bold text-xs sm:text-sm">₹{selectedLawyer.consultationFee || 99} per consultation</span>
               </div>
             </div>
 
             {/* Bio */}
             {selectedLawyer.bio && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ fontWeight: 600, color: '#374151', marginBottom: '0.5rem', fontSize: '0.875rem' }}>About</h4>
-                <p style={{ color: '#4b5563', fontSize: '0.85rem', lineHeight: 1.6, margin: 0 }}>{selectedLawyer.bio}</p>
+              <div className="mb-4">
+                <h4 className="font-semibold text-xs text-slate-700 uppercase tracking-wider mb-1.5">About</h4>
+                <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  {selectedLawyer.bio}
+                </p>
               </div>
             )}
 
             {/* CTA */}
             <button
               onClick={() => { const l = selectedLawyer; setSelectedLawyer(null); handleConsultLawyer(l); }}
-              style={{ width: '100%', padding: '0.85rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-xs active:scale-95 transition-all cursor-pointer"
             >
               Consult This Advocate
             </button>

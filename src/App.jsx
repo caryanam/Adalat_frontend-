@@ -34,6 +34,7 @@ import CustomerFindLawyersPage from './pages/customer/CustomerFindLawyersPage';
 
 import LawyerDashboardPage from './pages/lawyer/LawyerDashboardPage';
 import LawyerRequestsPage from './pages/lawyer/LawyerRequestsPage';
+import LawyerConsultationsPage from './pages/lawyer/LawyerConsultationsPage';
 import LawyerEarningsPage from './pages/lawyer/LawyerEarningsPage';
 import LawyerDocumentsPage from './pages/lawyer/LawyerDocumentsPage';
 import LawyerProfilePage from './pages/lawyer/LawyerProfilePage';
@@ -103,6 +104,8 @@ const AppLayout = () => {
           {/* Lawyer */}
           <Route path="/lawyer/dashboard" element={<LawyerDashboardPage />} />
           <Route path="/lawyer/requests" element={<LawyerRequestsPage />} />
+          <Route path="/lawyer/appointments" element={<LawyerConsultationsPage />} />
+          <Route path="/lawyer/consultations" element={<LawyerConsultationsPage />} />
           <Route path="/lawyer/earnings" element={<LawyerEarningsPage />} />
           <Route path="/lawyer/documents" element={<LawyerDocumentsPage />} />
           <Route path="/lawyer/profile" element={<LawyerProfilePage />} />

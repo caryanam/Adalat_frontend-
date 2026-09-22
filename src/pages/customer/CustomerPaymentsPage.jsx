@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
+import CustomerHeader from '../../components/CustomerHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import { CreditCard } from 'lucide-react';
 
 const CustomerPaymentsPage = () => {
-  const [payments, setPayments] = useState([
+  const [payments] = useState([
     {
       id: 'PAY-REG-99',
       service: 'Adalat Customer Account Activation',
@@ -16,16 +17,18 @@ const CustomerPaymentsPage = () => {
   ]);
 
   return (
-    <div className="portal-layout">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50 overflow-x-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="customer" />
 
-      <main className="portal-main-content">
-        <div className="portal-header">
-          <h1>Payment History</h1>
-          <p>Audit log of account activation fees & extended advocate consultation payments.</p>
-        </div>
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 min-h-screen relative">
+        <CustomerHeader 
+          title="Payment History"
+          subtitle="Audit log of account activation fees & extended advocate consultation payments."
+          badge={{ text: "Verified Invoices", variant: "indigo" }}
+        />
 
-        <div className="section-card card">
+        <div className="p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8">
+          <div className="section-card card">
           {payments.length === 0 ? (
             <EmptyState 
               icon={CreditCard}
@@ -58,6 +61,7 @@ const CustomerPaymentsPage = () => {
               </table>
             </div>
           )}
+        </div>
         </div>
       </main>
     </div>

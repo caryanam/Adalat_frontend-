@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import CustomerHeader from '../../components/CustomerHeader';
 import { useAuth } from '../../context/AuthContext';
 import { customerApi } from '../../api/customerApi';
 import apiClient from '../../api/apiClient';
 import OtpModal from '../../components/OtpModal';
 import { toast } from 'react-toastify';
 import { 
-  Bell, 
-  ChevronDown, 
   User, 
   Edit3, 
   Camera, 
@@ -19,15 +18,29 @@ import {
   CheckCircle2,
   Save,
   X,
-  ShieldCheck,
   Eye,
-  EyeOff
+  EyeOff,
+  ShieldCheck,
+  KeyRound,
+  FileText,
+  Printer,
+  Sparkles,
+  MapPin,
+  Globe,
+  Clock,
+  Check,
+  RefreshCw
 } from 'lucide-react';
+import logoImg from '../../assets/logo.png';
 
 const CustomerProfilePage = () => {
   const { user, updateUser } = useAuth();
   
-  const [isEditing, setIsEditing] = useState(false);
+  // Tab State
+  const [activeTab, setActiveTab] = useState('DETAILS'); // 'DETAILS', 'SECURITY', 'BILLING'
+
+  // Update Profile Modal States
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [editName, setEditName] = useState(user?.fullName || '');
   const [editEmail, setEditEmail] = useState(user?.email || '');
   const [editMobile, setEditMobile] = useState(user?.mobileNumber || '');
@@ -51,6 +64,10 @@ const CustomerProfilePage = () => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
+  // Receipt Modal State
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+
   useEffect(() => {
     if (user) {
       setEditName(user.fullName || '');
@@ -59,10 +76,27 @@ const CustomerProfilePage = () => {
     }
   }, [user]);
 
-  const userName = user?.fullName || 'User';
-  const userEmail = user?.email || 'user@adalat.com';
-  const userMobile = user?.mobileNumber || 'N/A';
-  const initial = (userName.charAt(0) || 'U').toUpperCase();
+  const userName = user?.fullName || 'Valued Client';
+  const userEmail = user?.email || 'customer@adalat.com';
+  const userMobile = user?.mobileNumber || '+91 98765 43210';
+  const initial = (userName.charAt(0) || 'C').toUpperCase();
+
+  const handleOpenEditModal = () => {
+    setEditName(user?.fullName || '');
+    setEditEmail(user?.email || '');
+    setEditMobile(user?.mobileNumber || '');
+    setError('');
+    setIsNewEmailVerified(false);
+    setVerifiedEmailValue('');
+    setShowEditProfileModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditProfileModal(false);
+    setError('');
+    setIsNewEmailVerified(false);
+    setVerifiedEmailValue('');
+  };
 
   const handleTriggerEmailOtp = async (emailToVerify, purpose = 'UPDATE_EMAIL') => {
     if (!emailToVerify || !emailToVerify.trim()) {
@@ -150,7 +184,7 @@ const CustomerProfilePage = () => {
       });
       
       toast.success('Profile updated successfully!');
-      setIsEditing(false);
+      setShowEditProfileModal(false);
       setIsNewEmailVerified(false);
       setVerifiedEmailValue('');
     } catch (err) {
@@ -219,265 +253,640 @@ const CustomerProfilePage = () => {
     }
   };
 
+  const handleViewReceipt = (receipt) => {
+    setSelectedReceipt(receipt);
+    setShowReceiptModal(true);
+  };
+
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="customer" />
 
-      <main className="portal-main-content" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', padding: 0 }}>
+      <main className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#f8fafc] relative">
         
-        {/* HEADER */}
-        <div className="portal-header-custom" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2.5rem', background: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
-          <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#1e3a8a', margin: 0, fontFamily: 'Georgia, serif' }}>My Profile</h1>
-            <p style={{ margin: 0, color: '#4b5563', fontSize: '0.875rem', marginTop: '0.25rem' }}>Manage your account details and view your payment history.</p>
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            {/* Green Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ecfdf5', color: '#10b981', border: '1px solid #a7f3d0', padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
-              <CheckCircle2 size={14} /> ACCOUNT ACTIVE (?99 PAID)
-            </div>
-
-            {/* Notification Bell */}
-            <div style={{ position: 'relative', color: '#1e3a8a' }}>
-              <Bell size={20} />
-              <span style={{ position: 'absolute', top: -2, right: -2, background: '#ef4444', borderRadius: '50%', width: 8, height: 8 }}></span>
-            </div>
-            
-            {/* User Profile */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-              <div style={{ width: 36, height: 36, background: '#1e3a8a', color: 'white', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1rem', fontWeight: 'bold' }}>
-                {initial}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e3a8a', lineHeight: 1.2 }}>{userName}</span>
-                <span style={{ fontSize: '0.75rem', color: '#6b7280', lineHeight: 1.2 }}>{userEmail}</span>
-              </div>
-              <ChevronDown size={16} color="#1e3a8a" />
-            </div>
-          </div>
-        </div>
+        {/* REUSABLE CUSTOMER HEADER */}
+        <CustomerHeader 
+          title="Account & Profile" 
+          subtitle="Manage your personal identity, contact security, and verified consultation billing receipts." 
+          badge={{ text: "Active Client (₹99 Paid)", variant: "success", icon: ShieldCheck }} 
+          actions={
+            <button 
+              type="button"
+              onClick={handleOpenEditModal} 
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs hover:shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer shrink-0"
+            >
+              <Edit3 size={14} />
+              <span>Edit Profile</span>
+            </button>
+          }
+        />
 
         {/* MAIN SCROLLABLE CONTENT */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem 2.5rem', background: '#f8fafc' }}>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-5 sm:space-y-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
           
-          {/* PROFILE INFORMATION CARD */}
-          <div style={{ background: '#ffffff', borderRadius: '0.75rem', padding: '1.5rem 2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div style={{ background: '#f5f3ff', color: '#6d28d9', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                  <User size={20} />
+          {/* HERO IDENTITY BANNER */}
+          <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-8 shadow-md border border-slate-800 overflow-hidden">
+            {/* Background Ambient Glow Accents */}
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/3 -mb-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
+              
+              {/* Left: Avatar & Identity Details */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                <div className="relative group self-start sm:self-auto">
+                  <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-indigo-800 text-white font-extrabold text-2xl sm:text-4xl flex items-center justify-center shadow-xl border-2 border-white/20 shrink-0">
+                    {initial}
+                  </div>
+                  
+                  {/* Photo Change Badge */}
+                  <button 
+                    type="button" 
+                    onClick={() => toast.info('Profile picture upload available in next version.')}
+                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center justify-center text-indigo-600 hover:bg-slate-50 transition-transform active:scale-95 cursor-pointer"
+                    title="Update Profile Photo"
+                  >
+                    <Camera size={13} />
+                  </button>
+
+                  {/* Online Status Dot */}
+                  <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 absolute top-0 -right-1" title="Account Online" />
                 </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e3a8a' }}>Profile Information</h3>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280', marginTop: '0.2rem' }}>View and manage your account details.</p>
+
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white truncate font-['Outfit',sans-serif]">
+                      {userName}
+                    </h2>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <CheckCircle2 size={12} className="text-emerald-400" />
+                      Verified Client
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-300 flex-wrap">
+                    <span className="flex items-center gap-1 truncate">
+                      <Mail size={13} className="text-indigo-400 shrink-0" />
+                      <span className="truncate">{userEmail}</span>
+                    </span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="flex items-center gap-1 shrink-0">
+                      <Phone size={13} className="text-indigo-400 shrink-0" />
+                      <span>{userMobile}</span>
+                    </span>
+                  </div>
+
+                  <div className="pt-1 flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-slate-300 bg-white/10 backdrop-blur-xs px-2.5 py-0.5 rounded-lg border border-white/10">
+                      <ShieldCheck size={12} className="text-emerald-400" />
+                      Account Active (₹99 Lifetime Access)
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-slate-300 bg-white/10 backdrop-blur-xs px-2.5 py-0.5 rounded-lg border border-white/10">
+                      <Calendar size={12} className="text-indigo-300" />
+                      Joined Sep 17, 2026
+                    </span>
+                  </div>
                 </div>
               </div>
-              
-              {!isEditing ? (
-                <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid #c4b5fd', color: '#6d28d9', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
-                  <Edit3 size={16} /> Edit Profile
+
+              {/* Right: Quick Action Controls */}
+              <div className="flex items-center gap-3 shrink-0 pt-2 sm:pt-0">
+                <button 
+                  type="button"
+                  onClick={handleOpenEditModal} 
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 shadow-md hover:shadow-indigo-500/30 transition-all cursor-pointer active:scale-95"
+                >
+                  <Edit3 size={14} />
+                  <span>Edit Profile Details</span>
                 </button>
-              ) : (
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => { setIsEditing(false); setError(''); setEditName(userName); setEditEmail(userEmail); setEditMobile(userMobile); setIsNewEmailVerified(false); setVerifiedEmailValue(''); }} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid #e5e7eb', color: '#4b5563', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
-                    <X size={16} /> Cancel
-                  </button>
-                  <button onClick={handleSaveProfile} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#6d28d9', border: '1px solid #6d28d9', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}>
-                    <Save size={16} /> {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
+              </div>
+
+            </div>
+          </div>
+
+          {/* 4 OVERVIEW KPI METRIC TILES */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">Account Tier</span>
+                <div className="text-sm sm:text-base font-bold text-slate-900">Verified Client</div>
+                <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold pt-0.5">
+                  <CheckCircle2 size={11} /> <span>100% Verified</span>
                 </div>
-              )}
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <ShieldCheck size={20} />
+              </div>
             </div>
 
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">Security Level</span>
+                <div className="text-sm sm:text-base font-bold text-slate-900">Password & OTP</div>
+                <div className="flex items-center gap-1 text-[11px] text-indigo-600 font-semibold pt-0.5">
+                  <KeyRound size={11} /> <span>Two-Factor Protected</span>
+                </div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                <Lock size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">Activation Fee</span>
+                <div className="text-sm sm:text-base font-bold text-slate-900">₹99.00 Settled</div>
+                <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold pt-0.5">
+                  <Check size={11} /> <span>Lifetime Valid</span>
+                </div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <CreditCard size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">Jurisdiction</span>
+                <div className="text-sm sm:text-base font-bold text-slate-900">All-India Courts</div>
+                <div className="flex items-center gap-1 text-[11px] text-indigo-600 font-semibold pt-0.5">
+                  <Globe size={11} /> <span>State & National</span>
+                </div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                <MapPin size={20} />
+              </div>
+            </div>
+
+          </div>
+
+          {/* TAB NAVIGATION STRIP */}
+          <div className="flex items-center gap-1 sm:gap-2 border-b border-slate-200 bg-white px-2 rounded-2xl shadow-2xs overflow-x-auto whitespace-nowrap scrollbar-none">
+            <button 
+              type="button"
+              onClick={() => setActiveTab('DETAILS')}
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 border-b-2 text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'DETAILS'
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <User size={16} />
+              <span>Personal Details</span>
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => setActiveTab('SECURITY')}
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 border-b-2 text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'SECURITY'
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <Lock size={16} />
+              <span>Security & Credentials</span>
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => setActiveTab('BILLING')}
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 border-b-2 text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'BILLING'
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <CreditCard size={16} />
+              <span>Invoices & Payment History</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.2 bg-emerald-100 text-emerald-700 rounded-full">1</span>
+            </button>
+          </div>
+
+          {/* TAB 1: PERSONAL DETAILS */}
+          {activeTab === 'DETAILS' && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-6">
+              
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight">Identity & Contact Information</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Your official account profile details used across consultations and legal filings.</p>
+                </div>
+
+                <button 
+                  type="button"
+                  onClick={handleOpenEditModal}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/80 transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95"
+                >
+                  <Edit3 size={13} />
+                  <span>Edit Info</span>
+                </button>
+              </div>
+
+              {/* READ-ONLY INFORMATION TILES GRID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Full Name</span>
+                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <User size={14} className="text-indigo-600" />
+                    <span>{userName}</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 block">Primary Account Holder</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Email Address</span>
+                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Mail size={14} className="text-indigo-600" />
+                    <span className="truncate">{userEmail}</span>
+                  </div>
+                  <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                    <CheckCircle2 size={11} /> Verified Primary Email
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mobile Phone</span>
+                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Phone size={14} className="text-indigo-600" />
+                    <span>{userMobile}</span>
+                  </div>
+                  <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                    <CheckCircle2 size={11} /> Verified Contact
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Account Role</span>
+                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <ShieldCheck size={14} className="text-indigo-600" />
+                    <span>Client / Consumer Portal</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 block">Standard Consultation Access</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Registration Date</span>
+                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Calendar size={14} className="text-indigo-600" />
+                    <span>September 17, 2026</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 block">Active Member</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Platform Security</span>
+                  <div className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                    <Lock size={14} className="text-emerald-600" />
+                    <span>256-Bit Encrypted</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 block">Privilege & Confidentiality Protected</span>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 2: SECURITY & CREDENTIALS */}
+          {activeTab === 'SECURITY' && (
+            <div className="space-y-6">
+              
+              {/* Change Password Card */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shadow-2xs shrink-0">
+                    <Lock size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Account Login Password</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Secure your login credentials. We send an OTP code to your registered email before allowing updates.</p>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={handleChangePasswordClick} 
+                  disabled={otpSending}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-50 active:scale-95"
+                >
+                  <KeyRound size={15} className="text-indigo-600" /> 
+                  <span>{otpSending && otpPurpose === 'CHANGE_PASSWORD' ? 'Sending Security Code...' : 'Update Password'}</span>
+                </button>
+              </div>
+
+              {/* Security Features Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">Two-Factor Authentication</h4>
+                      <p className="text-[11px] text-slate-500">Email OTP verification required on password and contact modifications.</p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Status:</span>
+                    <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Active & Enforced
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <Clock size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">Current Login Session</h4>
+                      <p className="text-[11px] text-slate-500">Connected via encrypted JWT bearer token session.</p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Session Status:</span>
+                    <span className="text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                      Authorized & Active
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 3: INVOICES & PAYMENT HISTORY */}
+          {activeTab === 'BILLING' && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs shrink-0">
+                    <CreditCard size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 tracking-tight">Verified Invoices & Receipts</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Official GST-compliant receipts for account activation and lawyer consultations.</p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl self-start sm:self-auto">
+                  Total Settled: ₹99.00
+                </span>
+              </div>
+
+              {/* Transactions Table */}
+              <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/90 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="p-3.5">Invoice #</th>
+                      <th className="p-3.5">Service Description</th>
+                      <th className="p-3.5">Payment Method</th>
+                      <th className="p-3.5">Amount</th>
+                      <th className="p-3.5">Date</th>
+                      <th className="p-3.5">Status</th>
+                      <th className="p-3.5 text-right">Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3.5 font-mono font-bold text-indigo-600">
+                        PAY-REG-99
+                      </td>
+                      <td className="p-3.5">
+                        <div className="font-bold text-slate-900">Adalat Customer Account Activation</div>
+                        <div className="text-[10px] text-slate-400">One-time registration and platform escrow enablement</div>
+                      </td>
+                      <td className="p-3.5 font-medium text-slate-600">
+                        UPI Direct (Auto-Settled)
+                      </td>
+                      <td className="p-3.5">
+                        <div className="font-extrabold text-slate-900 font-mono text-sm">₹99.00</div>
+                        <div className="text-[10px] text-slate-400">Incl. 18% GST</div>
+                      </td>
+                      <td className="p-3.5 text-slate-500 font-medium">
+                        9/17/2026
+                      </td>
+                      <td className="p-3.5">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <Check size={11} /> PAID
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-right">
+                        <button 
+                          type="button"
+                          onClick={() => handleViewReceipt({
+                            id: 'PAY-REG-99',
+                            service: 'Adalat Customer Account Activation',
+                            amount: '99.00',
+                            baseAmount: '83.90',
+                            gstAmount: '15.10',
+                            date: 'September 17, 2026',
+                            status: 'PAID'
+                          })}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+                        >
+                          <FileText size={12} />
+                          <span>Receipt</span>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
+                <span>Showing 1 of 1 verified transaction</span>
+                <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <ShieldCheck size={12} className="text-emerald-500" />
+                  Statutory Tax Invoice Available
+                </span>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      {/* UPDATE PROFILE POPUP MODAL */}
+      {showEditProfileModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 font-['Outfit',sans-serif]">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-7 max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+            
+            {/* Close Button Top Right */}
+            <button 
+              type="button"
+              onClick={handleCloseEditModal} 
+              disabled={loading}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+              title="Close modal"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3.5 mb-5 pb-4 border-b border-slate-100">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shadow-2xs shrink-0">
+                <Edit3 size={20} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  Update Profile Details
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Update your contact details and account identity.
+                </p>
+              </div>
+            </div>
+
+            {/* Error Message */}
             {error && (
-              <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium mb-4">
                 {error}
               </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4rem' }}>
-              {/* Avatar Side */}
-              <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ width: '100px', height: '100px', background: '#102A43', color: '#c4b5fd', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '2.5rem', fontWeight: 'bold' }}>
-                    {initial}
-                  </div>
-                  <div style={{ position: 'absolute', bottom: '0', right: '0', background: '#ffffff', borderRadius: '50%', padding: '0.4rem', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', color: '#6d28d9', cursor: 'pointer', display: 'flex' }}>
-                    <Camera size={16} />
-                  </div>
-                </div>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: '#1e3a8a', fontFamily: 'Georgia, serif' }}>{userName}</h2>
-                  <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', marginBottom: '1rem' }}>{userEmail}</p>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#ecfdf5', color: '#10b981', padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                    <CheckCircle2 size={14} /> ACCOUNT ACTIVE (?99 PAID)
-                  </div>
-                </div>
-              </div>
-
-              {/* Details Grid Side */}
-              <div style={{ flex: 1, background: '#f8fafc', padding: '1.5rem 2rem', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '220px', color: '#4b5563' }}>
-                    <User size={18} />
-                    <span style={{ fontSize: '0.875rem' }}>Full Name</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    {isEditing ? (
-                      <input 
-                        type="text" 
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none' }}
-                      />
-                    ) : (
-                      <div style={{ color: '#1e3a8a', fontSize: '0.875rem' }}>{userName}</div>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '220px', color: '#4b5563', paddingTop: isEditing ? '0.5rem' : '0' }}>
-                    <Mail size={18} />
-                    <span style={{ fontSize: '0.875rem' }}>Email Address</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    {isEditing ? (
-                      <div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <input 
-                            type="email" 
-                            value={editEmail}
-                            onChange={(e) => {
-                              setEditEmail(e.target.value);
-                              if (isNewEmailVerified && e.target.value.trim().toLowerCase() !== verifiedEmailValue.toLowerCase()) {
-                                setIsNewEmailVerified(false);
-                              }
-                            }}
-                            style={{ flex: 1, padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none' }}
-                            placeholder="Enter new email address"
-                          />
-                          {editEmail.trim().toLowerCase() !== userEmail.toLowerCase() && (
-                            isNewEmailVerified && verifiedEmailValue.toLowerCase() === editEmail.trim().toLowerCase() ? (
-                              <span style={{ color: '#059669', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', padding: '0.45rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #a7f3d0', whiteSpace: 'nowrap' }}>
-                                <CheckCircle2 size={14} /> Verified
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleTriggerEmailOtp(editEmail.trim())}
-                                disabled={otpSending || !editEmail.trim()}
-                                style={{ background: '#f5f3ff', color: '#6d28d9', border: '1px solid #c4b5fd', padding: '0.45rem 0.85rem', borderRadius: '0.375rem', fontSize: '0.78rem', fontWeight: 600, cursor: (otpSending || !editEmail.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
-                              >
-                                {otpSending ? 'Sending OTP...' : 'Verify OTP'}
-                              </button>
-                            )
-                          )}
-                        </div>
-                        {editEmail.trim().toLowerCase() !== userEmail.toLowerCase() && (!isNewEmailVerified || verifiedEmailValue.toLowerCase() !== editEmail.trim().toLowerCase()) && (
-                          <div style={{ color: '#d97706', fontSize: '0.75rem', marginTop: '0.35rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span>* New email address requires OTP verification before saving.</span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ color: '#1e3a8a', fontSize: '0.875rem' }}>{userEmail}</div>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '220px', color: '#4b5563' }}>
-                    <Phone size={18} />
-                    <span style={{ fontSize: '0.875rem' }}>Mobile Number</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    {isEditing ? (
-                      <input 
-                        type="text" 
-                        value={editMobile}
-                        onChange={(e) => setEditMobile(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none' }}
-                      />
-                    ) : (
-                      <div style={{ color: '#1e3a8a', fontSize: '0.875rem' }}>{userMobile}</div>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '220px', color: '#4b5563' }}>
-                    <Calendar size={18} />
-                    <span style={{ fontSize: '0.875rem' }}>Member Since</span>
-                  </div>
-                  <div style={{ color: '#1e3a8a', fontSize: '0.875rem' }}>September 17, 2026</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SECURITY SETTINGS CARD */}
-          <div style={{ background: '#ffffff', borderRadius: '0.75rem', padding: '1.5rem 2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div style={{ background: '#f5f3ff', color: '#6d28d9', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                <Lock size={20} />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e3a8a' }}>Security Settings</h3>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280', marginTop: '0.2rem' }}>Manage your password and account security.</p>
-              </div>
-            </div>
-            <button 
-              onClick={handleChangePasswordClick} 
-              disabled={otpSending}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid #c4b5fd', color: '#6d28d9', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600, cursor: otpSending ? 'not-allowed' : 'pointer' }}
+            {/* Form Fields */}
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveProfile();
+              }}
+              className="space-y-4"
             >
-              <Lock size={16} /> {otpSending && otpPurpose === 'CHANGE_PASSWORD' ? 'Sending OTP...' : 'Change Password'}
-            </button>
-          </div>
-
-          {/* PAYMENT HISTORY CARD */}
-          <div style={{ background: '#ffffff', borderRadius: '0.75rem', padding: '1.5rem 2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ background: '#f5f3ff', color: '#6d28d9', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                <CreditCard size={20} />
-              </div>
+              
+              {/* Full Legal Name */}
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e3a8a' }}>Payment History</h3>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280', marginTop: '0.2rem' }}>View your account activation fees and consultation payments.</p>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Full Legal Name <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <User size={16} />
+                  </div>
+                  <input 
+                    type="text" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    placeholder="Enter full legal name"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs font-medium"
+                  />
+                </div>
               </div>
-            </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', color: '#4b5563', fontSize: '0.875rem' }}>
-                  <th style={{ padding: '1rem', fontWeight: 600, borderBottom: '1px solid #e2e8f0', borderRadius: '0.5rem 0 0 0' }}>#</th>
-                  <th style={{ padding: '1rem', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>Payment Ref</th>
-                  <th style={{ padding: '1rem', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>Service Description</th>
-                  <th style={{ padding: '1rem', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>Amount</th>
-                  <th style={{ padding: '1rem', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>Date</th>
-                  <th style={{ padding: '1rem', fontWeight: 600, borderBottom: '1px solid #e2e8f0', borderRadius: '0 0.5rem 0 0' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.875rem', color: '#1e3a8a', fontWeight: 600 }}>
-                  <td style={{ padding: '1rem' }}>1</td>
-                  <td style={{ padding: '1rem' }}>PAY-REG-99</td>
-                  <td style={{ padding: '1rem' }}>Adalat Customer Account Activation</td>
-                  <td style={{ padding: '1rem' }}>₹99.00</td>
-                  <td style={{ padding: '1rem' }}>9/17/2026</td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{ background: '#ecfdf5', color: '#10b981', padding: '0.25rem 0.5rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>PAID</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-              Showing 1 of 1 transactions
-            </div>
+              {/* Email Address with Inline OTP verification if changed */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Email Address <span className="text-rose-500">*</span>
+                </label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <Mail size={16} />
+                      </div>
+                      <input 
+                        type="email" 
+                        value={editEmail}
+                        onChange={(e) => {
+                          setEditEmail(e.target.value);
+                          if (isNewEmailVerified && e.target.value.trim().toLowerCase() !== verifiedEmailValue.toLowerCase()) {
+                            setIsNewEmailVerified(false);
+                          }
+                        }}
+                        required
+                        placeholder="your.email@example.com"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs font-medium"
+                      />
+                    </div>
+
+                    {editEmail.trim().toLowerCase() !== userEmail.toLowerCase() && (
+                      isNewEmailVerified && verifiedEmailValue.toLowerCase() === editEmail.trim().toLowerCase() ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 shrink-0 shadow-2xs">
+                          <CheckCircle2 size={14} /> Verified
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleTriggerEmailOtp(editEmail.trim(), 'UPDATE_EMAIL')}
+                          disabled={otpSending || !editEmail.trim()}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs shrink-0 transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+                        >
+                          {otpSending ? 'Sending...' : 'Verify OTP'}
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  {editEmail.trim().toLowerCase() !== userEmail.toLowerCase() && (!isNewEmailVerified || verifiedEmailValue.toLowerCase() !== editEmail.trim().toLowerCase()) && (
+                    <p className="text-xs text-amber-600 font-medium">
+                      ⚠️ Changing your email address requires one-time OTP verification before saving.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Number */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Mobile Number <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Phone size={16} />
+                  </div>
+                  <input 
+                    type="tel" 
+                    value={editMobile}
+                    onChange={(e) => setEditMobile(e.target.value)}
+                    required
+                    placeholder="+91 98765 43210"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Form Action Buttons */}
+              <div className="flex items-center gap-2.5 pt-3 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={handleCloseEditModal} 
+                  disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md hover:shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin text-white" />
+                      <span>Saving Profile...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={14} />
+                      <span>Save Profile Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
           </div>
-
         </div>
-      </main>
+      )}
 
       {/* OTP Email Verification Modal */}
       <OtpModal 
@@ -490,102 +899,181 @@ const CustomerProfilePage = () => {
 
       {/* CHANGE PASSWORD POPUP MODAL */}
       {showPasswordModal && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 19, 31, 0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '2rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', position: 'relative' }}>
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 font-['Outfit',sans-serif]">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             <button 
               onClick={() => { setShowPasswordModal(false); setPasswordError(''); setNewPassword(''); setConfirmPassword(''); }} 
-              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer', padding: '0.25rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               title="Close"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
             
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ width: '48px', height: '48px', background: '#f5f3ff', color: '#6d28d9', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
-                <Lock size={24} />
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-2xs border border-indigo-100">
+                <KeyRound size={22} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '1.4rem', color: '#102A43', fontWeight: 700 }}>Set New Password</h3>
-              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.85rem', color: '#64748B' }}>
-                Email verified for <strong style={{ color: '#1e3a8a' }}>{userEmail}</strong>. Please enter your new password below.
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight">Set New Password</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Email verification passed for <strong className="text-indigo-600">{userEmail}</strong>. Create a strong replacement password.
               </p>
             </div>
 
             {passwordError && (
-              <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.65rem 0.85rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.82rem' }}>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium mb-4">
                 {passwordError}
               </div>
             )}
 
-            <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                  New Password
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  New Password <span className="text-rose-500">*</span>
                 </label>
-                <div style={{ position: 'relative' }}>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock size={16} />
+                  </div>
                   <input 
-                    type={showNewPassword ? "text" : "password"}
+                    type="password" 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
                     minLength={6}
-                    placeholder="Enter at least 6 characters"
-                    style={{ width: '100%', padding: '0.65rem 2.5rem 0.65rem 0.75rem', borderRadius: '0.5rem', border: '1.5px solid #cbd5e1', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    placeholder="Minimum 6 characters"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs"
                   />
-                  <button 
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, display: 'flex' }}
-                  >
-                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                  Confirm New Password
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Confirm Password <span className="text-rose-500">*</span>
                 </label>
-                <div style={{ position: 'relative' }}>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock size={16} />
+                  </div>
                   <input 
-                    type={showConfirmPassword ? "text" : "password"}
+                    type="password" 
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    minLength={6}
-                    placeholder="Re-enter your new password"
-                    style={{ width: '100%', padding: '0.65rem 2.5rem 0.65rem 0.75rem', borderRadius: '0.5rem', border: '1.5px solid #cbd5e1', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    placeholder="Repeat new password"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs"
                   />
-                  <button 
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, display: 'flex' }}
-                  >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <div className="flex items-center gap-2 pt-2">
                 <button 
                   type="button" 
                   onClick={() => { setShowPasswordModal(false); setPasswordError(''); setNewPassword(''); setConfirmPassword(''); }} 
                   disabled={passwordLoading}
-                  style={{ flex: 1, padding: '0.65rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={passwordLoading}
-                  style={{ flex: 1, padding: '0.65rem', borderRadius: '0.5rem', border: 'none', background: '#6d28d9', color: '#ffffff', fontSize: '0.875rem', fontWeight: 600, cursor: passwordLoading ? 'not-allowed' : 'pointer' }}
+                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md hover:shadow-indigo-500/20 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
                 >
-                  {passwordLoading ? 'Updating...' : 'Update Password'}
+                  {passwordLoading ? 'Updating...' : 'Save Password'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* RECEIPT PREVIEW MODAL */}
+      {showReceiptModal && selectedReceipt && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 font-['Outfit',sans-serif]">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <button 
+              onClick={() => setShowReceiptModal(false)} 
+              className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Close"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+              <img src={logoImg} alt="Adalat" className="w-7 h-7 object-contain" />
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">ADALAT LEGAL SERVICES</h3>
+                <p className="text-[10px] text-slate-400">Tax Invoice & Payment Receipt</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Receipt ID</span>
+                  <span className="font-mono font-bold text-slate-900">{selectedReceipt.id}</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                  PAID (UPI)
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-slate-600">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Customer Name:</span>
+                  <span className="font-semibold text-slate-800">{userName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Email:</span>
+                  <span className="font-semibold text-slate-800">{userEmail}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Payment Date:</span>
+                  <span className="font-semibold text-slate-800">{selectedReceipt.date}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Service:</span>
+                  <span className="font-semibold text-slate-800">{selectedReceipt.service}</span>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-dashed border-slate-200 space-y-1">
+                <div className="flex justify-between text-slate-500">
+                  <span>Base Amount:</span>
+                  <span className="font-mono font-semibold">₹{selectedReceipt.baseAmount}</span>
+                </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>CGST + SGST (18%):</span>
+                  <span className="font-mono font-semibold text-amber-600">+ ₹{selectedReceipt.gstAmount}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
+                  <span>Total Settled:</span>
+                  <span className="font-mono text-emerald-600 text-base">₹{selectedReceipt.amount}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-slate-100 flex gap-2">
+              <button 
+                type="button"
+                onClick={() => window.print()}
+                className="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Printer size={13} />
+                <span>Print Receipt</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => setShowReceiptModal(false)}
+                className="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+              >
+                <span>Done</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

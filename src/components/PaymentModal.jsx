@@ -1,49 +1,61 @@
-import React, { useState } from 'react';
-import { X, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  X, 
+  ShieldCheck, 
+  CheckCircle2, 
+  ArrowRight, 
+  Copy, 
+  Check, 
+  Lock, 
+  Sparkles, 
+  RefreshCw,
+  CreditCard,
+  QrCode
+} from 'lucide-react';
 import logoImg from '../assets/logo.png';
 import './PaymentModal.css';
 
-// Brand Icons for UPI Apps
+// Brand SVGs for UPI Apps
 const GPayIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="6" fill="#1A73E8" />
-    <path d="M12.2 10.5v3.2h4.5c-.2 1.2-1.4 3.5-4.5 3.5-2.7 0-4.9-2.2-4.9-4.9s2.2-4.9 4.9-4.9c1.5 0 2.6.6 3.2 1.2l2.5-2.4C16.3 4.7 14.5 4 12.2 4 7.7 4 4 7.7 4 12.2s3.7 8.2 8.2 8.2c4.7 0 7.8-3.3 7.8-7.9 0-.5-.1-1-.1-1.5h-7.7z" fill="#FFFFFF"/>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="rounded-full shadow-2xs">
+    <rect width="24" height="24" rx="12" fill="#FFFFFF" />
+    <path d="M12.2 10.5v3.2h4.5c-.2 1.2-1.4 3.5-4.5 3.5-2.7 0-4.9-2.2-4.9-4.9s2.2-4.9 4.9-4.9c1.5 0 2.6.6 3.2 1.2l2.5-2.4C16.3 4.7 14.5 4 12.2 4 7.7 4 4 7.7 4 12.2s3.7 8.2 8.2 8.2c4.7 0 7.8-3.3 7.8-7.9 0-.5-.1-1-.1-1.5h-7.7z" fill="#4285F4"/>
   </svg>
 );
 
 const PhonePeIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="6" fill="#5F259F" />
-    <path d="M15.5 8.5H12V6.5c0-.6-.4-1-1-1H9.5c-.6 0-1 .4-1 1v11c0 .6.4 1 1 1h2c.6 0 1-.4 1-1v-4h2c2.5 0 4-1.5 4-4s-1.5-3-4-3zm-.5 4.5h-2.5V10.5H15c1 0 1.5.5 1.5 1.25s-.5 1.25-1.5 1.25z" fill="#FFFFFF"/>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="rounded-full shadow-2xs">
+    <rect width="24" height="24" rx="12" fill="#5F259F" />
+    <text x="12" y="16.5" fontSize="13" fontWeight="bold" fill="#FFFFFF" textAnchor="middle" fontFamily="'Outfit', sans-serif">पे</text>
   </svg>
 );
 
 const PaytmIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="6" fill="#00BAF2" />
-    <path d="M6 8h2.5v8H6V8zm3.5 3.5h2v4.5h-2v-4.5zm0-3.5h2v2h-2V8zm4.5 0h4v2h-2v6h-2V8zm4 0h2v8h-2V8z" fill="#FFFFFF"/>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="rounded-full shadow-2xs">
+    <rect width="24" height="24" rx="12" fill="#00BAF2" />
+    <text x="12" y="15" fontSize="7" fontWeight="bold" fill="#FFFFFF" textAnchor="middle" fontFamily="'Outfit', sans-serif">paytm</text>
   </svg>
 );
 
 const BhimIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="6" fill="#FF9900" />
-    <path d="M6 6h4c1.7 0 3 1.3 3 3 0 1-.5 1.8-1.2 2.3C12.6 11.8 13.5 12.8 13.5 14c0 1.7-1.3 3-3 3H6V6zm3 4.5h1c.6 0 1-.4 1-1s-.4-1-1-1H9v2zm0 4.5h1.2c.6 0 1.1-.5 1.1-1.1 0-.6-.5-1.1-1.1-1.1H9V15z" fill="#FFFFFF"/>
-    <path d="M15 17l3-10h-2l-3 10h2z" fill="#00A859"/>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="rounded-full shadow-2xs">
+    <rect width="24" height="24" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
+    <path d="M8 16L12 8H10L6 16H8Z" fill="#FF9900"/>
+    <path d="M14 16L18 8H16L12 16H14Z" fill="#00A859"/>
   </svg>
 );
 
 const CredIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="6" fill="#121212" />
-    <path d="M7 6h10v12H7V6zm2 2v8h6V8H9zm2 2h2v4h-2v-4z" fill="#FFFFFF"/>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="rounded-full shadow-2xs">
+    <rect width="24" height="24" rx="12" fill="#18181B" />
+    <path d="M12 6.5L16.5 8.8V12.8C16.5 15.8 14.2 18 12 19C9.8 18 7.5 15.8 7.5 12.8V8.8L12 6.5Z" stroke="#FFFFFF" strokeWidth="1.5" fill="none"/>
   </svg>
 );
 
 const PaymentModal = ({ 
   isOpen, 
   onClose, 
-  title = "Adalat Customer Activation Fee", 
+  title = "Consultation Extension Fee", 
   amount = "99.00", 
   lawyerName = "Adalat Platform Activation", 
   lawyerUpiId = "adalat@upi", 
@@ -52,6 +64,8 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('QR'); // 'QR' or 'SUCCESS'
   const [qrSrcIndex, setQrSrcIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [confirmedPaymentRef, setConfirmedPaymentRef] = useState(null);
 
   const effectiveUpiId = (lawyerUpiId && typeof lawyerUpiId === 'string' && lawyerUpiId.trim()) 
     ? lawyerUpiId.trim() 
@@ -64,22 +78,33 @@ const PaymentModal = ({
   const gstNum = Math.round((baseNum * 0.18) * 100) / 100;
   const totalNum = Math.round((baseNum + gstNum) * 100) / 100;
 
-  const upiPayload = `upi://pay?pa=${effectiveUpiId}&pn=${encodeURIComponent(effectiveLawyerName)}&am=${totalNum.toFixed(2)}&cu=INR&tn=Consultation%20Fee`;
+  const upiPayload = `upi://pay?pa=${effectiveUpiId}&pn=${encodeURIComponent(effectiveLawyerName)}&am=${totalNum.toFixed(2)}&cu=INR&tn=${encodeURIComponent(title || 'Legal Consultation')}`;
+  
   const qrSources = [
-    `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiPayload)}`,
-    `https://quickchart.io/qr?size=220&text=${encodeURIComponent(upiPayload)}`,
-    `https://chart.googleapis.com/chart?chs=220x220&cht=qr&chl=${encodeURIComponent(upiPayload)}`
+    `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiPayload)}&margin=4`,
+    `https://quickchart.io/qr?size=240&text=${encodeURIComponent(upiPayload)}&margin=1`,
+    `https://chart.googleapis.com/chart?chs=240x240&cht=qr&chl=${encodeURIComponent(upiPayload)}`
   ];
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setStep('QR');
       setLoading(false);
       setQrSrcIndex(0);
+      setCopied(false);
+      setConfirmedPaymentRef(null);
     }
   }, [isOpen, lawyerUpiId, amount]);
 
   if (!isOpen) return null;
+
+  const handleCopyUpi = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(effectiveUpiId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const handleSimulatePayment = async () => {
     setLoading(true);
@@ -88,8 +113,11 @@ const PaymentModal = ({
       amount: totalNum.toFixed(2),
       baseAmount: baseNum.toFixed(2),
       gstAmount: gstNum.toFixed(2),
-      lawyerName: effectiveLawyerName
+      lawyerName: effectiveLawyerName,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
+
+    setConfirmedPaymentRef(paymentRef);
 
     if (onPaymentSuccess) {
       try {
@@ -110,175 +138,271 @@ const PaymentModal = ({
   };
 
   return (
-    <div className="payment-modal-overlay">
-      <div className="payment-modal-card">
+    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center z-[100] p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200 font-['Outfit',sans-serif]">
+      
+      {/* Modal Container Card */}
+      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200/90 overflow-hidden relative animate-in zoom-in-95 duration-200 my-auto text-slate-800">
+        
         {/* Close Button Top Right */}
-        <button onClick={onClose} className="payment-modal-close-btn" title="Close">
-          <X size={18} />
+        <button 
+          onClick={onClose} 
+          disabled={loading}
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
+          title="Close dialog"
+        >
+          <X size={16} />
         </button>
 
         {step === 'QR' ? (
-          <div className="payment-modal-split-body">
-            {/* Left Sidebar */}
-            <div className="payment-left-sidebar">
-              <div className="payment-brand-header">
-                <img src={logoImg} alt="Adalat Logo" className="payment-brand-logo" />
-                <span className="payment-brand-title">ADALAT</span>
+          <div className="flex flex-col md:flex-row min-h-[460px]">
+            
+            {/* Left Column: Order Summary & Amount Breakdown */}
+            <div className="md:w-5/12 bg-slate-50/90 p-5 sm:p-6 border-b md:border-b-0 md:border-r border-slate-200/80 flex flex-col justify-between">
+              <div>
+                {/* Brand Logo & Security Header */}
+                <div className="flex items-center gap-2 mb-4">
+                  <img 
+                    src={logoImg} 
+                    alt="Adalat" 
+                    className="w-7 h-7 object-contain" 
+                    style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px' }}
+                  />
+                  <span className="font-extrabold text-slate-900 tracking-tight text-sm font-['Outfit',sans-serif]">
+                    ADALAT
+                  </span>
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0 ml-auto">
+                    <ShieldCheck size={11} className="text-emerald-600 shrink-0" />
+                    Verified
+                  </span>
+                </div>
+
+                {/* Consultation Title */}
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                  {title}
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  Direct client-advocate settlement for consultation room extension.
+                </p>
+
+                {/* Beneficiary Card */}
+                <div className="mt-4 p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Beneficiary Advocate:
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-xs flex items-center justify-center shadow-2xs shrink-0">
+                      {effectiveLawyerName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-slate-900 truncate flex items-center gap-1">
+                        <span className="truncate">{effectiveLawyerName}</span>
+                        <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                      </div>
+                      <span className="text-[10px] text-slate-500 truncate block font-medium">
+                        Direct P2P Escrow
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cost Breakdown Card */}
+                <div className="mt-3 p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+                  <div className="flex justify-between items-center text-xs text-slate-500">
+                    <span>Base Fee</span>
+                    <span className="font-semibold text-slate-800 font-mono">₹{baseNum.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-slate-500">
+                    <span>GST (18% Statutory)</span>
+                    <span className="font-semibold text-amber-600 font-mono">+ ₹{gstNum.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-slate-500">
+                    <span>Platform Fee</span>
+                    <span className="text-[11px] font-bold text-emerald-600">FREE</span>
+                  </div>
+                  <div className="pt-2 border-t border-dashed border-slate-200 flex justify-between items-baseline">
+                    <span className="text-xs font-bold text-slate-800">Total Payable:</span>
+                    <div className="text-right">
+                      <span className="text-xl font-extrabold text-emerald-600 tracking-tight font-mono">
+                        ₹{totalNum.toFixed(2)}
+                      </span>
+                      <span className="block text-[9px] text-slate-400 font-medium">Inclusive of all taxes</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <h4 className="payment-modal-title">{title}</h4>
-
-              <div className="payment-amount-card">
-                <div style={{ fontSize: '0.82rem', color: '#64748B', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span>Base Fee:</span>
-                  <span style={{ fontWeight: 600, color: '#1C1C4A' }}>₹{baseNum.toFixed(2)}</span>
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#64748B', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>18% GST:</span>
-                  <span style={{ fontWeight: 600, color: '#D97706' }}>+ ₹{gstNum.toFixed(2)}</span>
-                </div>
-                <div style={{ borderTop: '1px dashed #CBD5E1', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="amount-payable-label" style={{ margin: 0 }}>Total Amount:</span>
-                  <h2 className="amount-payable-value" style={{ margin: 0, color: '#10B981' }}>₹{totalNum.toFixed(2)}</h2>
-                </div>
-                <p className="amount-payout-text" style={{ marginTop: '10px' }}>
-                  Direct settlement to:<br />
-                  <strong>{effectiveLawyerName}</strong><br />
-                  <span className="upi-handle">(UPI: {effectiveUpiId})</span>
-                </p>
+              {/* Security Tagline */}
+              <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
+                <Lock size={12} className="text-slate-400 shrink-0" />
+                <span>Instant confirmation via UPI verification callback</span>
               </div>
             </div>
 
-            {/* Right Main Section */}
-            <div className="payment-right-content">
-              <h4 className="scan-title">Scan & Pay with any UPI App</h4>
+            {/* Right Column: Scan QR & Payment Action */}
+            <div className="md:w-7/12 p-5 sm:p-6 flex flex-col justify-between items-center text-center bg-white">
+              
+              <div className="w-full flex flex-col items-center">
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-[11px] font-semibold mb-2 shadow-2xs">
+                  <QrCode size={12} className="text-indigo-600" />
+                  <span>Scan with any UPI App</span>
+                </div>
 
-              <div className="qr-and-apps-row">
-                <div className="qr-box">
+                <h4 className="text-sm sm:text-base font-bold text-slate-900">
+                  Instant QR Settlement
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Scan the QR code below using your mobile payment application
+                </p>
+
+                {/* QR Code Presentation Frame with Scanner Corners */}
+                <div className="relative mt-3 p-3 bg-white rounded-2xl border-2 border-slate-100 shadow-md group transition-all duration-200">
+                  
+                  {/* Decorative Scan Corner Guides */}
+                  <div className="absolute top-1 left-1 w-4 h-4 border-t-2 border-l-2 border-indigo-600 rounded-tl-md" />
+                  <div className="absolute top-1 right-1 w-4 h-4 border-t-2 border-r-2 border-indigo-600 rounded-tr-md" />
+                  <div className="absolute bottom-1 left-1 w-4 h-4 border-b-2 border-l-2 border-indigo-600 rounded-bl-md" />
+                  <div className="absolute bottom-1 right-1 w-4 h-4 border-b-2 border-r-2 border-indigo-600 rounded-br-md" />
+
+                  {/* QR Image */}
                   <img 
                     src={qrSources[qrSrcIndex] || qrSources[0]}
-                    alt="UPI QR Code"
-                    className="qr-image" 
+                    alt="UPI Payment QR Code"
+                    className="w-40 h-40 sm:w-44 sm:h-44 object-contain rounded-lg block"
                     onError={() => {
                       if (qrSrcIndex < qrSources.length - 1) {
                         setQrSrcIndex(prev => prev + 1);
                       }
                     }}
                   />
-                  {/* Center Emblem on QR Code */}
-                  <div className="qr-center-emblem">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+                  {/* Centered UPI Emblem */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-white border border-slate-200/90 shadow-md flex items-center justify-center pointer-events-none">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                       <path d="M7 17L12 7H9.5L4.5 17H7Z" fill="#FF9900"/>
-                      <path d="M14.5 17L19.5 7H17L12 17H14.5Z" fill="#00A859"/>
+                      <path d="M14 17L19.5 7H17L12 17H14Z" fill="#00A859"/>
                     </svg>
                   </div>
                 </div>
 
-                <div className="supported-apps-box">
-                  <h5>Supported UPI Apps</h5>
-                  <ul className="upi-apps-list">
-                    <li><span>Google Pay</span></li>
-                    <li><span>PhonePe</span></li>
-                    <li><span>Paytm</span></li>
-                    <li><span>BHIM</span></li>
-                    <li><span>Cred UPI</span></li>
-                  </ul>
+                {/* Copy UPI ID Pill */}
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-xl shadow-2xs max-w-full">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">UPI ID:</span>
+                  <span className="font-mono font-semibold text-slate-800 truncate max-w-[160px] sm:max-w-[200px]">
+                    {effectiveUpiId}
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={handleCopyUpi} 
+                    className="p-1 rounded-md text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer ml-0.5 flex items-center gap-1 text-[11px] font-semibold"
+                    title="Copy UPI address"
+                  >
+                    {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                    <span className={copied ? "text-emerald-600" : ""}>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
 
-                  {/* Circular UPI App Icons Row */}
-                  <div className="upi-circles-row">
-                    <div className="circle-app-icon gpay-circle" title="Google Pay">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                        <rect width="24" height="24" rx="12" fill="#4285F4"/>
-                        <path d="M12.2 10.5v3.2h4.5c-.2 1.2-1.4 3.5-4.5 3.5-2.7 0-4.9-2.2-4.9-4.9s2.2-4.9 4.9-4.9c1.5 0 2.6.6 3.2 1.2l2.5-2.4C16.3 4.7 14.5 4 12.2 4 7.7 4 4 7.7 4 12.2s3.7 8.2 8.2 8.2c4.7 0 7.8-3.3 7.8-7.9 0-.5-.1-1-.1-1.5h-7.7z" fill="#FFFFFF"/>
-                      </svg>
-                    </div>
-
-                    <div className="circle-app-icon phonepe-circle" title="PhonePe">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                        <rect width="24" height="24" rx="12" fill="#5F259F"/>
-                        <text x="12" y="16.5" fontSize="13" fontWeight="bold" fill="#FFFFFF" textAnchor="middle" fontFamily="sans-serif">पे</text>
-                      </svg>
-                    </div>
-
-                    <div className="circle-app-icon paytm-circle" title="Paytm">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                        <rect width="24" height="24" rx="12" fill="#00BAF2"/>
-                        <text x="12" y="15" fontSize="7.5" fontWeight="bold" fill="#FFFFFF" textAnchor="middle" fontFamily="sans-serif">paytm</text>
-                      </svg>
-                    </div>
-
-                    <div className="circle-app-icon bhim-circle" title="BHIM UPI">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                        <rect width="24" height="24" rx="12" fill="#F8FAFC" stroke="#CBD5E1"/>
-                        <path d="M8 16L12 8H10L6 16H8Z" fill="#FF9900"/>
-                        <path d="M14 16L18 8H16L12 16H14Z" fill="#00A859"/>
-                      </svg>
-                    </div>
-
-                    <div className="circle-app-icon cred-circle" title="Cred / Shield">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                        <rect width="24" height="24" rx="12" fill="#18181B"/>
-                        <path d="M12 6.5L16.5 8.8V12.8C16.5 15.8 14.2 18 12 19C9.8 18 7.5 15.8 7.5 12.8V8.8L12 6.5Z" stroke="#FFFFFF" strokeWidth="1.5" fill="none"/>
-                      </svg>
-                    </div>
+                {/* Supported Apps Row */}
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <div title="Google Pay" className="hover:scale-110 transition-transform cursor-pointer">
+                    <GPayIcon />
+                  </div>
+                  <div title="PhonePe" className="hover:scale-110 transition-transform cursor-pointer">
+                    <PhonePeIcon />
+                  </div>
+                  <div title="Paytm" className="hover:scale-110 transition-transform cursor-pointer">
+                    <PaytmIcon />
+                  </div>
+                  <div title="BHIM UPI" className="hover:scale-110 transition-transform cursor-pointer">
+                    <BhimIcon />
+                  </div>
+                  <div title="CRED" className="hover:scale-110 transition-transform cursor-pointer">
+                    <CredIcon />
                   </div>
                 </div>
               </div>
 
-              <div className="payment-action-bottom">
+              {/* Payment Confirmation Action */}
+              <div className="w-full mt-4 space-y-2">
                 <button 
+                  type="button"
                   onClick={handleSimulatePayment}
-                  className="btn-pay-confirm"
                   disabled={loading}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-indigo-500/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Confirming UPI Payment...' : 'I Have Paid — Continue Consultation'}
+                  {loading ? (
+                    <>
+                      <RefreshCw size={15} className="animate-spin text-white" />
+                      <span>Verifying Settlement with Bank...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>I Have Completed Payment</span>
+                      <ArrowRight size={15} />
+                    </>
+                  )}
                 </button>
-                <div className="ssl-secure-text">
-                  <ShieldCheck size={14} /> 256-Bit SSL Secured Direct UPI Settlement
+
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 font-medium">
+                  <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
+                  <span>256-Bit SSL Encrypted • NPCI Verified UPI Channel</span>
                 </div>
               </div>
+
             </div>
+
           </div>
         ) : (
-          <div className="payment-modal-split-body">
-            {/* Left Sidebar with Shield Graphic */}
-            <div className="payment-left-sidebar success-sidebar">
-              <div className="payment-brand-header">
-                <img src={logoImg} alt="Adalat Logo" className="payment-brand-logo" />
-                <span className="payment-brand-title">ADALAT</span>
+          /* Step 2: Payment Confirmed Success Screen */
+          <div className="p-8 sm:p-10 flex flex-col items-center justify-center text-center">
+            
+            <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 border-4 border-emerald-50 shadow-inner animate-in zoom-in-75 duration-200">
+              <CheckCircle2 size={46} className="text-emerald-600" />
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-['Outfit',sans-serif]">
+              Payment Confirmed!
+            </h3>
+            
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm leading-relaxed">
+              Your consultation session with <strong>{effectiveLawyerName}</strong> has been successfully unlocked and verified.
+            </p>
+
+            {/* Receipt Summary Box */}
+            <div className="w-full max-w-sm mt-5 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 text-left space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Amount Paid:</span>
+                <span className="font-bold text-emerald-700 font-mono text-sm">₹{totalNum.toFixed(2)}</span>
               </div>
-              <div className="success-shield-wrapper">
-                <div className="shield-circle">
-                  <ShieldCheck size={64} className="shield-icon" />
-                </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Beneficiary:</span>
+                <span className="font-semibold text-slate-800">{effectiveLawyerName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Payment ID:</span>
+                <span className="font-mono text-slate-700 font-medium text-[11px]">
+                  {confirmedPaymentRef?.gatewayPaymentId || 'PAY-SUCCESS'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                <span className="text-slate-500 font-medium">Status:</span>
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Check size={11} /> Completed
+                </span>
               </div>
             </div>
 
-            {/* Right Confirmation Content */}
-            <div className="payment-right-content success-content">
-              <div className="success-check-badge">
-                <CheckCircle2 size={68} className="check-icon-green" />
-              </div>
-              
-              <h2 className="payment-confirmed-title">Payment Confirmed!</h2>
-              
-              <p className="payment-confirmed-sub">
-                Your consultation with
-              </p>
-              <h4 className="payment-confirmed-target">{lawyerName}</h4>
-              <p className="payment-confirmed-sub">
-                has been successfully unlocked.
-              </p>
+            <button 
+              type="button"
+              onClick={handleFinishSuccess} 
+              className="mt-6 w-full max-w-sm py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-indigo-500/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>Continue to Consultation Room</span>
+              <ArrowRight size={15} />
+            </button>
 
-              <button 
-                onClick={handleFinishSuccess} 
-                className="btn-go-dashboard"
-              >
-                Go to Dashboard <ArrowRight size={18} />
-              </button>
-            </div>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -6,6 +6,8 @@ const ScrollToTop = () => {
   const { pathname } = useLocation();
   const [isVisible, setIsVisible] = useState(false);
 
+  const isPortal = pathname.startsWith('/customer') || pathname.startsWith('/lawyer') || pathname.startsWith('/admin');
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pathname]);
@@ -29,6 +31,8 @@ const ScrollToTop = () => {
       behavior: 'smooth',
     });
   };
+
+  if (isPortal) return null;
 
   const buttonStyle = {
     position: 'fixed',
