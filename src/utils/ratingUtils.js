@@ -1,4 +1,5 @@
-// Rating Utility for Client Ratings & Reviews (Frontend Persistence)
+// Rating Utility for Client Ratings & Reviews (Frontend Persistence & Backend Sync)
+import apiClient from '../api/apiClient';
 
 const STORAGE_KEY = 'adalat_lawyer_ratings_v1';
 
@@ -23,7 +24,7 @@ export const getLawyerRatingData = (lawyerId) => {
   }
 };
 
-export const saveLawyerRating = (lawyerId, rating, comment = '', customerName = 'Customer') => {
+export const saveLawyerRating = async (lawyerId, rating, comment = '', customerName = 'Customer', consultationRequestId = null) => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const data = raw ? JSON.parse(raw) : {};
@@ -48,6 +49,22 @@ export const saveLawyerRating = (lawyerId, rating, comment = '', customerName = 
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+    // Async backend database sync
+    if (consultationRequestId) {
+      apiClient.post(`/api/customer/consultations/${consultationRequestId}/rating`, {
+        rating,
+        comment,
+        customerName
+      }).catch(() => {});
+    } else if (lawyerId) {
+      apiClient.post(`/api/lawyers/${lawyerId}/ratings`, {
+        rating,
+        comment,
+        customerName
+      }).catch(() => {});
+    }
+
     return data[lId];
   } catch (e) {
     return { average: rating, count: 1, reviews: [] };

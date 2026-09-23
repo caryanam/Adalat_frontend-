@@ -71,10 +71,37 @@ const LawyerCard = ({ lawyer, onViewProfile }) => {
     }
   };
 
-  const ratingScore = ratingInfo.count > 0 ? ratingInfo.average.toFixed(1) : (lawyer.rating ? lawyer.rating.toFixed(1) : '4.8');
+  const getDisplayRating = () => {
+    if (lawyer.rating !== undefined && lawyer.rating !== null && !isNaN(Number(lawyer.rating))) {
+      return Number(lawyer.rating) > 0 ? Number(lawyer.rating).toFixed(1) : '0';
+    }
+    if (lawyer.averageRating !== undefined && lawyer.averageRating !== null && !isNaN(Number(lawyer.averageRating))) {
+      return Number(lawyer.averageRating) > 0 ? Number(lawyer.averageRating).toFixed(1) : '0';
+    }
+    if (lawyer.avgRating !== undefined && lawyer.avgRating !== null && !isNaN(Number(lawyer.avgRating))) {
+      return Number(lawyer.avgRating) > 0 ? Number(lawyer.avgRating).toFixed(1) : '0';
+    }
+    if (ratingInfo && ratingInfo.count > 0 && ratingInfo.average > 0) {
+      return ratingInfo.average.toFixed(1);
+    }
+    return '0';
+  };
+
+  const ratingScore = getDisplayRating();
   const yearsExp = lawyer.yearsOfExperience || lawyer.experience || 5;
   const initials = getInitials(lawyer.fullName);
   const displayName = formatName(lawyer.fullName);
+
+  const formatImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8082${cleanPath}`;
+  };
+
+  const lawyerImgUrl = formatImageUrl(lawyer.profilePhotoUrl || lawyer.photoUrl || lawyer.avatar || lawyer.lawyerProfileImageUrl);
 
   return (
     <div 
@@ -86,8 +113,25 @@ const LawyerCard = ({ lawyer, onViewProfile }) => {
         <div className="flex items-start gap-3.5">
           {/* Avatar with smart initials & online dot */}
           <div className="relative shrink-0 mt-0.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-sm sm:text-base flex items-center justify-center shadow-xs">
-              {initials}
+            <div className="relative w-12 h-12">
+              {lawyerImgUrl ? (
+                <img 
+                  src={lawyerImgUrl} 
+                  alt={displayName} 
+                  className="w-12 h-12 rounded-xl object-cover shadow-xs border border-slate-200"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.nextElementSibling) {
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }
+                  }}
+                />
+              ) : null}
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-sm sm:text-base items-center justify-center shadow-xs ${
+                lawyerImgUrl ? 'hidden' : 'flex'
+              }`}>
+                {initials}
+              </div>
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" title="Online" />
           </div>

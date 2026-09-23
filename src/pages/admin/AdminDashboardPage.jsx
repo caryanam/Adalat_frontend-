@@ -11,14 +11,16 @@ import apiClient from '../../api/apiClient';
 import { 
   Users, UserCheck, ShieldCheck, CreditCard, 
   ChevronRight, ArrowRight, Award, CheckCircle2,
-  RefreshCw, Sparkles
+  RefreshCw, Sparkles, Check
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const AdminDashboardPage = () => {
   const [pendingLawyers, setPendingLawyers] = useState([]);
   const [approvedLawyers, setApprovedLawyers] = useState([]);
   const [totalVolume, setTotalVolume] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [approvingId, setApprovingId] = useState(null);
 
   const fetchDashboardData = useCallback(() => {
     setLoading(true);
@@ -35,6 +37,21 @@ const AdminDashboardPage = () => {
       setTotalVolume(sum);
     }).finally(() => setLoading(false));
   }, []);
+
+  const handleQuickApprove = async (lawyer) => {
+    setApprovingId(lawyer.lawyerId);
+    try {
+      await adminApi.approveLawyer(lawyer.lawyerId);
+      toast.success(`Advocate ${lawyer.fullName} approved! Account is now ACTIVE.`);
+      // Update state locally
+      setPendingLawyers(prev => prev.filter(l => l.lawyerId !== lawyer.lawyerId));
+      setApprovedLawyers(prev => [{ ...lawyer, verificationStatus: 'APPROVED' }, ...prev]);
+    } catch (err) {
+      toast.error(err.message || 'Approval failed');
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -294,13 +311,27 @@ const AdminDashboardPage = () => {
                             <StatusBadge status={lawyer.verificationStatus || 'PENDING'} />
                           </td>
                           <td className="py-4 px-5 text-right">
-                            <Link
-                              to="/admin/verifications"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-xs shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
-                            >
-                              <span>Review</span>
-                              <ArrowRight size={13} />
-                            </Link>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleQuickApprove(lawyer)}
+                                disabled={approvingId === lawyer.lawyerId}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                                title="Approve Advocate"
+                              >
+                                <Check size={13} />
+                                <span>{approvingId === lawyer.lawyerId ? 'Approving...' : 'Approve'}</span>
+                              </button>
+
+                              <Link
+                                to="/admin/verifications"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition-all cursor-pointer"
+                                title="Review documents and details"
+                              >
+                                <span>Review</span>
+                                <ArrowRight size={13} />
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       ))}

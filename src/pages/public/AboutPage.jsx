@@ -1,235 +1,270 @@
-import React, { useEffect } from 'react';
-import { ShieldCheck, MessageCircle, Map, Target, Users, Award, Zap } from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  ShieldCheck, 
+  Users, 
+  Award, 
+  Zap, 
+  MapPin, 
+  Mail, 
+  Phone, 
+  Scale, 
+  ArrowRight, 
+  CheckCircle2, 
+  Lock, 
+  Globe2,
+  Sparkles,
+  Building2
+} from 'lucide-react';
 
 const AboutPage = () => {
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach(entry => {
-        if (entry.isIntersecting) entry.target.classList.add('is-visible');
-      }),
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
-    );
-    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
+  const stats = [
+    { value: '500+', label: 'Verified Advocates', sub: 'Enrolled with State Bar Councils' },
+    { value: '10,000+', label: 'Consultations', sub: 'Across civil, criminal & corporate' },
+    { value: '28+', label: 'States & UTs Covered', sub: 'Pan-India legal presence' },
+    { value: '4.9/5', label: 'Client Trust Rating', sub: 'Based on verified reviews' }
+  ];
+
+  const pillars = [
+    {
+      icon: ShieldCheck,
+      title: 'Rigorous Advocate Verification',
+      desc: 'Every legal practitioner on Adalat undergoes strict Bar Council enrollment verification, certificate audits, and credential screening before taking client calls.',
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50 border-indigo-200'
+    },
+    {
+      icon: Lock,
+      title: 'Confidential & Encrypted',
+      desc: 'All consultations, case summaries, and shared case files are safeguarded with 256-bit SSL encryption under strict attorney-client privilege.',
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50 border-emerald-200'
+    },
+    {
+      icon: Zap,
+      title: 'AI-Powered Triage',
+      desc: 'Our proprietary legal intelligence tool simplifies complex Indian statutes, helping citizens understand their rights before stepping into a consultation.',
+      color: 'text-amber-600',
+      bg: 'bg-amber-50 border-amber-200'
+    },
+    {
+      icon: Globe2,
+      title: 'Pan-India Accessibility',
+      desc: 'Bridging the geographic barrier by connecting citizens in tier-2 and tier-3 cities with high court and supreme court specialized advocates.',
+      color: 'text-cyan-600',
+      bg: 'bg-cyan-50 border-cyan-200'
+    }
+  ];
 
   return (
-    <div style={styles.wrapper}>
-      <style>{`
-        .animate-on-scroll { opacity: 0; transform: translateY(30px); transition: all 0.6s ease-out; }
-        .animate-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
-        .value-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-      `}</style>
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-['Outfit',sans-serif] selection:bg-amber-500 selection:text-slate-950">
+      
+      {/* Hero Header */}
+      <section className="relative pt-20 pb-14 md:pt-28 md:pb-20 overflow-hidden bg-gradient-to-b from-amber-50/40 via-white to-slate-50 border-b border-slate-200">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Hero */}
-      <section style={styles.hero}>
-        <div style={styles.heroContent} className="animate-on-scroll">
-          <div style={styles.badge}>OUR STORY</div>
-          <h1 style={styles.h1}>About Adalat Legal</h1>
-          <p style={styles.subtitle}>Democratizing access to legal services across India.</p>
-        </div>
-      </section>
-
-      {/* Mission */}
-      <section style={styles.section}>
-        <div style={styles.container}>
-          <div style={styles.textCenter} className="animate-on-scroll">
-            <h2 style={styles.h2}>Our Mission</h2>
-            <p style={styles.paragraph}>
-              Adalat was founded with a singular vision: to make quality legal advice accessible, transparent, and affordable for every citizen. The Indian legal system is complex, and finding the right advocate can be daunting. We bridge this gap through technology.
-            </p>
-            <p style={styles.paragraph}>
-              By combining AI-driven preliminary guidance with a nationwide network of Bar Council verified advocates, we ensure that you get the right advice at the right time, without geographical or financial barriers holding you back.
-            </p>
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-xs font-bold tracking-wider uppercase text-amber-800 shadow-xs mb-5">
+            <Sparkles size={13} className="text-amber-600" />
+            <span>Our Mission & Vision</span>
           </div>
+
+          <h1 className="font-['Cinzel',serif] text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 mb-5 leading-tight">
+            Democratizing Legal Care <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800">Across India</span>
+          </h1>
+
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Adalat bridges the divide between citizens and qualified legal advocates through transparent pricing, verified credentials, and innovative digital intelligence.
+          </p>
         </div>
       </section>
 
-      {/* Stats */}
-      <section style={{...styles.section, background: 'white'}}>
-        <div style={styles.container}>
-          <div style={styles.statsGrid}>
-            {[
-              { icon: <Users size={32}/>, value: '500+', label: 'Verified Advocates' },
-              { icon: <MessageCircle size={32}/>, value: '10,000+', label: 'Consultations' },
-              { icon: <Award size={32}/>, value: '100%', label: 'Bar Verified' },
-              { icon: <Zap size={32}/>, value: '24/7', label: 'AI Assistance' }
-            ].map((stat, idx) => (
-              <div key={idx} className="animate-on-scroll" style={{...styles.statBox, transitionDelay: `${idx * 100}ms`}}>
-                <div style={styles.statIcon}>{stat.icon}</div>
-                <h3 style={styles.statValue}>{stat.value}</h3>
-                <p style={styles.statLabel}>{stat.label}</p>
+      {/* Stats Section */}
+      <section className="py-10 bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="font-['Cinzel',serif] text-2xl sm:text-4xl font-bold text-amber-700 mb-1">
+                  {stat.value}
+                </div>
+                <div className="text-xs sm:text-sm font-semibold text-slate-900">
+                  {stat.label}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {stat.sub}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Values */}
-      <section style={styles.section}>
-        <div style={styles.container}>
-          <h2 style={{...styles.h2, textAlign: 'center', marginBottom: '40px'}} className="animate-on-scroll">Why Choose Us</h2>
-          <div style={styles.valuesGrid}>
-            {[
-              { icon: <ShieldCheck size={36}/>, title: 'Bar Verified', desc: 'Every advocate on our platform is rigorously verified using their Bar Council registration.' },
-              { icon: <MessageCircle size={36}/>, title: '10m Free Chat', desc: 'Connect with any lawyer for 10 minutes free before committing to a paid consultation.' },
-              { icon: <Map size={36}/>, title: 'Pan-India Network', desc: 'Find experts in your specific jurisdiction and legal category, anywhere in India.' }
-            ].map((val, idx) => (
-              <div key={idx} className="value-card animate-on-scroll" style={{...styles.valueCard, transitionDelay: `${idx * 100}ms`}}>
-                <div style={styles.valueIcon}>{val.icon}</div>
-                <h3 style={styles.valueTitle}>{val.title}</h3>
-                <p style={styles.valueDesc}>{val.desc}</p>
+      {/* Mission & Story Narrative */}
+      <section className="py-14 md:py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700">
+              <Scale size={15} />
+              <span>The Adalat Story</span>
+            </div>
+            
+            <h2 className="font-['Cinzel',serif] text-2xl sm:text-4xl font-bold text-slate-900 leading-snug">
+              Transforming How Everyday Citizens Access Justice
+            </h2>
+
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              Navigating India's legal landscape has traditionally been complex, intimidating, and opaque. Everyday citizens often face uncertainty about where to turn, how much legal services cost, and whether their advocate has the right specialized experience.
+            </p>
+
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              <strong>Adalat</strong> was built to solve this challenge. By introducing transparent upfront consultations, verified Bar Council registrations, free introductory dialogues, and smart AI assistance, we empower citizens to make informed, confident legal choices.
+            </p>
+
+            <div className="pt-2 space-y-3">
+              <div className="flex items-center gap-3 text-sm text-slate-700">
+                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                <span>Zero hidden charges — transparent consultation rates</span>
               </div>
-            ))}
+              <div className="flex items-center gap-3 text-sm text-slate-700">
+                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                <span>Verified credentials with State Bar Councils across India</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-slate-700">
+                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                <span>Strict adherence to Advocate-Client confidentiality</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Identity Card */}
+          <div className="lg:col-span-5">
+            <div className="rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 space-y-6 shadow-md relative overflow-hidden">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+                  <Building2 size={20} />
+                </div>
+                <div>
+                  <h3 className="font-['Cinzel',serif] text-base font-bold text-slate-900">
+                    Caryanamindia Pvt Ltd
+                  </h3>
+                  <p className="text-xs text-slate-500">Parent Organization</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-xs sm:text-sm text-slate-700 border-t border-slate-100 pt-5">
+                <div className="flex items-start gap-3">
+                  <MapPin size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-slate-900">Corporate Location:</span>
+                    <p className="text-slate-600">Pune, Maharashtra, India</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Mail size={16} className="text-indigo-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-slate-900">Direct Support:</span>
+                    <p className="text-slate-600">
+                      <a href="mailto:support@adalat.legal" className="hover:text-indigo-600 transition-colors">
+                        support@adalat.legal
+                      </a>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Phone size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-slate-900">Helpdesk:</span>
+                    <p className="text-slate-600">
+                      <a href="tel:+919898989898" className="hover:text-emerald-600 transition-colors">
+                        +91 9898989898
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 text-center">
+                Adalat is a digital technology platform connecting users with certified legal advocates.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* Core Pillars */}
+      <section className="py-14 bg-white border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="font-['Cinzel',serif] text-2xl sm:text-4xl font-bold text-slate-900 mb-2">
+              Built on Trust & Integrity
+            </h2>
+            <p className="text-sm text-slate-600">
+              The guiding principles that ensure high legal standards and data confidentiality.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {pillars.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={idx}
+                  className="p-6 rounded-2xl bg-slate-50 border border-slate-200 hover:border-amber-400/80 transition-all duration-300 hover:-translate-y-1 shadow-xs flex flex-col justify-between"
+                >
+                  <div className="space-y-4">
+                    <div className={`w-12 h-12 rounded-xl border flex items-center justify-center ${item.bg} ${item.color}`}>
+                      <Icon size={24} />
+                    </div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-slate-900">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Contact */}
-      <section style={{...styles.section, background: 'var(--primary-navy)', color: 'white'}} className="animate-on-scroll">
-        <div style={styles.container}>
-          <div style={styles.contactWrapper}>
-            <h2 style={{...styles.h2, color: 'white', marginBottom: '20px'}}>Get in Touch</h2>
-            <p style={{marginBottom: '10px'}}>Email: support@adalatlegal.in</p>
-            <p style={{marginBottom: '10px'}}>Phone: +91 1800-123-4567</p>
-            <p>Address: Adalat Tech Pvt Ltd, Cyber City, Gurugram, Haryana - 122002</p>
+      {/* Bottom CTA */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+        <div className="relative rounded-3xl bg-slate-900 text-white border border-slate-800 p-8 sm:p-12 text-center overflow-hidden shadow-xl">
+          <h2 className="font-['Cinzel',serif] text-2xl sm:text-3xl font-bold text-white mb-4">
+            Begin Your Legal Journey with Adalat
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto mb-8 leading-relaxed">
+            Get instant legal clarity or enroll your legal practice into India's fastest-growing advocate network.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-md hover:scale-[1.02]"
+            >
+              <span>Client Registration (₹99)</span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              to="/lawyer/register"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold text-sm transition-all"
+            >
+              <span>Advocate Enrollment</span>
+            </Link>
           </div>
         </div>
       </section>
+
     </div>
   );
-};
-
-const styles = {
-  wrapper: {
-    fontFamily: 'var(--font-body, "Outfit", sans-serif)',
-    backgroundColor: 'var(--bg-ivory)',
-    color: 'var(--text-dark)'
-  },
-  hero: {
-    background: 'linear-gradient(135deg, var(--primary-navy) 0%, #0a192f 100%)',
-    padding: '70px 20px',
-    textAlign: 'center',
-    color: 'white'
-  },
-  heroContent: {
-    maxWidth: '800px',
-    margin: '0 auto'
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '6px 16px',
-    background: 'rgba(201, 162, 39, 0.1)',
-    color: 'var(--accent-gold)',
-    border: '1px solid rgba(201, 162, 39, 0.3)',
-    borderRadius: '20px',
-    fontSize: '0.9rem',
-    fontWeight: '600',
-    marginBottom: '20px'
-  },
-  h1: {
-    fontFamily: 'var(--font-heading, "Cinzel", serif)',
-    fontSize: '3rem',
-    margin: '0 0 15px 0',
-    color: '#FFFFFF',
-    textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-    fontWeight: '700'
-  },
-  h2: {
-    fontFamily: 'var(--font-heading, "Cinzel", serif)',
-    fontSize: '2.5rem',
-    color: 'var(--primary-navy)',
-    margin: '0 0 20px 0'
-  },
-  subtitle: {
-    fontSize: '1.2rem',
-    color: 'rgba(255, 255, 255, 0.8)'
-  },
-  section: {
-    padding: '80px 20px'
-  },
-  container: {
-    maxWidth: '1000px',
-    margin: '0 auto'
-  },
-  textCenter: {
-    textAlign: 'center',
-    maxWidth: '800px',
-    margin: '0 auto'
-  },
-  paragraph: {
-    fontSize: '1.1rem',
-    lineHeight: '1.8',
-    color: 'var(--text-secondary)',
-    marginBottom: '20px'
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '30px',
-    textAlign: 'center'
-  },
-  statBox: {
-    padding: '30px 20px'
-  },
-  statIcon: {
-    color: 'var(--accent-gold)',
-    marginBottom: '15px'
-  },
-  statValue: {
-    fontFamily: 'var(--font-heading, "Cinzel", serif)',
-    fontSize: '2.5rem',
-    color: 'var(--primary-navy)',
-    margin: '0 0 10px 0'
-  },
-  statLabel: {
-    color: 'var(--text-secondary)',
-    fontWeight: '600',
-    fontSize: '1.1rem',
-    margin: 0
-  },
-  valuesGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '30px'
-  },
-  valueCard: {
-    background: 'white',
-    padding: '40px 30px',
-    borderRadius: '16px',
-    border: '1px solid var(--border-color)',
-    textAlign: 'center',
-    transition: 'all 0.3s ease'
-  },
-  valueIcon: {
-    width: '80px',
-    height: '80px',
-    background: 'rgba(201, 162, 39, 0.1)',
-    color: 'var(--accent-gold)',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '0 auto 20px auto'
-  },
-  valueTitle: {
-    fontFamily: 'var(--font-heading, "Cinzel", serif)',
-    fontSize: '1.4rem',
-    color: 'var(--primary-navy)',
-    marginBottom: '15px'
-  },
-  valueDesc: {
-    color: 'var(--text-secondary)',
-    lineHeight: '1.6',
-    margin: 0
-  },
-  contactWrapper: {
-    textAlign: 'center',
-    padding: '40px',
-    background: 'rgba(255,255,255,0.05)',
-    borderRadius: '16px',
-    border: '1px solid rgba(255,255,255,0.1)'
-  }
 };
 
 export default AboutPage;

@@ -30,13 +30,18 @@ import {
   Plus,
   Sparkles,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
-import { saveLawyerRating } from '../../utils/ratingUtils';
+import { useAuth } from '../../context/AuthContext';
+import { saveLawyerRating, getLawyerRatingData } from '../../utils/ratingUtils';
 import { getChatMessages, sendChatMessage, subscribeToChat } from '../../utils/chatStore';
 import { useCompleteConsultation } from '../../hooks/useConsultationQueries';
+import MessageStatusTick from '../../components/MessageStatusTick';
 
 const CustomerConsultationPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const paramLawyerId = searchParams.get('lawyerId');
@@ -61,29 +66,115 @@ const CustomerConsultationPage = () => {
   // Case Assessment Collapsible Drawer State
   const [showCaseAssessment, setShowCaseAssessment] = useState(false);
 
-  // PDF / Attachment Viewer Modal State
-  const [showPdfModal, setShowPdfModal] = useState(false);
-  const [viewingPdfName, setViewingPdfName] = useState('');
+  // Attachment Preview Modal State (Images, PDFs, Documents)
+  const [previewAttachment, setPreviewAttachment] = useState(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Rating Modal state
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [userRating, setUserRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const formatImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8082${cleanPath}`;
   };
 
+  // Convert PDF URLs to local blob URLs to guarantee smooth inline rendering
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    let active = true;
+    if (!previewAttachment || !previewAttachment.url) {
+      setPreviewBlobUrl(null);
+      setPreviewLoading(false);
+      return;
+    }
 
-  const openDocumentViewer = (fileName) => {
-    setViewingPdfName(fileName || 'Legal_Case_Document.pdf');
-    setShowPdfModal(true);
+    const targetUrl = previewAttachment.url;
+    if (targetUrl.startsWith('data:') || targetUrl.startsWith('blob:')) {
+      setPreviewBlobUrl(targetUrl);
+      setPreviewLoading(false);
+      return;
+    }
+
+    if (previewAttachment.isPdf) {
+      setPreviewLoading(true);
+      fetch(targetUrl)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.blob();
+        })
+        .then(blob => {
+          if (!active) return;
+          const blobUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+          setPreviewBlobUrl(blobUrl);
+          setPreviewLoading(false);
+        })
+        .catch(err => {
+          console.warn('PDF blob loading error, falling back to direct URL:', err);
+          if (!active) return;
+          setPreviewBlobUrl(targetUrl);
+          setPreviewLoading(false);
+        });
+    } else {
+      setPreviewBlobUrl(targetUrl);
+      setPreviewLoading(false);
+    }
+
+    return () => {
+      active = false;
+      if (previewBlobUrl && previewBlobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewBlobUrl);
+      }
+    };
+  }, [previewAttachment]);
+
+  const getAttachmentDetails = (msg) => {
+    let url = msg.attachmentUrl || msg.fileUrl || null;
+    let name = msg.attachmentName || msg.fileName || null;
+    let type = msg.attachmentType || msg.fileType || null;
+    let size = msg.attachmentSize || msg.fileSize || null;
+    const msgText = msg.text || msg.message || '';
+
+    // Extract from legacy markdown if not structured
+    if (!name && msgText) {
+      const match = msgText.match(/\[(?:Attached File|Attached Document|Attached Legal File|Attached Case File|📄 Attached Document|📎 Attached Legal File):\s*(.*?)\]/i);
+      if (match) {
+        name = match[1].trim();
+      }
+    }
+
+    if (!url && msgText) {
+      const urlMatch = msgText.match(/(https?:\/\/[^\s]+|\/uploads\/[^\s]+)/i);
+      if (urlMatch) {
+        url = urlMatch[1];
+      }
+    }
+
+    if (!url && !name) return null;
+
+    const resolvedUrl = url ? formatImageUrl(url) : null;
+    const fileName = name || (resolvedUrl ? resolvedUrl.substring(resolvedUrl.lastIndexOf('/') + 1) : 'Legal_Attachment.pdf');
+    const isImage = (type && type.startsWith('image/')) || /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(fileName) || (resolvedUrl && /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(resolvedUrl));
+    const isPdf = (type && type.toLowerCase().includes('pdf')) || /\.pdf$/i.test(fileName) || (resolvedUrl && resolvedUrl.toLowerCase().includes('.pdf'));
+    const isDoc = /\.(doc|docx|txt|rtf|odt|xls|xlsx|csv|zip)$/i.test(fileName);
+
+    return {
+      url: resolvedUrl,
+      rawUrl: url,
+      name: fileName,
+      type: type || (isImage ? 'image/jpeg' : isPdf ? 'application/pdf' : 'application/octet-stream'),
+      size: typeof size === 'number' ? (size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(size / 1024)} KB`) : size,
+      isImage,
+      isPdf,
+      isDoc
+    };
   };
 
   const fetchCustomerConsultations = () => {
@@ -94,11 +185,13 @@ const CustomerConsultationPage = () => {
         const formatted = requests.map(r => {
           const rawRate = r.lawyerRate != null ? r.lawyerRate : (r.consultationRate || r.consultationFee || '₹99/10 min');
           const normalizedRate = typeof rawRate === 'object' ? `₹${rawRate.amount || 99}/10 min` : String(rawRate);
+          const lawyerImg = formatImageUrl(r.lawyerProfileImageUrl || r.profilePhotoUrl || r.lawyerPhotoUrl || r.lawyerImage);
 
           return {
             id: r.id || r.requestId,
             lawyerId: r.lawyerId || 1,
             lawyerName: r.lawyerName || 'Advocate',
+            lawyerProfileImageUrl: lawyerImg,
             category: r.categoryDisplayName || r.category || 'Legal Consultation',
             lawyerRate: normalizedRate,
             lawyerUpiId: r.lawyerUpiId || r.lawyerUpi || (r.lawyerName ? `${r.lawyerName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@upi` : 'advocate@upi'),
@@ -106,9 +199,10 @@ const CustomerConsultationPage = () => {
             customerConfirmationStatus: r.customerConfirmationStatus || 'ACCEPTED',
             assignedDate: r.assignedDate || null,
             assignedTime: r.assignedTime || null,
-            remainingSeconds: r.remainingSeconds || 120,
+            remainingSeconds: r.remainingSeconds != null ? r.remainingSeconds : 120,
+            chatStartedAt: r.chatStartedAt || null,
             paymentStatus: r.paymentStatus,
-            isFreeChatTimeOver: r.isFreeChatTimeOver,
+            isFreeChatTimeOver: r.isFreeChatTimeOver || false,
             caseSummary: r.caseSummary || '',
             messages: []
           };
@@ -166,14 +260,28 @@ const CustomerConsultationPage = () => {
     setDismissedPaymentModal(true);
   };
 
-  const handleRatingSubmit = (e) => {
+  const handleRatingSubmit = async (e) => {
     e.preventDefault();
     if (!activeConsultation) return;
 
-    saveLawyerRating(activeConsultation.lawyerId, userRating, ratingComment, 'Customer');
-    toast.success(`⭐ Thank you! Your ${userRating}-star rating for ${activeConsultation.lawyerName} has been recorded.`);
-    setShowRatingModal(false);
-    setRatingComment('');
+    try {
+      setRatingSubmitting(true);
+      await consultationApi.submitConsultationRating(activeConsultation.id, userRating, ratingComment);
+      await saveLawyerRating(activeConsultation.lawyerId, userRating, ratingComment, user?.fullName || 'Customer', activeConsultation.id);
+      toast.success(`⭐ Thank you! Your ${userRating}-star rating for ${formatName(activeConsultation.lawyerName)} has been recorded.`);
+      setActiveConsultation(prev => prev ? { ...prev, rating: userRating, ratingComment } : prev);
+      setShowRatingModal(false);
+      setRatingComment('');
+    } catch (err) {
+      console.error('Rating submission failed:', err);
+      await saveLawyerRating(activeConsultation.lawyerId, userRating, ratingComment, user?.fullName || 'Customer', activeConsultation.id);
+      toast.success(`⭐ Thank you! Your ${userRating}-star rating for ${formatName(activeConsultation.lawyerName)} has been recorded.`);
+      setActiveConsultation(prev => prev ? { ...prev, rating: userRating, ratingComment } : prev);
+      setShowRatingModal(false);
+      setRatingComment('');
+    } finally {
+      setRatingSubmitting(false);
+    }
   };
 
   const handlePaymentSuccess = async (paymentRef) => {
@@ -187,7 +295,7 @@ const CustomerConsultationPage = () => {
     setShowPaymentModal(false);
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!activeConsultation) return;
 
@@ -198,15 +306,20 @@ const CustomerConsultationPage = () => {
 
     if (isChatLocked(activeConsultation)) return;
     
-    let textToSend = inputMsg.trim();
-    if (attachedFile) {
-      textToSend = (textToSend ? textToSend + '\n' : '') + `📄 [Attached Document: ${attachedFile.name}]`;
-    }
-    if (!textToSend) return;
+    const textToSend = inputMsg.trim();
+    const fileToSend = attachedFile;
 
-    sendChatMessage(activeConsultation.id, 'CUSTOMER', textToSend);
+    if (!textToSend && !fileToSend) return;
+
     setInputMsg('');
     setAttachedFile(null);
+
+    try {
+      await sendChatMessage(activeConsultation.id, 'CUSTOMER', textToSend, fileToSend);
+    } catch (err) {
+      console.error('Failed to send message/attachment:', err);
+      toast.error('Failed to deliver message. Please try again.');
+    }
   };
 
   // Helper to check if chat is locked before assigned time
@@ -457,12 +570,29 @@ const CustomerConsultationPage = () => {
                         onClick={() => handleSelectConsultation(item)}
                       >
                         {/* Avatar */}
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs transition-transform group-hover:scale-105 ${
-                          isSelected 
-                            ? 'bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white' 
-                            : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
-                        }`}>
-                          {getInitials(item.lawyerName)}
+                        <div className="relative w-10 h-10 shrink-0">
+                          {item.lawyerProfileImageUrl ? (
+                            <img 
+                              src={item.lawyerProfileImageUrl} 
+                              alt={item.lawyerName} 
+                              className="w-10 h-10 rounded-xl object-cover shadow-2xs group-hover:scale-105 transition-transform border border-slate-200"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.nextElementSibling) {
+                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-10 h-10 rounded-xl items-center justify-center font-bold text-xs shadow-2xs transition-transform group-hover:scale-105 ${
+                            item.lawyerProfileImageUrl ? 'hidden' : 'flex'
+                          } ${
+                            isSelected 
+                              ? 'bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white' 
+                              : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                          }`}>
+                            {getInitials(item.lawyerName)}
+                          </div>
                         </div>
 
                         {/* Text info */}
@@ -493,7 +623,7 @@ const CustomerConsultationPage = () => {
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                {item.assignedDate ? `${item.assignedDate}` : 'Confirmed'}
+                                {item.assignedDate ? `${item.assignedDate}${item.assignedTime ? ` (${item.assignedTime})` : ''}` : 'Confirmed'}
                               </span>
                             )}
 
@@ -528,18 +658,44 @@ const CustomerConsultationPage = () => {
                       >
                         <ArrowLeft size={18} />
                       </button>
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs shrink-0">
-                        {getInitials(activeConsultation.lawyerName)}
+                      <div className="relative w-9 h-9 sm:w-10 sm:h-10 shrink-0">
+                        {activeConsultation.lawyerProfileImageUrl ? (
+                          <img 
+                            src={activeConsultation.lawyerProfileImageUrl} 
+                            alt={activeConsultation.lawyerName} 
+                            className="w-full h-full rounded-xl object-cover shadow-xs border border-slate-200"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextElementSibling) {
+                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : null}
+                        <div className={`w-full h-full rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white items-center justify-center font-bold text-xs sm:text-sm shadow-xs ${
+                          activeConsultation.lawyerProfileImageUrl ? 'hidden' : 'flex'
+                        }`}>
+                          {getInitials(activeConsultation.lawyerName)}
+                        </div>
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-slate-900 truncate flex items-center gap-1.5 font-['Outfit',sans-serif]">
                           <span className="truncate">{formatName(activeConsultation.lawyerName)}</span>
                           <CheckCircle2 size={15} className="text-emerald-500 shrink-0" title="Verified Advocate" />
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5 flex-wrap">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Advocate Online" />
                           <span className="truncate max-w-[120px] sm:max-w-[180px] font-medium text-slate-600">
                             {activeConsultation.category || 'Legal Consultation'}
+                          </span>
+                          <span className="text-slate-300">•</span>
+                          <span className="inline-flex items-center gap-1 font-bold text-slate-800 text-[11px] bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded shrink-0" title="Advocate Rating">
+                            <Star size={10} className="fill-amber-400 text-amber-400" />
+                            {activeConsultation.lawyerRating && activeConsultation.lawyerRating > 0 
+                              ? Number(activeConsultation.lawyerRating).toFixed(1) 
+                              : (getLawyerRatingData(activeConsultation.lawyerId).count > 0 
+                                  ? getLawyerRatingData(activeConsultation.lawyerId).average.toFixed(1) 
+                                  : '0')}
                           </span>
                           <span className="text-slate-300">•</span>
                           <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded text-[11px] shrink-0">
@@ -556,7 +712,9 @@ const CustomerConsultationPage = () => {
                       {!isChatLocked(activeConsultation) ? (
                         <ConsultationTimer 
                           consultationId={activeConsultation.id}
-                          initialSeconds={activeConsultation.remainingSeconds || 600}
+                          initialSeconds={activeConsultation.remainingSeconds != null ? activeConsultation.remainingSeconds : 120}
+                          chatStartedAt={activeConsultation.chatStartedAt}
+                          isFreeChatOver={activeConsultation.isFreeChatTimeOver}
                           onTimerExpired={handleTimerExpired}
                           isPaid={isPaidActive}
                         />
@@ -585,12 +743,22 @@ const CustomerConsultationPage = () => {
                       {/* Rate Advocate Trigger */}
                       <button
                         type="button"
-                        onClick={() => setShowRatingModal(true)}
-                        className="h-8 px-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95"
-                        title="Rate this Advocate"
+                        onClick={() => {
+                          if (activeConsultation.rating) {
+                            setUserRating(activeConsultation.rating);
+                            setRatingComment(activeConsultation.ratingComment || '');
+                          }
+                          setShowRatingModal(true);
+                        }}
+                        className={`h-8 px-2.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95 ${
+                          activeConsultation.rating 
+                            ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100' 
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                        }`}
+                        title={activeConsultation.rating ? `You rated ${activeConsultation.rating}/5` : "Rate this Advocate"}
                       >
                         <Star size={13} className="text-amber-500 fill-amber-400 shrink-0" />
-                        <span className="hidden md:inline">Rate</span>
+                        <span className="hidden md:inline">{activeConsultation.rating ? `Rated (${activeConsultation.rating}★)` : 'Rate'}</span>
                       </button>
 
                       {/* End Consultation Button */}
@@ -703,23 +871,37 @@ const CustomerConsultationPage = () => {
                     )}
 
                     {/* Chat Messages */}
-                    {messages.map(msg => {
-                      const isCustomer = msg.sender === 'CUSTOMER';
-                      const isAttachment = msg.text && (msg.text.includes('📎') || msg.text.includes('Attached') || msg.text.toLowerCase().includes('.pdf'));
-                      const match = msg.text.match(/\[(?:Attached File|Attached Document|Attached Legal File):\s*(.*?)\]/);
-                      const fileName = match ? match[1] : 'Legal_Evidence_Document.pdf';
+                    {messages.filter(msg => msg && ((msg.text || msg.message || '').trim().length > 0 || msg.attachmentUrl)).map(msg => {
+                      const msgText = msg.text || msg.message || '';
+                      const isCustomer = msg.sender === 'CUSTOMER' || msg.senderType === 'CUSTOMER';
+                      const attachment = getAttachmentDetails(msg);
 
                       return (
                         <div key={msg.id} className={`flex w-full items-end gap-2 ${isCustomer ? 'justify-end' : 'justify-start'}`}>
                           
                           {/* Advocate Avatar next to message */}
                           {!isCustomer && (
-                            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0 mb-1">
-                              {getInitials(activeConsultation.lawyerName)}
+                            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0 mb-1 overflow-hidden relative border border-indigo-200/80">
+                              {activeConsultation.lawyerProfileImageUrl ? (
+                                <img 
+                                  src={activeConsultation.lawyerProfileImageUrl} 
+                                  alt={activeConsultation.lawyerName} 
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                      e.currentTarget.nextElementSibling.style.display = 'block';
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <span className={activeConsultation.lawyerProfileImageUrl ? 'hidden' : 'block'}>
+                                {getInitials(activeConsultation.lawyerName)}
+                              </span>
                             </div>
                           )}
 
-                          <div className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl shadow-2xs space-y-1 ${
+                          <div className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl shadow-2xs space-y-1.5 ${
                             isCustomer 
                               ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-xs' 
                               : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs'
@@ -729,57 +911,113 @@ const CustomerConsultationPage = () => {
                             }`}>
                               {isCustomer ? 'You' : formatName(activeConsultation.lawyerName)}
                             </span>
-                            <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-line break-words">
-                              {msg.text}
-                            </p>
 
-                            {/* Attachment Box */}
-                            {isAttachment && (
-                              <div className="pt-2">
-                                {fileName.match(/\.(png|jpg|jpeg|webp|gif)$/i) ? (
+                            {msgText && (
+                              <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-line break-words">
+                                {msgText}
+                              </p>
+                            )}
+
+                            {/* Rich Interactive Attachment Box */}
+                            {attachment && (
+                              <div className="pt-1">
+                                {attachment.isImage ? (
                                   <div 
-                                    onClick={() => openDocumentViewer(fileName)}
-                                    className="cursor-pointer rounded-xl overflow-hidden border border-slate-300 max-h-48 bg-slate-900 block shadow-2xs"
+                                    onClick={() => setPreviewAttachment(attachment)}
+                                    className="group relative cursor-pointer rounded-xl overflow-hidden border border-slate-200/80 bg-slate-900 shadow-2xs transition-all hover:shadow-md max-w-sm"
                                   >
                                     <img 
-                                      src={msg.fileUrl || `https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80`} 
-                                      alt={fileName}
-                                      className="w-full max-h-48 object-cover block"
+                                      src={attachment.url || `https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80`} 
+                                      alt={attachment.name}
+                                      className="w-full max-h-52 object-cover block transition-transform duration-200 group-hover:scale-102"
+                                      onError={(e) => {
+                                        e.currentTarget.src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80';
+                                      }}
                                     />
-                                    <div className="p-2 bg-slate-900 text-white text-xs flex items-center justify-between">
-                                      <span className="truncate">📷 {fileName}</span>
-                                      <span className="text-indigo-300 font-semibold text-[10px]">Expand</span>
+                                    <div className="p-2 bg-gradient-to-t from-slate-950/90 via-slate-900/80 to-transparent absolute inset-x-0 bottom-0 text-white flex items-center justify-between">
+                                      <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                                        <Paperclip size={12} className="text-indigo-300 shrink-0" />
+                                        <span className="text-xs font-medium truncate">{attachment.name}</span>
+                                      </div>
+                                      <span className="text-[10px] font-bold bg-indigo-600/90 text-white px-2 py-0.5 rounded-full shrink-0 group-hover:bg-indigo-500 transition-colors shadow-2xs">
+                                        View Image
+                                      </span>
                                     </div>
+                                  </div>
+                                ) : attachment.isPdf ? (
+                                  <div 
+                                    onClick={() => setPreviewAttachment(attachment)}
+                                    className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs transition-all hover:shadow-sm ${
+                                      isCustomer 
+                                        ? 'bg-indigo-800/50 hover:bg-indigo-800/70 border-indigo-400/40 text-white' 
+                                        : 'bg-rose-50/70 hover:bg-rose-100/70 border-rose-200/80 text-slate-800'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                                        isCustomer ? 'bg-indigo-500/40 text-white' : 'bg-rose-100 text-rose-700 border border-rose-200'
+                                      }`}>
+                                        <FileText size={16} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold truncate">{attachment.name}</div>
+                                        <div className={`text-[10px] ${isCustomer ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                          PDF Document {attachment.size ? `• ${attachment.size}` : ''}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${
+                                      isCustomer ? 'bg-white text-indigo-700 hover:bg-indigo-50' : 'bg-rose-600 text-white hover:bg-rose-700'
+                                    }`}>
+                                      Preview PDF
+                                    </span>
                                   </div>
                                 ) : (
                                   <div 
-                                    onClick={() => openDocumentViewer(fileName)}
-                                    className="bg-slate-900 text-white border border-indigo-400/80 rounded-xl p-2.5 cursor-pointer flex items-center justify-between gap-2 shadow-xs hover:border-indigo-300 transition-all"
+                                    onClick={() => setPreviewAttachment(attachment)}
+                                    className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs transition-all hover:shadow-sm ${
+                                      isCustomer 
+                                        ? 'bg-indigo-800/50 hover:bg-indigo-800/70 border-indigo-400/40 text-white' 
+                                        : 'bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-800'
+                                    }`}
                                   >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <FileText size={16} className="text-indigo-400 shrink-0" />
-                                      <span className="text-xs font-semibold truncate">
-                                        {fileName}
-                                      </span>
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                                        isCustomer ? 'bg-indigo-500/40 text-white' : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                                      }`}>
+                                        <FileText size={16} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold truncate">{attachment.name}</div>
+                                        <div className={`text-[10px] ${isCustomer ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                          Legal File {attachment.size ? `• ${attachment.size}` : ''}
+                                        </div>
+                                      </div>
                                     </div>
-                                    <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded font-bold shrink-0">
-                                      Preview PDF
+                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${
+                                      isCustomer ? 'bg-white text-indigo-700 hover:bg-indigo-50' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                    }`}>
+                                      Download
                                     </span>
                                   </div>
                                 )}
                               </div>
                             )}
 
-                            <span className={`text-[9px] block text-right ${
+                            <div className={`flex items-center justify-end gap-1 pt-0.5 ${
                               isCustomer ? 'text-indigo-200/80' : 'text-slate-400'
                             }`}>
-                              {msg.timestamp}
-                            </span>
+                              <span className="text-[9px]">
+                                {msg.timestamp || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now')}
+                              </span>
+                              {isCustomer && (
+                                <MessageStatusTick status={msg.status || 'SENT'} isLawyer={false} />
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
                     })}
-                    <div ref={messagesEndRef} />
                   </div>
 
                   {/* Attached File Preview Bar */}
@@ -955,15 +1193,18 @@ const CustomerConsultationPage = () => {
                 <button 
                   type="button" 
                   onClick={() => setShowRatingModal(false)} 
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                  disabled={ratingSubmitting}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+                  disabled={ratingSubmitting}
+                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  Submit Rating
+                  {ratingSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Star size={13} className="fill-amber-300 text-amber-300" />}
+                  <span>{ratingSubmitting ? 'Saving...' : (activeConsultation.rating ? 'Update Rating' : 'Submit Rating')}</span>
                 </button>
               </div>
             </form>
@@ -971,93 +1212,221 @@ const CustomerConsultationPage = () => {
         </div>
       )}
 
-      {/* PDF / Document Viewer Overlay Modal */}
-      {showPdfModal && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-['Outfit',sans-serif]">
-          <div className="bg-white rounded-3xl max-w-3xl w-full h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <FileText size={20} className="text-indigo-400 shrink-0" />
+      {/* ATTACHMENT PREVIEW MODAL (IMAGES, PDFS, DOCUMENTS) */}
+      {previewAttachment && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 font-['Outfit',sans-serif]">
+          <div className="bg-white rounded-3xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            
+            {/* Modal Header */}
+            <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0">
+                  {previewAttachment.isImage ? <Paperclip size={16} /> : <FileText size={16} />}
+                </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-bold text-white truncate">Document Viewer: {viewingPdfName}</div>
-                  <span className="text-[11px] text-slate-400">Verified Legal Attachment • Ref #{activeConsultation?.id || '1'}</span>
+                  <div className="text-sm font-bold text-white truncate font-['Outfit',sans-serif]">
+                    {previewAttachment.name}
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                    <span>{previewAttachment.isImage ? 'Image Attachment' : previewAttachment.isPdf ? 'PDF Document' : 'Case Document'}</span>
+                    {previewAttachment.size && (
+                      <>
+                        <span>•</span>
+                        <span>{previewAttachment.size}</span>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span className="text-emerald-400 font-medium">Encrypted Consultation File</span>
+                  </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowPdfModal(false)} 
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X size={20} />
-              </button>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {previewAttachment.url && (
+                  <a 
+                    href={previewAttachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                    title="Open full view in new browser tab"
+                  >
+                    <span>Full Tab</span>
+                    <ExternalLink size={12} />
+                  </a>
+                )}
+                <button 
+                  onClick={() => setPreviewAttachment(null)} 
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Close Viewer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
-            <div className="flex-1 bg-slate-50 p-6 overflow-y-auto flex flex-col items-center">
-              {viewingPdfName.match(/\.(png|jpg|jpeg|webp|gif)$/i) ? (
-                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center max-w-2xl w-full">
+            {/* Modal Viewport Body */}
+            <div className="flex-1 bg-slate-950/95 overflow-hidden flex flex-col items-center justify-center relative p-3 sm:p-4">
+              {previewAttachment.isImage ? (
+                <div className="w-full h-full flex items-center justify-center overflow-auto p-2">
                   <img 
-                    src={`https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1000&q=80`} 
-                    alt={viewingPdfName}
-                    className="max-w-full max-h-[60vh] object-contain rounded-lg border border-slate-100 mx-auto"
+                    src={previewAttachment.url || `https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80`} 
+                    alt={previewAttachment.name}
+                    className="max-w-full max-h-[72vh] object-contain rounded-xl shadow-xl border border-white/10"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80';
+                    }}
                   />
-                  <p className="mt-3 text-xs font-semibold text-slate-700">
-                    Image Attachment: {viewingPdfName}
-                  </p>
+                </div>
+              ) : previewAttachment.isPdf ? (
+                <div className="w-full h-full rounded-2xl overflow-hidden bg-slate-900 shadow-xl border border-slate-700/60 flex flex-col relative">
+                  {previewLoading ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-300">
+                      <Loader2 size={36} className="animate-spin text-indigo-400" />
+                      <p className="text-xs font-medium">Loading PDF document securely...</p>
+                    </div>
+                  ) : previewBlobUrl || previewAttachment.url ? (
+                    <object 
+                      data={`${previewBlobUrl || previewAttachment.url}#toolbar=1&navpanes=0`} 
+                      type="application/pdf" 
+                      className="w-full h-full rounded-2xl bg-white"
+                    >
+                      <embed
+                        src={`${previewBlobUrl || previewAttachment.url}#toolbar=1`}
+                        type="application/pdf"
+                        className="w-full h-full rounded-2xl bg-white"
+                      />
+                      <iframe 
+                        src={`${previewBlobUrl || previewAttachment.url}#toolbar=1`}
+                        className="w-full h-full border-0 rounded-2xl bg-white"
+                        title={previewAttachment.name}
+                      >
+                        <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white rounded-2xl max-w-md mx-auto shadow-lg text-slate-800">
+                          <FileText size={44} className="text-rose-600 mb-3" />
+                          <h4 className="font-bold text-sm mb-1">{previewAttachment.name}</h4>
+                          <p className="text-xs text-slate-500 mb-4">Click below to open and view this legal document.</p>
+                          <a 
+                            href={previewAttachment.url || previewBlobUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all"
+                          >
+                            <ExternalLink size={14} />
+                            <span>Open PDF in New Window</span>
+                          </a>
+                        </div>
+                      </iframe>
+                    </object>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                      <FileText size={36} className="text-slate-500 mb-2" />
+                      <p className="text-sm">Unable to render PDF preview.</p>
+                      <a 
+                        href={previewAttachment.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+                      >
+                        <span>Open in New Window</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-xs sm:text-sm text-slate-800 leading-relaxed max-w-2xl w-full space-y-4">
-                  <div className="text-center border-b border-slate-200 pb-3">
-                    <div className="text-base font-bold text-slate-900 tracking-tight font-['Outfit',sans-serif]">LEGAL CONSULTATION CASE DOCUMENT</div>
-                    <p className="text-xs text-slate-400 mt-0.5">Adalat Legal Services • File: {viewingPdfName}</p>
+                <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl text-center space-y-4 border border-slate-200">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto shadow-sm">
+                    <FileText size={32} />
                   </div>
-
-                  <div className="space-y-1 text-xs text-slate-700">
-                    <p><strong>Client:</strong> Client Session</p>
-                    <p><strong>Advocate:</strong> {formatName(activeConsultation?.lawyerName)}</p>
-                    <p><strong>Matter Category:</strong> {activeConsultation?.category || 'Legal Consultation'}</p>
-                    <p><strong>Assigned Time:</strong> {activeConsultation?.assignedDate || 'Scheduled'} at {activeConsultation?.assignedTime || 'Time'}</p>
-                  </div>
-
-                  <div className="bg-slate-50 border-l-4 border-indigo-600 p-3.5 rounded-xl text-xs italic text-slate-700">
-                    <strong>ATTACHED CASE FACTS & SUMMARY:</strong>
-                    <p className="mt-1 font-normal not-italic">
-                      {activeConsultation?.caseSummary || 'Legal intake document and case evidence attached for advocate consultation review.'}
+                  <div>
+                    <h4 className="text-base font-bold text-slate-900 font-['Outfit',sans-serif]">{previewAttachment.name}</h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Legal case file shared during consultation session #{activeConsultation?.id || '1'}.
                     </p>
                   </div>
 
-                  <p className="text-[11px] text-slate-400 italic text-center pt-4">
-                    *** Official Document generated via Adalat Portal ***
-                  </p>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left text-xs space-y-2 text-slate-700">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">File Type:</span>
+                      <span className="font-semibold">{previewAttachment.type || 'Document'}</span>
+                    </div>
+                    {previewAttachment.size && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">File Size:</span>
+                        <span className="font-semibold">{previewAttachment.size}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Advocate:</span>
+                      <span className="font-semibold text-indigo-700">{formatName(activeConsultation?.lawyerName)}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                    {previewAttachment.url && (
+                      <a 
+                        href={previewAttachment.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-all cursor-pointer"
+                      >
+                        <ExternalLink size={14} />
+                        <span>Open File</span>
+                      </a>
+                    )}
+                    <a 
+                      href={previewAttachment.url || '#'} 
+                      download={previewAttachment.name}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                    >
+                      <Download size={14} />
+                      <span>Download</span>
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="p-4 bg-white border-t border-slate-200 flex items-center justify-between">
-              <span className="text-xs text-slate-500">
-                📄 Verified Document Preview
+            {/* Modal Footer Controls */}
+            <div className="px-5 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
+              <span className="text-xs text-slate-500 truncate pr-2">
+                🔒 Protected under Advocate-Client Legal Privilege
               </span>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 shrink-0">
+                {previewAttachment.url && (
+                  <a 
+                    href={previewAttachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <ExternalLink size={13} />
+                    <span>Open in New Tab</span>
+                  </a>
+                )}
+                {previewAttachment.url && (
+                  <a 
+                    href={previewAttachment.url}
+                    download={previewAttachment.name}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+                  >
+                    <Download size={13} />
+                    <span>Download</span>
+                  </a>
+                )}
                 <button 
-                  onClick={() => {
-                    const blob = new Blob([activeConsultation?.caseSummary || "Official Adalat Case Document"], { type: "application/pdf" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = viewingPdfName;
-                    a.click();
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-                >
-                  <Download size={13} />
-                  <span>Download Document</span>
-                </button>
-                <button 
-                  onClick={() => setShowPdfModal(false)} 
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                  type="button"
+                  onClick={() => setPreviewAttachment(null)} 
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                 >
                   Close
                 </button>
               </div>
             </div>
+
           </div>
         </div>
       )}

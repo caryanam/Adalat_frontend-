@@ -58,7 +58,10 @@ const CustomerFindLawyersPage = () => {
     try {
       const response = await lawyerApi.getApprovedLawyers();
       const raw = response && response.data ? (response.data.data || response.data) : [];
-      setLawyers(Array.isArray(raw) ? raw : []);
+      const list = Array.isArray(raw) ? raw : [];
+      // Only display approved advocates to customers
+      const approvedOnly = list.filter(l => l.verificationStatus === 'APPROVED');
+      setLawyers(approvedOnly);
     } catch (error) {
       console.error('Error fetching lawyers:', error);
       setLawyers([]);
@@ -73,6 +76,24 @@ const CustomerFindLawyersPage = () => {
                 (typeof l.consultationRate === 'object' ? l.consultationRate?.amount : null) || 
                 (typeof l.consultationRate === 'string' ? l.consultationRate.replace('RATE_', '') : 99);
     return parseInt(amt, 10) || 99;
+  };
+
+  const getLawyerRating = (l) => {
+    if (!l) return '0';
+    if (l.rating !== undefined && l.rating !== null && !isNaN(Number(l.rating))) {
+      return Number(l.rating) > 0 ? Number(l.rating).toFixed(1) : '0';
+    }
+    if (l.averageRating !== undefined && l.averageRating !== null && !isNaN(Number(l.averageRating))) {
+      return Number(l.averageRating) > 0 ? Number(l.averageRating).toFixed(1) : '0';
+    }
+    if (l.avgRating !== undefined && l.avgRating !== null && !isNaN(Number(l.avgRating))) {
+      return Number(l.avgRating) > 0 ? Number(l.avgRating).toFixed(1) : '0';
+    }
+    const info = getLawyerRatingData(l.lawyerId || l.id || 1);
+    if (info && info.count > 0 && info.average > 0) {
+      return info.average.toFixed(1);
+    }
+    return '0';
   };
 
   const filteredLawyers = useMemo(() => {
@@ -97,8 +118,8 @@ const CustomerFindLawyersPage = () => {
       })
       .sort((a, b) => {
         if (sortBy === 'RATING_DESC') {
-          const ratingA = a.rating || (getLawyerRatingData(a.lawyerId || a.id || 1).average) || 0;
-          const ratingB = b.rating || (getLawyerRatingData(b.lawyerId || b.id || 1).average) || 0;
+          const ratingA = Number(getLawyerRating(a)) || 0;
+          const ratingB = Number(getLawyerRating(b)) || 0;
           return ratingB - ratingA;
         }
         if (sortBy === 'EXP_DESC') {
@@ -425,12 +446,12 @@ const CustomerFindLawyersPage = () => {
               </div>
             </div>
 
-            {/* Stats Row: 4 Metric Cards across the expanded width */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            {/* Stats Row: 3 Metric Cards across the expanded width */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
               <div className="text-center bg-slate-50 border border-slate-200/80 p-3 sm:p-3.5 rounded-2xl">
                 <div className="text-base sm:text-lg font-bold text-amber-500 flex items-center justify-center gap-1">
                   <Star size={15} className="fill-amber-400" />
-                  {selectedLawyer.rating ? selectedLawyer.rating.toFixed(1) : '4.8'}
+                  {getLawyerRating(selectedLawyer)}
                 </div>
                 <div className="text-[11px] uppercase tracking-wider text-slate-500 mt-1 font-semibold">Client Rating</div>
               </div>
@@ -439,12 +460,6 @@ const CustomerFindLawyersPage = () => {
                   {selectedLawyer.yearsOfExperience || selectedLawyer.experience || 5}+ Years
                 </div>
                 <div className="text-[11px] uppercase tracking-wider text-slate-500 mt-1 font-semibold">Legal Experience</div>
-              </div>
-              <div className="text-center bg-slate-50 border border-slate-200/80 p-3 sm:p-3.5 rounded-2xl">
-                <div className="text-base sm:text-lg font-bold text-slate-900">
-                  {selectedLawyer.totalConsultations || 14}+ Cases
-                </div>
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 mt-1 font-semibold">Consultations Done</div>
               </div>
               <div className="text-center bg-slate-50 border border-slate-200/80 p-3 sm:p-3.5 rounded-2xl">
                 <div className="text-base sm:text-lg font-bold text-indigo-600 flex items-center justify-center gap-1">

@@ -40,6 +40,11 @@ export const consultationApi = {
     return apiClient.post(`/api/customer/consultations/${requestId}/complete`);
   },
 
+  // 5.1. Rate Consultation
+  submitConsultationRating: (requestId, rating, comment) => {
+    return apiClient.post(`/api/customer/consultations/${requestId}/rating`, { rating, comment });
+  },
+
   // 6. Appointment Confirmation
   confirmAppointment: (requestId, action) => {
     return apiClient.post(`/api/customer/consultations/${requestId}/confirm?action=${action}`).catch(() => {
@@ -71,15 +76,59 @@ export const consultationApi = {
     return apiClient.get(`/api/customer/consultations/${requestId}/messages`);
   },
 
-  sendConsultationMessageCustomer: (requestId, message) => {
-    return apiClient.post(`/api/customer/consultations/${requestId}/messages`, { text: message, message });
+  sendConsultationMessageCustomer: (requestId, message, attachment = null) => {
+    const payload = {
+      text: message,
+      message: message,
+      attachmentUrl: attachment?.attachmentUrl || attachment?.url || null,
+      attachmentName: attachment?.attachmentName || attachment?.name || null,
+      attachmentType: attachment?.attachmentType || attachment?.type || null,
+      attachmentSize: attachment?.attachmentSize || attachment?.size || null
+    };
+    return apiClient.post(`/api/customer/consultations/${requestId}/messages`, payload);
+  },
+
+  uploadConsultationAttachmentCustomer: (requestId, formData) => {
+    return apiClient.post(`/api/customer/consultations/${requestId}/upload-attachment`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  markConsultationMessagesSeenCustomer: (requestId, messageIds) => {
+    return apiClient.post(`/api/customer/consultations/${requestId}/messages/seen`, { messageIds }).catch(() => {});
+  },
+
+  markConsultationMessagesDeliveredCustomer: (requestId, messageIds) => {
+    return apiClient.post(`/api/customer/consultations/${requestId}/messages/delivered`, { messageIds }).catch(() => {});
   },
 
   getConsultationMessagesLawyer: (requestId) => {
     return apiClient.get(`/api/lawyer/consultations/${requestId}/messages`);
   },
 
-  sendConsultationMessageLawyer: (requestId, message) => {
-    return apiClient.post(`/api/lawyer/consultations/${requestId}/messages`, { text: message, message });
+  sendConsultationMessageLawyer: (requestId, message, attachment = null) => {
+    const payload = {
+      text: message,
+      message: message,
+      attachmentUrl: attachment?.attachmentUrl || attachment?.url || null,
+      attachmentName: attachment?.attachmentName || attachment?.name || null,
+      attachmentType: attachment?.attachmentType || attachment?.type || null,
+      attachmentSize: attachment?.attachmentSize || attachment?.size || null
+    };
+    return apiClient.post(`/api/lawyer/consultations/${requestId}/messages`, payload);
+  },
+
+  uploadConsultationAttachmentLawyer: (requestId, formData) => {
+    return apiClient.post(`/api/lawyer/consultations/${requestId}/upload-attachment`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  markConsultationMessagesSeenLawyer: (requestId, messageIds) => {
+    return apiClient.post(`/api/lawyer/consultations/${requestId}/messages/seen`, { messageIds }).catch(() => {});
+  },
+
+  markConsultationMessagesDeliveredLawyer: (requestId, messageIds) => {
+    return apiClient.post(`/api/lawyer/consultations/${requestId}/messages/delivered`, { messageIds }).catch(() => {});
   }
 };

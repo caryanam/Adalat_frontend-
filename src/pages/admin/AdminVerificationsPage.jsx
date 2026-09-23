@@ -1,28 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Sidebar from '../../components/Sidebar';
 import AdminHeader from '../../components/AdminHeader';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingState from '../../components/LoadingState';
 import EmptyState from '../../components/EmptyState';
 import { adminApi } from '../../api/adminApi';
-import { UserCheck, ShieldCheck, FileText, CheckCircle, XCircle, Eye, X, Award, MapPin, Briefcase, DollarSign, Globe, BookOpen, RefreshCw } from 'lucide-react';
+import { 
+  UserCheck, ShieldCheck, FileText, CheckCircle2, XCircle, Eye, 
+  X, Award, MapPin, Briefcase, DollarSign, Globe, BookOpen, 
+  RefreshCw, Search, LayoutGrid, List, AlertTriangle, Download, 
+  ExternalLink, Sparkles, Check, ChevronRight, User
+} from 'lucide-react';
 import { toast } from 'react-toastify';
-import './AdminPortalPages.css';
 
 const AdminVerificationsPage = () => {
   const [pendingLawyers, setPendingLawyers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modal & Selection States
   const [selectedLawyer, setSelectedLawyer] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [msg, setMsg] = useState('');
+  
+  // Document preview state
   const [fetchedDocs, setFetchedDocs] = useState([]);
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [docBlobUrl, setDocBlobUrl] = useState(null);
 
-  const fetchPending = () => {
+  const fetchPending = useCallback(() => {
     setLoading(true);
     adminApi.getPendingLawyers()
       .then(res => {
@@ -34,11 +43,11 @@ const AdminVerificationsPage = () => {
       })
       .catch(() => setPendingLawyers([]))
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchPending();
-  }, []);
+  }, [fetchPending]);
 
   const handleOpenDetails = (lawyer) => {
     setSelectedLawyer(lawyer);
@@ -123,20 +132,15 @@ const AdminVerificationsPage = () => {
       });
   };
 
-  const handleApprove = async (lawyerId) => {
+  const handleApprove = async (lawyer) => {
     setActionLoading(true);
-    setMsg('');
     try {
-      await adminApi.approveLawyer(lawyerId);
-      const successMsg = `Advocate ${selectedLawyer?.fullName || lawyerId} successfully APPROVED! Account is now ACTIVE and visible to customers.`;
-      setMsg(successMsg);
-      toast.success(successMsg);
+      await adminApi.approveLawyer(lawyer.lawyerId);
+      toast.success(`Advocate ${lawyer.fullName || 'account'} APPROVED successfully! Account is now ACTIVE and visible to customers.`);
       setShowDetailsModal(false);
-      fetchPending();
+      setPendingLawyers(prev => prev.filter(l => l.lawyerId !== lawyer.lawyerId));
     } catch (err) {
-      const errMsg = err.message || 'Approval failed.';
-      setMsg(errMsg);
-      toast.error(errMsg);
+      toast.error(err.message || 'Approval failed.');
     } finally {
       setActionLoading(false);
     }
@@ -148,34 +152,43 @@ const AdminVerificationsPage = () => {
     setActionLoading(true);
     try {
       await adminApi.rejectLawyer(selectedLawyer.lawyerId, rejectionReason);
-      const rejectMsg = `Lawyer application for ${selectedLawyer.fullName} REJECTED.`;
-      setMsg(rejectMsg);
-      toast.info(rejectMsg);
+      toast.info(`Application for ${selectedLawyer.fullName} rejected.`);
       setShowRejectModal(false);
       setShowDetailsModal(false);
       setRejectionReason('');
-      fetchPending();
+      setPendingLawyers(prev => prev.filter(l => l.lawyerId !== selectedLawyer.lawyerId));
     } catch (err) {
-      const errMsg = err.message || 'Rejection failed.';
-      setMsg(errMsg);
-      toast.error(errMsg);
+      toast.error(err.message || 'Rejection failed.');
     } finally {
       setActionLoading(false);
     }
   };
 
+  // Filter pending lawyers by search query
+  const filteredPendingLawyers = useMemo(() => {
+    if (!searchQuery.trim()) return pendingLawyers;
+    const query = searchQuery.toLowerCase();
+    return pendingLawyers.filter(lawyer => {
+      const matchName = (lawyer.fullName || '').toLowerCase().includes(query);
+      const matchEmail = (lawyer.email || '').toLowerCase().includes(query);
+      const matchBar = (lawyer.barEnrollmentNumber || '').toLowerCase().includes(query);
+      const matchLoc = (lawyer.location || '').toLowerCase().includes(query);
+      return matchName || matchEmail || matchBar || matchLoc;
+    });
+  }, [pendingLawyers, searchQuery]);
+
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
       <Sidebar portalType="admin" />
 
-      <main className="portal-main-content">
+      <main className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#f8fafc] relative">
         <AdminHeader 
-          title="Lawyer Verification Management"
-          subtitle="Review advocate Bar Council certificates, credentials, bio, and approve accounts for customer listing."
+          title="Advocate Verification Queue"
+          subtitle="Review Bar Council certifications, credentials, experience, and grant platform listing permissions."
           badge={{
             text: `${pendingLawyers.length} Pending Review`,
             variant: pendingLawyers.length > 0 ? 'amber' : 'emerald',
-            icon: UserCheck
+            icon: pendingLawyers.length > 0 ? UserCheck : ShieldCheck
           }}
           actions={
             <button
@@ -183,257 +196,518 @@ const AdminVerificationsPage = () => {
               onClick={fetchPending}
               disabled={loading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-50"
-              title="Refresh verifications"
+              title="Refresh queue"
             >
               <RefreshCw size={13} className={loading ? "animate-spin text-purple-600" : "text-slate-500"} />
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden sm:inline">Refresh Queue</span>
             </button>
           }
         />
 
-        {msg && (
-          <div className="admin-alert-banner card" style={{ marginBottom: '1.25rem' }}>
-            <CheckCircle size={18} /> {msg}
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+          
+          {/* Executive Queue Hero Banner */}
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0d1322] via-[#111827] to-[#1e1b4b] text-white p-5 sm:p-6 shadow-xl border border-slate-800/80">
+            <div className="absolute -right-16 -top-16 w-60 h-60 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute left-1/3 -bottom-16 w-48 h-48 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
 
-        {loading ? (
-          <div className="section-card card">
-            <LoadingState message="Fetching pending advocate verification requests..." />
-          </div>
-        ) : pendingLawyers.length === 0 ? (
-          <div className="section-card card">
-            <EmptyState 
-              icon={ShieldCheck}
-              title="No Pending Applications"
-              message="There are currently no pending advocate verification applications awaiting admin review."
-            />
-          </div>
-        ) : (
-          /* 3-Column Advocate Cards Grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-            {pendingLawyers.map(lawyer => (
-              <div 
-                key={lawyer.lawyerId}
-                className="card"
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: '16px',
-                  border: '1.5px solid #E2E8F0',
-                  padding: '1.25rem',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.05)',
-                  transition: 'all 0.25s ease-in-out',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer'
-                }}
-                onClick={() => handleOpenDetails(lawyer)}
-              >
-                <div>
-                  {/* Card Top Row: Avatar + Name + Status */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                      {lawyer.profilePhotoUrl ? (
-                        <img src={lawyer.profilePhotoUrl} alt={lawyer.fullName} style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #1C1C4A' }} />
-                      ) : (
-                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#1C1C4A', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.15rem' }}>
-                          {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
-                        </div>
-                      )}
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1C1C4A', fontWeight: 700 }}>{lawyer.fullName}</h3>
-                        <div style={{ fontSize: '0.78rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                          <MapPin size={12} /> {lawyer.location || 'India'}
-                        </div>
-                      </div>
-                    </div>
-                    <StatusBadge status={lawyer.verificationStatus || 'PENDING'} />
-                  </div>
-
-                  {/* Card Quick Info Box */}
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.85rem', borderRadius: '12px', fontSize: '0.82rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#64748B' }}>Bar Reg No:</span>
-                      <strong style={{ color: '#1C1C4A' }}>{lawyer.barEnrollmentNumber || 'Not Provided'}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#64748B' }}>Experience:</span>
-                      <span style={{ fontWeight: 600 }}>{lawyer.yearsOfExperience !== null && lawyer.yearsOfExperience !== undefined ? `${lawyer.yearsOfExperience} Yrs` : 'N/A'}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#64748B' }}>Consultation Fee:</span>
-                      <span style={{ fontWeight: 700, color: '#10B981' }}>₹{lawyer.consultationFee || lawyer.consultationRateAmount || 99}</span>
-                    </div>
-                  </div>
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-2xs">
+                    <UserCheck size={13} className="text-amber-400" />
+                    <span>Bar Council Verification Gateway</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-0.5" />
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-white/10 text-slate-300 border border-white/15 backdrop-blur-xs">
+                    <Sparkles size={12} className="text-amber-300" />
+                    <span>1-Click Authorization</span>
+                  </span>
                 </div>
 
-                {/* Card Action Button */}
-                <button 
-                  className="btn"
-                  style={{
-                    width: '100%',
-                    borderRadius: '10px',
-                    padding: '0.65rem',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.45rem',
-                    background: '#1C1C4A',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
-                  onClick={(e) => { e.stopPropagation(); handleOpenDetails(lawyer); }}
-                >
-                  <Eye size={16} /> Review Details & Documents
-                </button>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-1">
+                  Pending Advocate Verifications ({pendingLawyers.length})
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  Carefully audit the lawyer's Bar enrollment number, certificates, experience, and fee structure before approving their live listing.
+                </p>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* Full Details & Documents Review Modal */}
+              {/* View & Search Controls */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                <div className="flex items-center bg-slate-900/80 border border-slate-700/80 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      viewMode === 'grid' 
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-xs' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Grid Card View"
+                  >
+                    <LayoutGrid size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('table')}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      viewMode === 'table' 
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-xs' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Table List View"
+                  >
+                    <List size={15} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Search & Stats Bar */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs shrink-0">
+                <UserCheck size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                  Applications Awaiting Review
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {filteredPendingLawyers.length} advocate{filteredPendingLawyers.length === 1 ? '' : 's'} matching current filter
+                </p>
+              </div>
+            </div>
+
+            <div className="relative w-full sm:w-80">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by advocate name, Bar No, location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Verification Cards or Table Content */}
+          {loading ? (
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-12 shadow-xs">
+              <LoadingState message="Fetching pending advocate applications..." />
+            </div>
+          ) : filteredPendingLawyers.length === 0 ? (
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-12 shadow-xs">
+              <EmptyState 
+                icon={ShieldCheck}
+                title="No Pending Applications"
+                message={
+                  searchQuery 
+                    ? `No applications matched "${searchQuery}". Clear your search query.` 
+                    : "All advocate verification requests have been audited and resolved."
+                }
+              />
+            </div>
+          ) : viewMode === 'grid' ? (
+            /* 3-Column Modern Grid Cards */
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filteredPendingLawyers.map(lawyer => (
+                <div 
+                  key={lawyer.lawyerId}
+                  onClick={() => handleOpenDetails(lawyer)}
+                  className="group bg-white rounded-2xl sm:rounded-3xl p-5 border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-amber-400/60 transition-all duration-300 flex flex-col justify-between cursor-pointer relative overflow-hidden"
+                >
+                  {/* Top Ambient Glow */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/10 transition-all" />
+
+                  <div>
+                    {/* Header: Photo + Name + Status */}
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {lawyer.profilePhotoUrl ? (
+                          <img 
+                            src={lawyer.profilePhotoUrl} 
+                            alt={lawyer.fullName} 
+                            className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-100 shadow-2xs shrink-0" 
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-700 via-indigo-800 to-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-2xs shrink-0">
+                            {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-slate-900 truncate text-sm leading-tight group-hover:text-indigo-600 transition-colors">
+                            {lawyer.fullName}
+                          </h3>
+                          <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5 truncate">
+                            <MapPin size={11} className="text-slate-400" />
+                            <span>{lawyer.location || 'India'}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block truncate mt-0.5">
+                            {lawyer.email}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0 inline-flex items-center gap-1 shadow-2xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        <span>Pending</span>
+                      </span>
+                    </div>
+
+                    {/* Quick Info Grid */}
+                    <div className="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/70 text-xs space-y-2 mb-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-medium">Bar Reg No:</span>
+                        <span className="font-mono font-bold text-slate-900 px-2 py-0.5 bg-white rounded-md border border-slate-200/80 text-[11px]">
+                          {lawyer.barEnrollmentNumber || 'Not Provided'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-medium">Experience:</span>
+                        <span className="font-semibold text-slate-800 inline-flex items-center gap-1">
+                          <Award size={12} className="text-amber-500" />
+                          <span>{lawyer.yearsOfExperience !== null && lawyer.yearsOfExperience !== undefined ? `${lawyer.yearsOfExperience} Years` : 'N/A'}</span>
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-medium">Consultation Fee:</span>
+                        <span className="font-bold font-mono text-emerald-600">
+                          ₹{lawyer.consultationFee || lawyer.consultationRateAmount || 99}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Practice Area Badges */}
+                    {lawyer.practiceAreas && lawyer.practiceAreas.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {lawyer.practiceAreas.slice(0, 3).map((p, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100/80">
+                            {typeof p === 'string' ? p.replace(/_/g, ' ') : p}
+                          </span>
+                        ))}
+                        {lawyer.practiceAreas.length > 3 && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600">
+                            +{lawyer.practiceAreas.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Action Footer */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      type="button"
+                      onClick={() => handleOpenDetails(lawyer)}
+                      className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Eye size={13} />
+                      <span>Review Details & Documents</span>
+                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={() => handleApprove(lawyer)}
+                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5 shadow-xs shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 size={13} />
+                        <span>Approve</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={() => {
+                          setSelectedLawyer(lawyer);
+                          setShowRejectModal(true);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <XCircle size={13} />
+                        <span>Reject</span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Table List View */
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[780px]">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 text-slate-400 uppercase tracking-wider text-[10px] bg-slate-50/80 font-bold">
+                      <th className="py-3.5 px-5">Advocate</th>
+                      <th className="py-3.5 px-5">Bar Reg No</th>
+                      <th className="py-3.5 px-5">Experience & Fee</th>
+                      <th className="py-3.5 px-5">Status</th>
+                      <th className="py-3.5 px-5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredPendingLawyers.map(lawyer => (
+                      <tr key={lawyer.lawyerId} className="hover:bg-slate-50/70 transition-colors duration-150">
+                        <td className="py-4 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-700 to-indigo-900 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+                              {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-bold text-slate-900 block truncate text-sm">
+                                {lawyer.fullName}
+                              </span>
+                              <span className="text-[11px] text-slate-400 block truncate">
+                                {lawyer.email} • {lawyer.mobileNumber}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-5">
+                          <span className="font-mono text-slate-800 font-bold px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200/60 inline-block text-[11px]">
+                            {lawyer.barEnrollmentNumber || 'Not Provided'}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-5">
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
+                              <Award size={12} className="text-amber-500" />
+                              <span>{lawyer.yearsOfExperience !== null && lawyer.yearsOfExperience !== undefined ? `${lawyer.yearsOfExperience} Yrs` : 'N/A'}</span>
+                            </span>
+                            <div className="font-bold text-emerald-600 font-mono text-[11px]">
+                              ₹{lawyer.consultationFee || lawyer.consultationRateAmount || 99}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-5">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span>Pending Review</span>
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDetails(lawyer)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+                            >
+                              <Eye size={13} />
+                              <span>Review</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleApprove(lawyer)}
+                              disabled={actionLoading}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs shadow-emerald-600/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                            >
+                              <CheckCircle2 size={13} />
+                              <span>Approve</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedLawyer(lawyer);
+                                setShowRejectModal(true);
+                              }}
+                              disabled={actionLoading}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                            >
+                              <XCircle size={13} />
+                              <span>Reject</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Detailed Verification & Documents Review Modal */}
         {showDetailsModal && selectedLawyer && (
-          <div className="payment-modal-overlay">
-            <div className="payment-modal-card" style={{ maxWidth: '820px', width: '95%', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
-              {/* Modal Header */}
-              <div style={{ background: '#1C1C4A', padding: '1.25rem 1.5rem', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-3xl overflow-hidden max-h-[90vh] flex flex-col">
+              
+              {/* Modal Top Header */}
+              <div className="bg-gradient-to-r from-[#0d1322] via-[#111827] to-[#1e1b4b] text-white p-5 sm:p-6 flex items-center justify-between border-b border-slate-800">
+                <div className="flex items-center gap-3.5">
                   {selectedLawyer.profilePhotoUrl ? (
-                    <img src={selectedLawyer.profilePhotoUrl} alt={selectedLawyer.fullName} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #CCCCFF' }} />
+                    <img 
+                      src={selectedLawyer.profilePhotoUrl} 
+                      alt={selectedLawyer.fullName} 
+                      className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/40 shadow-md shrink-0" 
+                    />
                   ) : (
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#5C5C99', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem' }}>
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0">
                       {selectedLawyer.fullName ? selectedLawyer.fullName.charAt(0).toUpperCase() : 'A'}
                     </div>
                   )}
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#FFFFFF', fontFamily: "'Cinzel', serif" }}>
+                    <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
                       {selectedLawyer.fullName}
                     </h3>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#CCCCFF' }}>
-                      Bar Reg: <strong>{selectedLawyer.barEnrollmentNumber || 'D/2491/2012'}</strong> • {selectedLawyer.location || 'New Delhi'}
+                    <p className="text-xs text-indigo-200 mt-0.5">
+                      Bar Reg: <strong className="text-white">{selectedLawyer.barEnrollmentNumber || 'Not Provided'}</strong> • {selectedLawyer.location || 'India'}
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setShowDetailsModal(false)} style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer' }}>
-                  <X size={22} />
+                
+                <button 
+                  onClick={() => setShowDetailsModal(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X size={16} />
                 </button>
               </div>
 
-              {/* Modal Body */}
-              <div style={{ padding: '1.5rem', maxHeight: '75vh', overflowY: 'auto', background: '#F8FAFC' }}>
-                {/* Details 2-Column Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-                  <div style={{ background: '#FFFFFF', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <Briefcase size={13} /> Years of Experience
+              {/* Modal Content Scroll Area */}
+              <div className="p-5 sm:p-6 overflow-y-auto space-y-5 bg-slate-50/50">
+                
+                {/* 4-Stat Metrics */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mb-1">
+                      <Briefcase size={13} className="text-indigo-500" />
+                      <span>Experience</span>
                     </div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1C1C4A' }}>
+                    <div className="text-sm font-bold text-slate-900">
                       {selectedLawyer.yearsOfExperience !== null && selectedLawyer.yearsOfExperience !== undefined ? `${selectedLawyer.yearsOfExperience} Years` : 'N/A'}
                     </div>
                   </div>
 
-                  <div style={{ background: '#FFFFFF', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <DollarSign size={13} /> Consultation Fee
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mb-1">
+                      <DollarSign size={13} className="text-emerald-500" />
+                      <span>Fee Rate</span>
                     </div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10B981' }}>
-                      ₹{selectedLawyer.consultationFee || selectedLawyer.consultationRateAmount || 99} / Consultation
-                    </div>
-                  </div>
-
-                  <div style={{ background: '#FFFFFF', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <Award size={13} /> Education & Qualification
-                    </div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1C1C4A' }}>
-                      {selectedLawyer.education || 'LL.B, Delhi University'}
+                    <div className="text-sm font-bold text-emerald-600 font-mono">
+                      ₹{selectedLawyer.consultationFee || selectedLawyer.consultationRateAmount || 99}
                     </div>
                   </div>
 
-                  <div style={{ background: '#FFFFFF', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                      <Globe size={13} /> UPI ID Payout
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mb-1">
+                      <Award size={13} className="text-amber-500" />
+                      <span>Education</span>
                     </div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1C1C4A' }}>
-                      <code>{selectedLawyer.upiId || 'advocate@upi'}</code>
+                    <div className="text-xs font-bold text-slate-900 truncate" title={selectedLawyer.education}>
+                      {selectedLawyer.education || 'LL.B, Law Degree'}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mb-1">
+                      <Globe size={13} className="text-purple-500" />
+                      <span>UPI Payout</span>
+                    </div>
+                    <div className="text-xs font-mono font-bold text-slate-800 truncate" title={selectedLawyer.upiId}>
+                      {selectedLawyer.upiId || 'advocate@upi'}
                     </div>
                   </div>
                 </div>
 
                 {/* Professional Bio */}
-                <div style={{ background: '#FFFFFF', padding: '1rem 1.15rem', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '1.25rem' }}>
-                  <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.88rem', color: '#1C1C4A', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <BookOpen size={15} style={{ color: '#1C1C4A' }} /> Professional Bio & Summary
+                <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+                    <BookOpen size={14} className="text-indigo-600" />
+                    <span>Professional Bio & Summary</span>
                   </h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#334155', lineHeight: '1.5' }}>
-                    {selectedLawyer.bio || 'Practicing legal advocate with extensive courtroom representation and success rates.'}
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    {selectedLawyer.bio || 'Advocate practicing in high courts and district courts with verified credentials.'}
                   </p>
                 </div>
 
                 {/* Practice Areas & Languages */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                  <div style={{ background: '#FFFFFF', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                    <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: '#64748B' }}>Practice Areas</h5>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                      Practice Areas
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
                       {selectedLawyer.practiceAreas && selectedLawyer.practiceAreas.length > 0 ? (
                         selectedLawyer.practiceAreas.map((p, i) => (
-                          <span key={i} className="mini-tag" style={{ background: '#F0F0FC', color: '#1C1C4A' }}>{typeof p === 'string' ? p.replace('_', ' ') : p}</span>
+                          <span key={i} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {typeof p === 'string' ? p.replace(/_/g, ' ') : p}
+                          </span>
                         ))
                       ) : (
-                        <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Criminal Law, Civil Law</span>
+                        <span className="text-xs text-slate-400 italic">Civil Law, Criminal Law</span>
                       )}
                     </div>
                   </div>
 
-                  <div style={{ background: '#FFFFFF', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                    <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: '#64748B' }}>Languages Spoken</h5>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                      Languages Spoken
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
                       {selectedLawyer.languages && selectedLawyer.languages.length > 0 ? (
                         selectedLawyer.languages.map((l, i) => (
-                          <span key={i} className="mini-tag" style={{ background: '#ECFDF5', color: '#065F46' }}>{typeof l === 'string' ? l.replace('_', ' ') : l}</span>
+                          <span key={i} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            {typeof l === 'string' ? l.replace(/_/g, ' ') : l}
+                          </span>
                         ))
                       ) : (
-                        <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>English, Hindi</span>
+                        <span className="text-xs text-slate-400 italic">English, Hindi</span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Documents Section */}
-                <div style={{ background: '#FFFFFF', padding: '1.15rem', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
-                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#1C1C4A', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <FileText size={16} /> Uploaded Verification Documents ({fetchedDocs.length})
+                {/* Uploaded Documents */}
+                <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                    <FileText size={14} className="text-indigo-600" />
+                    <span>Uploaded Verification Documents ({fetchedDocs.length})</span>
                   </h4>
 
                   {fetchedDocs.length > 0 ? (
                     <div>
-                      {/* Document Tabs */}
-                      <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', marginBottom: '1rem', paddingBottom: '0.3rem' }}>
+                      {/* Tabs */}
+                      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3">
                         {fetchedDocs.map((doc, idx) => (
                           <button
                             key={idx}
                             onClick={() => setActiveDocIndex(idx)}
-                            style={{
-                              background: activeDocIndex === idx ? '#1C1C4A' : '#F1F5F9',
-                              color: activeDocIndex === idx ? '#FFFFFF' : '#334155',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '0.35rem 0.75rem',
-                              fontSize: '0.78rem',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              activeDocIndex === idx
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
                           >
-                            Doc #{idx + 1}: {doc.documentType || doc.name || 'Certificate'}
+                            Doc #{idx + 1}: {doc.documentType || doc.name || 'Bar Certificate'}
                           </button>
                         ))}
                       </div>
 
-                      {/* Embedded File Viewer */}
+                      {/* File preview */}
                       {(() => {
                         const currentDoc = fetchedDocs[activeDocIndex] || fetchedDocs[0];
                         const fileUrl = currentDoc ? (currentDoc.fileUrl || currentDoc.file_url || currentDoc.dataUrl || (currentDoc.filePath ? `http://localhost:8082/uploads/lawyers/${currentDoc.filePath}` : null)) : null;
@@ -444,44 +718,47 @@ const AdminVerificationsPage = () => {
                         const isImage = fileType.includes('image') || (fileUrl && (fileUrl.toLowerCase().includes('.jpg') || fileUrl.toLowerCase().includes('.png') || fileUrl.toLowerCase().includes('.jpeg')));
 
                         return (
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.8rem' }}>
-                              <span style={{ fontWeight: 600, color: '#1C1C4A' }}>{fileName}</span>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-semibold text-slate-800">{fileName}</span>
                               {fileUrl && (
-                                <div style={{ display: 'flex', gap: '0.6rem' }}>
+                                <div className="flex items-center gap-2">
                                   <a 
                                     href={fileUrl} 
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'none', background: '#EFF6FF', padding: '0.3rem 0.65rem', borderRadius: '6px', border: '1px solid #BFDBFE' }}
+                                    className="text-indigo-600 font-bold hover:underline inline-flex items-center gap-1"
                                   >
-                                    Open Preview ↗
+                                    <span>Open Preview</span>
+                                    <ExternalLink size={12} />
                                   </a>
-                                  <button 
+                                  <button
                                     type="button"
                                     onClick={() => handleDownloadFile(fileUrl, fileName)}
-                                    style={{ color: '#059669', fontWeight: 700, textDecoration: 'none', background: '#ECFDF5', padding: '0.3rem 0.65rem', borderRadius: '6px', border: '1px solid #A7F3D0', cursor: 'pointer' }}
+                                    className="text-emerald-600 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
                                   >
-                                    Download File 📥
+                                    <Download size={12} />
+                                    <span>Download</span>
                                   </button>
                                 </div>
                               )}
                             </div>
 
                             {isPdf ? (
-                              <div style={{ width: '100%', height: '360px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #CBD5E1', background: '#FFFFFF' }}>
+                              <div className="w-full h-72 rounded-xl overflow-hidden border border-slate-200 bg-white">
                                 <object data={docBlobUrl || fileUrl} type="application/pdf" width="100%" height="100%">
                                   <embed src={docBlobUrl || fileUrl} type="application/pdf" width="100%" height="100%" />
                                 </object>
                               </div>
                             ) : isImage ? (
-                              <div style={{ textAlign: 'center', background: '#FFFFFF', padding: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '10px' }}>
-                                <img src={docBlobUrl || fileUrl} alt={fileName} style={{ maxWidth: '100%', maxHeight: '360px', objectFit: 'contain' }} />
+                              <div className="text-center bg-slate-100 p-3 border border-slate-200 rounded-xl">
+                                <img src={docBlobUrl || fileUrl} alt={fileName} className="max-h-72 object-contain mx-auto rounded-lg" />
                               </div>
                             ) : (
-                              <div style={{ padding: '1rem', background: '#F8FAFC', borderRadius: '8px', textAlign: 'center' }}>
-                                <a href={fileUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
-                                  View Document File ↗
+                              <div className="p-4 bg-slate-100 rounded-xl text-center">
+                                <a href={fileUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-indigo-600 inline-flex items-center gap-1">
+                                  <span>View Document File</span>
+                                  <ExternalLink size={13} />
                                 </a>
                               </div>
                             )}
@@ -490,65 +767,104 @@ const AdminVerificationsPage = () => {
                       })()}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic', padding: '0.5rem 0' }}>
-                      No verification documents attached yet.
-                    </div>
+                    <p className="text-xs text-slate-400 italic">
+                      No verification certificates or ID documents attached yet.
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Modal Actions Footer */}
-              <div style={{ padding: '1.15rem 1.5rem', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <button onClick={() => setShowDetailsModal(false)} className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem' }}>
+              {/* Modal Footer Actions */}
+              <div className="p-4 sm:p-5 bg-white border-t border-slate-100 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setShowDetailsModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
+                >
                   Close
                 </button>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button 
-                    onClick={() => { setSelectedLawyer(selectedLawyer); setShowRejectModal(true); }} 
-                    className="btn btn-danger"
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectModal(true)}
                     disabled={actionLoading}
-                    style={{ padding: '0.55rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <XCircle size={16} /> Reject Application
+                    <XCircle size={14} />
+                    <span>Reject Application</span>
                   </button>
-                  <button 
-                    onClick={() => handleApprove(selectedLawyer.lawyerId)} 
-                    className="btn btn-gold"
+
+                  <button
+                    type="button"
+                    onClick={() => handleApprove(selectedLawyer)}
                     disabled={actionLoading}
-                    style={{ padding: '0.55rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#10B981', color: '#FFFFFF', border: 'none' }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <CheckCircle size={16} /> Approve Advocate
+                    <CheckCircle2 size={14} />
+                    <span>Approve Advocate</span>
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
         )}
 
-        {/* Reject Modal */}
-        {showRejectModal && (
-          <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: '480px', borderRadius: '16px' }}>
-              <h3 style={{ marginTop: 0, color: '#1C1C4A' }}>Reject Lawyer Application</h3>
-              <p style={{ fontSize: '0.85rem', color: '#64748B' }}>Advocate: <strong>{selectedLawyer?.fullName}</strong></p>
-              <form onSubmit={handleRejectSubmit} className="form-group" style={{ marginTop: '1rem' }}>
-                <label className="form-label">Rejection Reason <span className="required">*</span></label>
-                <textarea 
-                  className="form-textarea" 
-                  rows="3" 
-                  placeholder="e.g. Invalid Bar Council Enrollment certificate or incomplete document details..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  required 
-                ></textarea>
-                <div className="modal-actions-row" style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem' }}>
-                  <button type="button" className="btn btn-secondary flex-1" onClick={() => setShowRejectModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-danger flex-1" disabled={actionLoading}>Confirm Rejection</button>
+        {/* Reject Reason Modal */}
+        {showRejectModal && selectedLawyer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-md overflow-hidden p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-3 text-rose-600">
+                <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center">
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Reject Application
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Advocate: {selectedLawyer.fullName}
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleRejectSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Rejection Reason <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="e.g. Invalid Bar Council Enrollment certificate or incomplete document details..."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    required
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectModal(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoading || !rejectionReason.trim()}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs shadow-rose-600/20 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    Confirm Rejection
+                  </button>
                 </div>
               </form>
             </div>
           </div>
         )}
+
       </main>
     </div>
   );

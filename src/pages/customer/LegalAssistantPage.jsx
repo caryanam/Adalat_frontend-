@@ -901,7 +901,7 @@ const LegalAssistantPage = () => {
                                       <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
                                         <span className="text-amber-500 font-semibold flex items-center gap-1">
                                           <Star size={12} className="fill-amber-400" />
-                                          {lawyer.rating ? lawyer.rating.toFixed(1) : '4.8'}
+                                          {(lawyer.rating !== undefined && lawyer.rating !== null && Number(lawyer.rating) > 0) ? Number(lawyer.rating).toFixed(1) : '0'}
                                         </span>
                                         <span>•</span>
                                         <span>{lawyer.yearsOfExperience || 5}+ yrs exp</span>
@@ -1079,7 +1079,7 @@ const LegalAssistantPage = () => {
               <div className="text-center bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
                 <div className="text-sm sm:text-base font-bold text-amber-500 flex items-center justify-center gap-1">
                   <Star size={13} className="fill-amber-400" />
-                  {selectedLawyer.rating ? selectedLawyer.rating.toFixed(1) : '4.8'}
+                  {(selectedLawyer.rating !== undefined && selectedLawyer.rating !== null && Number(selectedLawyer.rating) > 0) ? Number(selectedLawyer.rating).toFixed(1) : '0'}
                 </div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5 font-semibold">Rating</div>
               </div>

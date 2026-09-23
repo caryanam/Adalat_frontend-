@@ -27,5 +27,10 @@ export const customerApi = {
 
   changePassword: (passwordData) => {
     return apiClient.put('/api/customer/change-password', passwordData);
+  },
+
+  getPaymentHistory: () => {
+    return apiClient.get('/api/customer/payments');
   }
 };
+

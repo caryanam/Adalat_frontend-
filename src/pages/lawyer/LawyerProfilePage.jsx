@@ -502,7 +502,9 @@ const LawyerProfilePage = () => {
     return match ? match.label : code;
   };
 
-  const isApproved = advocate.verificationStatus === 'APPROVED' || advocate.accountStatus === 'ACTIVE';
+  const currentStatus = (advocate.verificationStatus || 'PENDING').toUpperCase();
+  const isApproved = currentStatus === 'APPROVED' || advocate.accountStatus === 'ACTIVE';
+  const isRejected = currentStatus === 'REJECTED';
 
   return (
     <div className="flex h-screen w-full bg-[#f8fafc] text-slate-800 overflow-hidden font-['Outfit',sans-serif]">
@@ -513,9 +515,9 @@ const LawyerProfilePage = () => {
           title="Advocate Profile"
           subtitle="Manage your credentials, Bar enrollment, consultation fee, and practice domains."
           badge={{ 
-            text: isApproved ? 'Bar Verified' : (advocate.verificationStatus || 'Pending Verification'), 
-            variant: isApproved ? 'success' : 'amber',
-            icon: ShieldCheck
+            text: isApproved ? 'Bar Verified' : isRejected ? 'Verification Rejected' : (advocate.verificationStatus || 'Pending Verification'), 
+            variant: isApproved ? 'success' : isRejected ? 'danger' : 'amber',
+            icon: isApproved ? ShieldCheck : isRejected ? ShieldAlert : Scale
           }}
           actions={
             <button
@@ -547,11 +549,19 @@ const LawyerProfilePage = () => {
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border shadow-xs ${
                     isApproved 
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' 
+                      : isRejected
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-400/30'
                       : 'bg-amber-500/20 text-amber-300 border-amber-400/30'
                   }`}>
-                    <span className={`w-2 h-2 rounded-full ${isApproved ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
-                    <ShieldCheck size={13} className={isApproved ? 'text-emerald-400' : 'text-amber-400'} />
-                    <span>{isApproved ? 'Bar Council Verified' : (advocate.verificationStatus || 'Verification Pending')}</span>
+                    <span className={`w-2 h-2 rounded-full ${isApproved ? 'bg-emerald-400' : isRejected ? 'bg-rose-400' : 'bg-amber-400 animate-pulse'}`} />
+                    {isApproved ? (
+                      <ShieldCheck size={13} className="text-emerald-400" />
+                    ) : isRejected ? (
+                      <ShieldAlert size={13} className="text-rose-400" />
+                    ) : (
+                      <Scale size={13} className="text-amber-400" />
+                    )}
+                    <span>{isApproved ? 'Bar Council Verified' : isRejected ? 'Verification Rejected' : (advocate.verificationStatus || 'Verification Pending')}</span>
                   </span>
 
                   <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-white/10 text-slate-200 border border-white/15 backdrop-blur-md">
@@ -573,6 +583,31 @@ const LawyerProfilePage = () => {
 
             {/* Profile Content Body */}
             <div className="px-5 sm:px-8 pb-6 pt-0 relative">
+              
+              {/* Rejection Alert Notice if rejected */}
+              {isRejected && (
+                <div className="mt-4 rounded-2xl bg-gradient-to-br from-rose-50 via-rose-50/80 to-red-50 border-2 border-rose-300 p-4 sm:p-5 shadow-sm flex items-start gap-3.5 animate-in fade-in duration-150">
+                  <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <ShieldAlert size={20} />
+                  </div>
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-bold text-rose-950">
+                        Application Verification Rejected by Admin
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white">
+                        Action Required
+                      </span>
+                    </div>
+                    <p className="text-xs text-rose-900/90 leading-relaxed">
+                      Admin Feedback: <strong className="text-slate-900 font-semibold">"{advocate.rejectionReason || 'Uploaded Bar Council certificate or registration credentials did not pass verification.'}"</strong>
+                    </p>
+                    <p className="text-xs text-rose-800/80 mt-0.5">
+                      Please update your information or upload updated certificates in the Verification Documents section to submit for re-evaluation.
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-5">
                 {/* Avatar with Camera Overlay Button */}
                 <div className="relative shrink-0 group">

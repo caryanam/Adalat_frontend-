@@ -3,19 +3,45 @@ import { Clock, Lock, CheckCircle2 } from 'lucide-react';
 import { getSharedTimerSeconds } from '../utils/chatStore';
 import './ConsultationTimer.css';
 
-const ConsultationTimer = ({ consultationId, initialSeconds = 120, onTimerExpired, isPaid = false, isLawyer = false }) => {
-  const [timeLeft, setTimeLeft] = useState(() => {
+const ConsultationTimer = ({ 
+  consultationId, 
+  initialSeconds = 120, 
+  chatStartedAt = null,
+  isFreeChatOver = false,
+  onTimerExpired, 
+  isPaid = false, 
+  isLawyer = false 
+}) => {
+  const calculateRemaining = () => {
+    if (isPaid) return 120;
+    if (isFreeChatOver) return 0;
+    if (chatStartedAt) {
+      const startTime = new Date(chatStartedAt).getTime();
+      if (!isNaN(startTime)) {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        return Math.max(0, 120 - elapsed);
+      }
+    }
     return consultationId ? getSharedTimerSeconds(consultationId, initialSeconds) : initialSeconds;
-  });
-  const [isExpired, setIsExpired] = useState(false);
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateRemaining);
+  const [isExpired, setIsExpired] = useState(() => isFreeChatOver || calculateRemaining() <= 0);
 
   useEffect(() => {
     if (isPaid) return;
 
+    if (isFreeChatOver) {
+      setIsExpired(true);
+      setTimeLeft(0);
+      if (onTimerExpired) onTimerExpired();
+      return;
+    }
+
     let hasFiredExpired = false;
 
     const updateTimer = () => {
-      const remaining = consultationId ? getSharedTimerSeconds(consultationId, initialSeconds) : (timeLeft > 0 ? timeLeft - 1 : 0);
+      const remaining = calculateRemaining();
       if (remaining <= 0) {
         setIsExpired(true);
         setTimeLeft(0);
@@ -32,7 +58,7 @@ const ConsultationTimer = ({ consultationId, initialSeconds = 120, onTimerExpire
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [consultationId, initialSeconds, isPaid]);
+  }, [consultationId, initialSeconds, chatStartedAt, isFreeChatOver, isPaid]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

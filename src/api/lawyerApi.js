@@ -154,5 +154,21 @@ export const lawyerApi = {
         return { status: 'SUCCESS', data: { totalEarnings: '₹0.00', todayEarnings: '₹0.00', completedConsultations: 0, transactions: [] } };
       });
     });
+  },
+
+  // Get dynamic reviews & rating breakdown from database
+  getRatings: (lawyerId) => {
+    const id = lawyerId || 1;
+    return apiClient.get(`/api/lawyers/${id}/ratings`).then(res => {
+      return res?.data?.data || res?.data || { averageRating: 0, ratingCount: 0, reviews: [] };
+    }).catch(() => {
+      return { averageRating: 0, ratingCount: 0, reviews: [] };
+    });
+  },
+
+  // Submit client rating & feedback directly
+  submitRating: (lawyerId, rating, comment, customerName) => {
+    const id = lawyerId || 1;
+    return apiClient.post(`/api/lawyers/${id}/ratings`, { rating, comment, customerName });
   }
 };

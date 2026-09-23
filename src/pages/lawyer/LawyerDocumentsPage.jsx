@@ -12,7 +12,9 @@ import {
   ShieldCheck, 
   Clock, 
   Upload, 
-  FileCheck 
+  FileCheck,
+  AlertTriangle,
+  XCircle
 } from 'lucide-react';
 
 const LawyerDocumentsPage = () => {
@@ -115,11 +117,38 @@ const LawyerDocumentsPage = () => {
               </div>
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-emerald-900 leading-tight">
-                  Credentials Verified & Approved
+                  Credentials Verified &amp; Approved
                 </h3>
                 <p className="text-xs sm:text-sm text-emerald-800/90 mt-0.5 font-normal">
                   All your Bar Council and legal practice verification documents have been verified by Adalat Admins.
                 </p>
+              </div>
+            </div>
+          ) : advocate?.verificationStatus === 'REJECTED' ? (
+            <div className="rounded-2xl bg-gradient-to-br from-rose-50 via-rose-50/80 to-red-50 border-2 border-rose-300 p-5 sm:p-6 shadow-md flex items-start gap-4 animate-in fade-in duration-150">
+              <div className="w-11 h-11 rounded-xl bg-rose-600 text-white flex items-center justify-center shadow-md shadow-rose-600/20 shrink-0">
+                <AlertTriangle size={22} />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-rose-950">
+                    Document Verification Rejected by Admin
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white">
+                    Re-upload Required
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-rose-900/90 font-normal">
+                  Please upload a clear, authentic copy of your document addressing the admin's feedback below:
+                </p>
+                <div className="bg-white/95 rounded-xl p-3 border border-rose-200/90 shadow-2xs mt-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block mb-0.5">
+                    Admin Feedback:
+                  </span>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-800">
+                    "{advocate?.rejectionReason || 'Uploaded Bar Council certificate was unclear or invalid. Please upload a clear photo or PDF.'}"
+                  </p>
+                </div>
               </div>
             </div>
           ) : (

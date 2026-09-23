@@ -34,11 +34,21 @@ const CustomerAppointmentsPage = () => {
   const [viewMode, setViewMode] = useState('GRID'); // 'GRID' | 'TABLE'
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
+  const formatImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8082${cleanPath}`;
+  };
+
   const appointments = useMemo(() => {
     return requests.map(r => ({
       id: r.id || r.requestId,
       lawyerId: r.lawyerId || 1,
       lawyerName: r.lawyerName || 'Advocate',
+      lawyerProfileImageUrl: formatImageUrl(r.lawyerProfileImageUrl || r.profilePhotoUrl || r.lawyerPhotoUrl || r.lawyerImage),
       category: r.categoryDisplayName || r.category || 'Legal Consultation',
       scheduledTime: r.assignedDate ? `${r.assignedDate} at ${r.assignedTime || 'Scheduled Time'}` : (r.scheduledAt || 'Scheduled'),
       assignedDate: r.assignedDate,
@@ -414,8 +424,25 @@ const CustomerAppointmentsPage = () => {
                     {/* Card Top: Avatar + Name + Status */}
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-base flex items-center justify-center shadow-xs shrink-0">
-                          {getInitials(app.lawyerName)}
+                        <div className="relative w-12 h-12 shrink-0">
+                          {app.lawyerProfileImageUrl ? (
+                            <img 
+                              src={app.lawyerProfileImageUrl} 
+                              alt={app.lawyerName} 
+                              className="w-12 h-12 rounded-xl object-cover shadow-xs border border-slate-200"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.nextElementSibling) {
+                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-base items-center justify-center shadow-xs ${
+                            app.lawyerProfileImageUrl ? 'hidden' : 'flex'
+                          }`}>
+                            {getInitials(app.lawyerName)}
+                          </div>
                         </div>
                         <div className="min-w-0">
                           <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
@@ -507,8 +534,25 @@ const CustomerAppointmentsPage = () => {
                       <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="py-3.5 px-4 sm:px-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0">
-                              {getInitials(app.lawyerName)}
+                            <div className="relative w-9 h-9 shrink-0">
+                              {app.lawyerProfileImageUrl ? (
+                                <img 
+                                  src={app.lawyerProfileImageUrl} 
+                                  alt={app.lawyerName} 
+                                  className="w-9 h-9 rounded-xl object-cover shadow-xs border border-slate-200"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-xs items-center justify-center shadow-xs ${
+                                app.lawyerProfileImageUrl ? 'hidden' : 'flex'
+                              }`}>
+                                {getInitials(app.lawyerName)}
+                              </div>
                             </div>
                             <div className="min-w-0">
                               <div className="font-bold text-slate-900 flex items-center gap-1">
@@ -598,8 +642,25 @@ const CustomerAppointmentsPage = () => {
 
             {/* Header */}
             <div className="flex items-center gap-3.5 mb-5 pr-8">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-md">
-                {getInitials(selectedAppointment.lawyerName)}
+              <div className="relative w-14 h-14 shrink-0">
+                {selectedAppointment.lawyerProfileImageUrl ? (
+                  <img 
+                    src={selectedAppointment.lawyerProfileImageUrl} 
+                    alt={selectedAppointment.lawyerName} 
+                    className="w-14 h-14 rounded-2xl object-cover shadow-md border border-slate-200"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white items-center justify-center text-xl font-bold shadow-md ${
+                  selectedAppointment.lawyerProfileImageUrl ? 'hidden' : 'flex'
+                }`}>
+                  {getInitials(selectedAppointment.lawyerName)}
+                </div>
               </div>
               <div className="min-w-0">
                 <div className="text-lg font-bold text-slate-900 flex items-center gap-1.5">

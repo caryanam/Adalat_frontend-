@@ -9,6 +9,7 @@ import AssignTimeModal from '../../components/AssignTimeModal';
 import { consultationApi } from '../../api/consultationApi';
 import { getChatMessages, sendChatMessage, subscribeToChat } from '../../utils/chatStore';
 import { useCompleteConsultation } from '../../hooks/useConsultationQueries';
+import MessageStatusTick from '../../components/MessageStatusTick';
 import { toast } from 'react-toastify';
 import { 
   MessageSquare, 
@@ -24,7 +25,9 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  RefreshCw
+  RefreshCw,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 
 const LawyerConsultationsPage = () => {
@@ -45,13 +48,108 @@ const LawyerConsultationsPage = () => {
   const [isFreeExpired, setIsFreeExpired] = useState(false);
   const [expandedSummary, setExpandedSummary] = useState(null);
 
-  // PDF / Document Viewer Overlay Modal State
-  const [showPdfModal, setShowPdfModal] = useState(false);
-  const [viewingPdfName, setViewingPdfName] = useState('');
+  // Attachment Preview Modal State (Images, PDFs, Documents)
+  const [previewAttachment, setPreviewAttachment] = useState(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  const openDocumentViewer = (fileName) => {
-    setViewingPdfName(fileName || 'Legal_Evidence_Document.pdf');
-    setShowPdfModal(true);
+  const formatImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8082${cleanPath}`;
+  };
+
+  // Convert PDF URLs to local blob URLs for flawless inline preview
+  useEffect(() => {
+    let active = true;
+    if (!previewAttachment || !previewAttachment.url) {
+      setPreviewBlobUrl(null);
+      setPreviewLoading(false);
+      return;
+    }
+
+    const targetUrl = previewAttachment.url;
+    if (targetUrl.startsWith('data:') || targetUrl.startsWith('blob:')) {
+      setPreviewBlobUrl(targetUrl);
+      setPreviewLoading(false);
+      return;
+    }
+
+    if (previewAttachment.isPdf) {
+      setPreviewLoading(true);
+      fetch(targetUrl)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.blob();
+        })
+        .then(blob => {
+          if (!active) return;
+          const blobUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+          setPreviewBlobUrl(blobUrl);
+          setPreviewLoading(false);
+        })
+        .catch(err => {
+          console.warn('PDF blob loading error, falling back to direct URL:', err);
+          if (!active) return;
+          setPreviewBlobUrl(targetUrl);
+          setPreviewLoading(false);
+        });
+    } else {
+      setPreviewBlobUrl(targetUrl);
+      setPreviewLoading(false);
+    }
+
+    return () => {
+      active = false;
+      if (previewBlobUrl && previewBlobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewBlobUrl);
+      }
+    };
+  }, [previewAttachment]);
+
+  const getAttachmentDetails = (msg) => {
+    let url = msg.attachmentUrl || msg.fileUrl || null;
+    let name = msg.attachmentName || msg.fileName || msg.attachedFileName || null;
+    let type = msg.attachmentType || msg.fileType || null;
+    let size = msg.attachmentSize || msg.fileSize || null;
+    const msgText = msg.text || msg.message || '';
+
+    // Extract from legacy markdown if not structured
+    if (!name && msgText) {
+      const match = msgText.match(/\[(?:Attached File|Attached Document|Attached Legal File|Attached Case File|📄 Attached Document|📎 Attached Legal File):\s*(.*?)\]/i);
+      if (match) {
+        name = match[1].trim();
+      }
+    }
+
+    if (!url && msgText) {
+      const urlMatch = msgText.match(/(https?:\/\/[^\s]+|\/uploads\/[^\s]+)/i);
+      if (urlMatch) {
+        url = urlMatch[1];
+      }
+    }
+
+    if (!url && !name) return null;
+
+    const resolvedUrl = url ? formatImageUrl(url) : null;
+    const fileName = name || (resolvedUrl ? resolvedUrl.substring(resolvedUrl.lastIndexOf('/') + 1) : 'Legal_Evidence_Document.pdf');
+    const isImage = (type && type.startsWith('image/')) || /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(fileName) || (resolvedUrl && /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(resolvedUrl));
+    const isPdf = (type && type.toLowerCase().includes('pdf')) || /\.pdf$/i.test(fileName) || (resolvedUrl && resolvedUrl.toLowerCase().includes('.pdf'));
+    const isDoc = /\.(doc|docx|txt|rtf|odt|xls|xlsx|csv|zip)$/i.test(fileName);
+
+    return {
+      url: resolvedUrl,
+      rawUrl: url,
+      name: fileName,
+      type: type || (isImage ? 'image/jpeg' : isPdf ? 'application/pdf' : 'application/octet-stream'),
+      size: typeof size === 'number' ? (size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(size / 1024)} KB`) : size,
+      isImage,
+      isPdf,
+      isDoc
+    };
   };
 
   const fetchLawyerConsultations = () => {
@@ -109,20 +207,25 @@ const LawyerConsultationsPage = () => {
     setIsFreeExpired(item.isFreeChatTimeOver || false);
   };
 
-  const handleSendLawyerMessage = (e) => {
+  const handleSendLawyerMessage = async (e) => {
     if (e) e.preventDefault();
     if (!activeChatConsultation) return;
 
-    let textToSend = lawyerInput.trim();
-    if (attachedLawyerFile) {
-      textToSend = (textToSend ? textToSend + '\n' : '') + `📎 [Attached Legal File: ${attachedLawyerFile.name}]`;
-    }
-    if (!textToSend) return;
+    const textToSend = lawyerInput.trim();
+    const fileToSend = attachedLawyerFile;
+
+    if (!textToSend && !fileToSend) return;
 
     const cId = activeChatConsultation.id || activeChatConsultation.requestId;
-    sendChatMessage(cId, 'LAWYER', textToSend);
     setLawyerInput('');
     setAttachedLawyerFile(null);
+
+    try {
+      await sendChatMessage(cId, 'LAWYER', textToSend, fileToSend);
+    } catch (err) {
+      console.error('Failed to send lawyer message/attachment:', err);
+      toast.error('Failed to deliver message.');
+    }
   };
 
   return (
@@ -322,9 +425,11 @@ const LawyerConsultationsPage = () => {
                 <div className="flex items-center gap-2 shrink-0">
                   <ConsultationTimer 
                     consultationId={activeChatConsultation.id || activeChatConsultation.requestId}
-                    initialSeconds={120} 
+                    initialSeconds={activeChatConsultation.remainingSeconds != null ? activeChatConsultation.remainingSeconds : 120} 
+                    chatStartedAt={activeChatConsultation.chatStartedAt}
+                    isFreeChatOver={activeChatConsultation.isFreeChatTimeOver}
                     onTimerExpired={() => setIsFreeExpired(true)}
-                    isPaid={activeChatConsultation.status === 'ACTIVE' || activeChatConsultation.status === 'PAYMENT_COMPLETED'} 
+                    isPaid={activeChatConsultation.paymentStatus === 'PAID'} 
                     isLawyer={true}
                   />
                   
@@ -366,55 +471,162 @@ const LawyerConsultationsPage = () => {
 
               {/* Chat Messages Body */}
               <div className="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-                {chatMessages.length === 0 ? (
+                {chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl)).length === 0 ? (
                   <div className="text-center text-slate-400 my-auto py-8">
                     <MessageSquare size={36} className="mx-auto text-slate-300 mb-2" />
                     <p className="text-sm font-bold text-slate-700">Real-time Consultation Room</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Send a greeting message to begin the legal consultation.</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Send a greeting message or review case documents with your client.</p>
                   </div>
                 ) : (
-                  chatMessages.map((msg, index) => {
+                  chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl)).map((msg, index) => {
                     const isLawyerMsg = msg.sender === 'LAWYER' || msg.senderType === 'LAWYER';
+                    const msgText = msg.text || msg.message || '';
+                    const attachment = getAttachmentDetails(msg);
+
                     return (
                       <div 
                         key={msg.id || index}
                         className={`flex flex-col ${isLawyerMsg ? 'items-end' : 'items-start'}`}
                       >
                         <div 
-                          className={`max-w-[82%] sm:max-w-[75%] px-4 py-3 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                          className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words space-y-1.5 ${
                             isLawyerMsg 
                               ? 'bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl rounded-tr-xs shadow-sm font-normal' 
                               : 'bg-white text-slate-800 border border-slate-200/90 rounded-2xl rounded-tl-xs shadow-xs'
                           }`}
                         >
-                          {msg.text || msg.message}
-                          {msg.attachedFileName && (
-                            <button 
-                              type="button"
-                              onClick={() => openDocumentViewer(msg.attachedFileName)}
-                              className={`mt-2 p-2 rounded-xl flex items-center gap-2 text-xs font-semibold w-full text-left transition-colors cursor-pointer ${
-                                isLawyerMsg ? 'bg-white/15 text-indigo-200 hover:bg-white/25' : 'bg-slate-100 text-indigo-700 hover:bg-slate-200'
-                              }`}
-                            >
-                              <FileText size={14} />
-                              <span className="truncate">{msg.attachedFileName}</span>
-                            </button>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                            isLawyerMsg ? 'text-indigo-300' : 'text-indigo-600'
+                          }`}>
+                            {isLawyerMsg ? 'You (Advocate)' : (activeChatConsultation.customerName || 'Client')}
+                          </span>
+
+                          {msgText && (
+                            <p className="leading-relaxed">
+                              {msgText}
+                            </p>
+                          )}
+
+                          {/* Rich Interactive Attachment Box */}
+                          {attachment && (
+                            <div className="pt-1">
+                              {attachment.isImage ? (
+                                <div 
+                                  onClick={() => setPreviewAttachment(attachment)}
+                                  className="group relative cursor-pointer rounded-xl overflow-hidden border border-white/20 bg-slate-900 shadow-2xs transition-all hover:shadow-md max-w-sm"
+                                >
+                                  <img 
+                                    src={attachment.url || `https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80`} 
+                                    alt={attachment.name}
+                                    className="w-full max-h-52 object-cover block transition-transform duration-200 group-hover:scale-102"
+                                    onError={(e) => {
+                                      e.currentTarget.src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80';
+                                    }}
+                                  />
+                                  <div className="p-2 bg-gradient-to-t from-slate-950/90 via-slate-900/80 to-transparent absolute inset-x-0 bottom-0 text-white flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                                      <Paperclip size={12} className="text-indigo-300 shrink-0" />
+                                      <span className="text-xs font-medium truncate">{attachment.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full shrink-0 group-hover:bg-indigo-500 transition-colors shadow-2xs">
+                                      View Image
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : attachment.isPdf ? (
+                                <div 
+                                  onClick={() => setPreviewAttachment(attachment)}
+                                  className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs transition-all hover:shadow-sm ${
+                                    isLawyerMsg 
+                                      ? 'bg-white/10 hover:bg-white/15 border-white/20 text-white' 
+                                      : 'bg-rose-50/80 hover:bg-rose-100/80 border-rose-200/80 text-slate-800'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                                      isLawyerMsg ? 'bg-indigo-500/40 text-white' : 'bg-rose-100 text-rose-700 border border-rose-200'
+                                    }`}>
+                                      <FileText size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold truncate">{attachment.name}</div>
+                                      <div className={`text-[10px] ${isLawyerMsg ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                        PDF Document {attachment.size ? `• ${attachment.size}` : ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${
+                                    isLawyerMsg ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-rose-600 text-white hover:bg-rose-700'
+                                  }`}>
+                                    Preview PDF
+                                  </span>
+                                </div>
+                              ) : (
+                                <div 
+                                  onClick={() => setPreviewAttachment(attachment)}
+                                  className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs transition-all hover:shadow-sm ${
+                                    isLawyerMsg 
+                                      ? 'bg-white/10 hover:bg-white/15 border-white/20 text-white' 
+                                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-800'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                                      isLawyerMsg ? 'bg-indigo-500/40 text-white' : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                                    }`}>
+                                      <FileText size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold truncate">{attachment.name}</div>
+                                      <div className={`text-[10px] ${isLawyerMsg ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                        Legal Attachment {attachment.size ? `• ${attachment.size}` : ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${
+                                    isLawyerMsg ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                  }`}>
+                                    Download
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-400 mt-1 px-1">
-                          {msg.time || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now')}
-                        </span>
+
+                        <div className={`flex items-center gap-1 mt-1 px-1 ${isLawyerMsg ? 'justify-end' : 'justify-start'}`}>
+                          <span className="text-[10px] text-slate-400">
+                            {msg.time || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.timestamp || 'Now'))}
+                          </span>
+                          {isLawyerMsg && (
+                            <MessageStatusTick status={msg.status || 'SENT'} isLawyer={true} />
+                          )}
+                        </div>
                       </div>
                     );
                   })
                 )}
               </div>
 
+              {/* Attached File Preview Bar */}
+              {attachedLawyerFile && (
+                <div className="px-4 py-2 bg-amber-50 border-t border-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-between shrink-0">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Paperclip size={14} className="text-amber-700 shrink-0" /> 
+                    <span>Ready to send: <strong>{attachedLawyerFile.name}</strong> ({Math.round(attachedLawyerFile.size / 1024)} KB)</span>
+                  </span>
+                  <button type="button" onClick={() => setAttachedLawyerFile(null)} className="text-amber-800 hover:text-amber-950 p-1 cursor-pointer">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
               {/* Chat Input Bar */}
               <form onSubmit={handleSendLawyerMessage} className="p-3 sm:p-4 bg-white border-t border-slate-200/90 flex items-center gap-2 shrink-0">
                 <input
                   type="file"
                   id="lawyer-file-input"
+                  accept="image/*,.pdf,.doc,.docx,.txt,.rtf,.xlsx,.xls,.csv,.zip"
                   className="hidden"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
@@ -426,8 +638,12 @@ const LawyerConsultationsPage = () => {
                 <button
                   type="button"
                   onClick={() => document.getElementById('lawyer-file-input').click()}
-                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 border border-slate-200/80 transition-colors cursor-pointer shrink-0 shadow-2xs"
-                  title="Attach Legal Document"
+                  className={`p-2.5 rounded-xl border transition-colors cursor-pointer shrink-0 shadow-2xs ${
+                    attachedLawyerFile
+                      ? 'border-amber-400 bg-amber-50 text-amber-800'
+                      : 'border-slate-200/80 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-indigo-600'
+                  }`}
+                  title="Attach Legal Document or Image"
                 >
                   <Paperclip size={18} />
                 </button>
@@ -453,31 +669,221 @@ const LawyerConsultationsPage = () => {
           </div>
         )}
 
-        {/* Document Viewer Modal */}
-        {showPdfModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-150">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-slate-800">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                  <FileText size={18} className="text-indigo-600" />
-                  <span>Document Preview</span>
-                </h3>
-                <button onClick={() => setShowPdfModal(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 transition-colors cursor-pointer">
-                  <X size={18} />
-                </button>
+        {/* ATTACHMENT PREVIEW MODAL FOR LAWYER */}
+        {previewAttachment && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 font-['Outfit',sans-serif]">
+            <div className="bg-white rounded-3xl max-w-4xl w-full h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              
+              {/* Modal Header */}
+              <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0">
+                    {previewAttachment.isImage ? <Paperclip size={16} /> : <FileText size={16} />}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-white truncate font-['Outfit',sans-serif]">
+                      {previewAttachment.name}
+                    </div>
+                    <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                      <span>{previewAttachment.isImage ? 'Image Attachment' : previewAttachment.isPdf ? 'PDF Document' : 'Client Case Evidence'}</span>
+                      {previewAttachment.size && (
+                        <>
+                          <span>•</span>
+                          <span>{previewAttachment.size}</span>
+                        </>
+                      )}
+                      <span>•</span>
+                      <span className="text-emerald-400 font-medium">Encrypted Consultation File</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {previewAttachment.url && (
+                    <a 
+                      href={previewAttachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                      title="Open full view in new browser tab"
+                    >
+                      <span>Full Tab</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  )}
+                  <button 
+                    onClick={() => setPreviewAttachment(null)} 
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Close Viewer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
-              <div className="bg-slate-50 p-6 rounded-xl text-center border border-dashed border-slate-300">
-                <FileText size={48} className="text-indigo-600 mx-auto mb-3" />
-                <p className="font-bold text-sm text-slate-900">{viewingPdfName}</p>
-                <p className="text-xs text-slate-500 mt-1 mb-4">Legally secure client uploaded case evidence document.</p>
-                <button 
-                  onClick={() => toast.success('Document downloaded for offline review.')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs transition-all active:scale-95 cursor-pointer"
-                >
-                  <Download size={13} />
-                  <span>Download Document</span>
-                </button>
+
+              {/* Modal Viewport Body */}
+              <div className="flex-1 bg-slate-950/95 overflow-hidden flex flex-col items-center justify-center relative p-3 sm:p-4">
+                {previewAttachment.isImage ? (
+                  <div className="w-full h-full flex items-center justify-center overflow-auto p-2">
+                    <img 
+                      src={previewAttachment.url || `https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80`} 
+                      alt={previewAttachment.name}
+                      className="max-w-full max-h-[72vh] object-contain rounded-xl shadow-xl border border-white/10"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80';
+                      }}
+                    />
+                  </div>
+                ) : previewAttachment.isPdf ? (
+                  <div className="w-full h-full rounded-2xl overflow-hidden bg-slate-900 shadow-xl border border-slate-700/60 flex flex-col relative">
+                    {previewLoading ? (
+                      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-300">
+                        <Loader2 size={36} className="animate-spin text-indigo-400" />
+                        <p className="text-xs font-medium">Loading PDF document securely...</p>
+                      </div>
+                    ) : previewBlobUrl || previewAttachment.url ? (
+                      <object 
+                        data={`${previewBlobUrl || previewAttachment.url}#toolbar=1&navpanes=0`} 
+                        type="application/pdf" 
+                        className="w-full h-full rounded-2xl bg-white"
+                      >
+                        <embed
+                          src={`${previewBlobUrl || previewAttachment.url}#toolbar=1`}
+                          type="application/pdf"
+                          className="w-full h-full rounded-2xl bg-white"
+                        />
+                        <iframe 
+                          src={`${previewBlobUrl || previewAttachment.url}#toolbar=1`}
+                          className="w-full h-full border-0 rounded-2xl bg-white"
+                          title={previewAttachment.name}
+                        >
+                          <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white rounded-2xl max-w-md mx-auto shadow-lg text-slate-800">
+                            <FileText size={44} className="text-rose-600 mb-3" />
+                            <h4 className="font-bold text-sm mb-1">{previewAttachment.name}</h4>
+                            <p className="text-xs text-slate-500 mb-4">Click below to open and view this case evidence document.</p>
+                            <a 
+                              href={previewAttachment.url || previewBlobUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all"
+                            >
+                              <ExternalLink size={14} />
+                              <span>Open PDF in New Window</span>
+                            </a>
+                          </div>
+                        </iframe>
+                      </object>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                        <FileText size={36} className="text-slate-500 mb-2" />
+                        <p className="text-sm">Unable to render PDF preview.</p>
+                        <a 
+                          href={previewAttachment.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+                        >
+                          <span>Open in New Window</span>
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl text-center space-y-4 border border-slate-200">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto shadow-sm">
+                      <FileText size={32} />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-slate-900 font-['Outfit',sans-serif]">{previewAttachment.name}</h4>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Client case document attached for advocate consultation review.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left text-xs space-y-2 text-slate-700">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">File Type:</span>
+                        <span className="font-semibold">{previewAttachment.type || 'Document'}</span>
+                      </div>
+                      {previewAttachment.size && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">File Size:</span>
+                          <span className="font-semibold">{previewAttachment.size}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Client:</span>
+                        <span className="font-semibold text-indigo-700">{activeChatConsultation?.customerName || 'Client'}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                      {previewAttachment.url && (
+                        <a 
+                          href={previewAttachment.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          <ExternalLink size={14} />
+                          <span>Open File</span>
+                        </a>
+                      )}
+                      <a 
+                        href={previewAttachment.url || '#'} 
+                        download={previewAttachment.name}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                      >
+                        <Download size={14} />
+                        <span>Download</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Modal Footer Controls */}
+              <div className="px-5 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
+                <span className="text-xs text-slate-500 truncate pr-2">
+                  🔒 Legally privileged consultation file
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {previewAttachment.url && (
+                    <a 
+                      href={previewAttachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <ExternalLink size={13} />
+                      <span>Open in New Tab</span>
+                    </a>
+                  )}
+                  {previewAttachment.url && (
+                    <a 
+                      href={previewAttachment.url}
+                      download={previewAttachment.name}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+                    >
+                      <Download size={13} />
+                      <span>Download</span>
+                    </a>
+                  )}
+                  <button 
+                    type="button"
+                    onClick={() => setPreviewAttachment(null)} 
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
         )}

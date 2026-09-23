@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import SessionExpiredModal from './components/SessionExpiredModal';
 
 import HomePage from './pages/public/HomePage';
 import HowItWorksPage from './pages/public/HowItWorksPage';
@@ -63,6 +64,7 @@ const AppLayout = () => {
   return (
     <>
       <ScrollToTop />
+      <SessionExpiredModal />
       {!hideNavbarFooter && <Navbar />}
       <div className="page-wrapper" style={{ transition: 'opacity 0.3s ease-in-out' }}>
         <Routes>
