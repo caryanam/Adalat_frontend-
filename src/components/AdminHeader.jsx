@@ -1,6 +1,8 @@
+import React from 'react';
 import { ShieldCheck, Award, Sparkles, UserCheck, Menu, CreditCard, Shield, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import NotificationDropdown from './NotificationDropdown';
 
 const AdminHeader = ({ 
   title = 'Admin Command Center', 
@@ -117,6 +119,9 @@ const AdminHeader = ({
         )}
 
         <div className="h-6 w-px bg-slate-200 mx-0.5 hidden sm:block shrink-0" />
+
+        {/* Notifications Dropdown */}
+        <NotificationDropdown role="ADMIN" defaultLink="/admin/verifications" />
 
         {/* Quick Link: Lawyer Verification Queue */}
         <Link 

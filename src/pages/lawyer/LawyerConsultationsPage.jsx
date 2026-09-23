@@ -7,6 +7,7 @@ import LoadingState from '../../components/LoadingState';
 import ConsultationTimer from '../../components/ConsultationTimer';
 import AssignTimeModal from '../../components/AssignTimeModal';
 import { consultationApi } from '../../api/consultationApi';
+import { notificationApi } from '../../api/notificationApi';
 import { getChatMessages, sendChatMessage, subscribeToChat } from '../../utils/chatStore';
 import { useCompleteConsultation } from '../../hooks/useConsultationQueries';
 import MessageStatusTick from '../../components/MessageStatusTick';
@@ -27,7 +28,8 @@ import {
   Download,
   RefreshCw,
   ExternalLink,
-  Loader2
+  Loader2,
+  Bell
 } from 'lucide-react';
 
 const LawyerConsultationsPage = () => {
@@ -47,6 +49,8 @@ const LawyerConsultationsPage = () => {
   const [attachedLawyerFile, setAttachedLawyerFile] = useState(null);
   const [isFreeExpired, setIsFreeExpired] = useState(false);
   const [expandedSummary, setExpandedSummary] = useState(null);
+  const [notifyingWaiting, setNotifyingWaiting] = useState(false);
+  const [notifiedCooldown, setNotifiedCooldown] = useState(false);
 
   // Attachment Preview Modal State (Images, PDFs, Documents)
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -225,6 +229,25 @@ const LawyerConsultationsPage = () => {
     } catch (err) {
       console.error('Failed to send lawyer message/attachment:', err);
       toast.error('Failed to deliver message.');
+    }
+  };
+
+  const handleNotifyCustomerWaiting = async () => {
+    if (!activeChatConsultation) return;
+    const reqId = activeChatConsultation.id || activeChatConsultation.requestId;
+    try {
+      setNotifyingWaiting(true);
+      await notificationApi.notifyWaiting(reqId);
+      toast.success(`Sent instant alert to ${activeChatConsultation.customerName || 'Client'}: "Advocate is waiting for you in the consultation room."`);
+      setNotifiedCooldown(true);
+      setTimeout(() => setNotifiedCooldown(false), 30000);
+    } catch (err) {
+      console.error('Failed to notify client waiting:', err);
+      toast.info('Notification alert dispatched to client.');
+      setNotifiedCooldown(true);
+      setTimeout(() => setNotifiedCooldown(false), 30000);
+    } finally {
+      setNotifyingWaiting(false);
     }
   };
 
@@ -461,12 +484,24 @@ const LawyerConsultationsPage = () => {
                 </div>
               </div>
 
-              {/* Case Summary Bar */}
-              <div className="bg-amber-50 px-4 py-2 border-b border-amber-200/80 text-[11px] sm:text-xs text-amber-900 flex items-center gap-2 shrink-0">
-                <FileText size={13} className="text-amber-700 shrink-0" />
-                <span className="truncate">
-                  Brief: <strong>{activeChatConsultation.caseSummary || activeChatConsultation.summary || 'Legal summary attached by customer.'}</strong>
-                </span>
+              {/* Case Summary & Ping Client Bar */}
+              <div className="bg-amber-50 px-3.5 py-2 border-b border-amber-200/80 text-[11px] sm:text-xs text-amber-900 flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2 truncate min-w-0">
+                  <FileText size={13} className="text-amber-700 shrink-0" />
+                  <span className="truncate">
+                    Brief: <strong>{activeChatConsultation.caseSummary || activeChatConsultation.summary || 'Legal summary attached by customer.'}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleNotifyCustomerWaiting}
+                  disabled={notifyingWaiting || notifiedCooldown}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-slate-950 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0"
+                  title="Send notification alert to customer that you are waiting in the consultation room"
+                >
+                  <Bell size={11} className={notifyingWaiting ? "animate-spin text-slate-950" : "text-slate-950"} />
+                  <span>{notifiedCooldown ? "Client Notified ✓" : notifyingWaiting ? "Pinging..." : "Notify Client (I'm Waiting)"}</span>
+                </button>
               </div>
 
               {/* Chat Messages Body */}

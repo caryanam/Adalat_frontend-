@@ -2,6 +2,7 @@ import React from 'react';
 import { Bell, ShieldCheck, Sparkles, AlertCircle, Info, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import NotificationDropdown from './NotificationDropdown';
 
 const CustomerHeader = ({ 
   title = 'Customer Portal', 
@@ -113,15 +114,8 @@ const CustomerHeader = ({
 
         <div className="h-6 w-px bg-slate-200 mx-0.5 hidden sm:block shrink-0" />
 
-        {/* Notifications Button */}
-        <Link 
-          to="/customer/consultations" 
-          title="Notifications & Activity"
-          className="relative w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-indigo-600 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer shadow-xs hover:border-indigo-200 active:scale-95 shrink-0"
-        >
-          <Bell size={16} />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
-        </Link>
+        {/* Notifications Dropdown */}
+        <NotificationDropdown role="CUSTOMER" defaultLink="/customer/consultations" />
 
         {/* Customer Profile Pill */}
         <Link 
