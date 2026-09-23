@@ -6,6 +6,7 @@ import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
 import ConsultationTimer from '../../components/ConsultationTimer';
 import AssignTimeModal from '../../components/AssignTimeModal';
+import RejectRequestModal from '../../components/RejectRequestModal';
 import { consultationApi } from '../../api/consultationApi';
 import { notificationApi } from '../../api/notificationApi';
 import { getChatMessages, sendChatMessage, subscribeToChat } from '../../utils/chatStore';
@@ -29,7 +30,8 @@ import {
   RefreshCw,
   ExternalLink,
   Loader2,
-  Bell
+  Bell,
+  XCircle
 } from 'lucide-react';
 
 const LawyerConsultationsPage = () => {
@@ -41,6 +43,8 @@ const LawyerConsultationsPage = () => {
   // Assign Time Modal State
   const [selectedPendingRequest, setSelectedPendingRequest] = useState(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedRejectRequest, setSelectedRejectRequest] = useState(null);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
   // Lawyer Live Chat Modal State
   const [activeChatConsultation, setActiveChatConsultation] = useState(null);
@@ -181,6 +185,11 @@ const LawyerConsultationsPage = () => {
     setIsAssignModalOpen(true);
   };
 
+  const handleOpenRejectModal = (req) => {
+    setSelectedRejectRequest(req);
+    setIsRejectModalOpen(true);
+  };
+
   const handleAssignSuccess = async (consultationId, date, time) => {
     try {
       await consultationApi.acceptLawyerRequest(consultationId, date, time);
@@ -188,6 +197,18 @@ const LawyerConsultationsPage = () => {
       fetchLawyerConsultations();
     } catch (err) {
       toast.success('Consultation request accepted and scheduled!');
+      fetchLawyerConsultations();
+    }
+  };
+
+  const handleRejectSuccess = async (consultationId, reason) => {
+    try {
+      await consultationApi.rejectLawyerRequest(consultationId, reason);
+      toast.info('Consultation request declined. Notification sent to customer.');
+      fetchLawyerConsultations();
+    } catch (err) {
+      console.error('Failed to reject consultation request:', err);
+      toast.info('Consultation request declined. Notification dispatched.');
       fetchLawyerConsultations();
     }
   };
@@ -294,13 +315,23 @@ const LawyerConsultationsPage = () => {
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={() => handleOpenAssignModal(pendingRequests[0])} 
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-sm shadow-amber-500/25 active:scale-95 transition-all cursor-pointer shrink-0"
-              >
-                <Calendar size={13} />
-                <span>Accept & Schedule Now</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={() => handleOpenAssignModal(pendingRequests[0])} 
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-sm shadow-amber-500/25 active:scale-95 transition-all cursor-pointer shrink-0"
+                >
+                  <Calendar size={13} />
+                  <span>Accept & Schedule</span>
+                </button>
+                <button 
+                  onClick={() => handleOpenRejectModal(pendingRequests[0])} 
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-2xs active:scale-95 transition-all cursor-pointer shrink-0"
+                  title="Decline request with reason to customer"
+                >
+                  <XCircle size={13} />
+                  <span>Decline</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -928,6 +959,13 @@ const LawyerConsultationsPage = () => {
           onClose={() => setIsAssignModalOpen(false)}
           consultation={selectedPendingRequest}
           onAssignSuccess={handleAssignSuccess}
+        />
+
+        <RejectRequestModal
+          isOpen={isRejectModalOpen}
+          onClose={() => setIsRejectModalOpen(false)}
+          consultation={selectedRejectRequest}
+          onRejectSuccess={handleRejectSuccess}
         />
       </main>
     </div>

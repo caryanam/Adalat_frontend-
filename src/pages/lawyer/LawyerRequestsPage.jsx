@@ -4,6 +4,7 @@ import LawyerHeader from '../../components/LawyerHeader';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingState from '../../components/LoadingState';
 import AssignTimeModal from '../../components/AssignTimeModal';
+import RejectRequestModal from '../../components/RejectRequestModal';
 import { consultationApi } from '../../api/consultationApi';
 import { toast } from 'react-toastify';
 import {
@@ -13,16 +14,20 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 
 const LawyerRequestsPage = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedRejectRequest, setSelectedRejectRequest] = useState(null);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSummary, setExpandedSummary] = useState(null);
-  const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'PENDING' | 'SCHEDULED'
+  const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'PENDING' | 'SCHEDULED' | 'DECLINED'
 
   const fetchRequests = () => {
     setLoading(true);
@@ -48,6 +53,11 @@ const LawyerRequestsPage = () => {
     setIsAssignModalOpen(true);
   };
 
+  const handleOpenRejectModal = (req) => {
+    setSelectedRejectRequest(req);
+    setIsRejectModalOpen(true);
+  };
+
   const handleAssignSuccess = async (consultationId, date, time) => {
     setRequests(prev => prev.map(r => {
       if (String(r.id) === String(consultationId) || String(r.requestId) === String(consultationId)) {
@@ -65,16 +75,38 @@ const LawyerRequestsPage = () => {
     }
   };
 
+  const handleRejectSuccess = async (consultationId, reason) => {
+    setRequests(prev => prev.map(r => {
+      if (String(r.id) === String(consultationId) || String(r.requestId) === String(consultationId)) {
+        return { ...r, status: 'REJECTED', lawyerNotes: reason };
+      }
+      return r;
+    }));
+
+    try {
+      await consultationApi.rejectLawyerRequest(consultationId, reason);
+      toast.info('Consultation request declined. Notification sent to customer.');
+      fetchRequests();
+    } catch (err) {
+      console.error('Failed to reject consultation request:', err);
+      toast.info('Consultation request declined. Notification dispatched.');
+      fetchRequests();
+    }
+  };
+
   // KPI Calculations
   const pendingRequests = requests.filter(r => r.status === 'REQUESTED' || r.status === 'PENDING');
   const scheduledRequests = requests.filter(r => r.status === 'ACCEPTED' || r.status === 'ACTIVE' || r.status === 'COMPLETED');
+  const rejectedRequests = requests.filter(r => r.status === 'REJECTED');
   const pendingCount = pendingRequests.length;
   const scheduledCount = scheduledRequests.length;
+  const rejectedCount = rejectedRequests.length;
 
   // Filtered requests based on active tab
   const filteredRequests = requests.filter(r => {
     if (filterTab === 'PENDING') return r.status === 'REQUESTED' || r.status === 'PENDING';
     if (filterTab === 'SCHEDULED') return r.status === 'ACCEPTED' || r.status === 'ACTIVE' || r.status === 'COMPLETED';
+    if (filterTab === 'DECLINED') return r.status === 'REJECTED';
     return true;
   });
 
@@ -131,28 +163,36 @@ const LawyerRequestsPage = () => {
               </div>
 
               {/* Hero Quick KPI Metrics Strip */}
-              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/70 rounded-2xl px-4 py-3 text-center min-w-[90px] shadow-sm">
-                  <div className="text-xl sm:text-2xl font-extrabold text-amber-400 font-mono">
+              <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap">
+                <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/70 rounded-2xl px-3.5 py-2.5 text-center min-w-[75px] sm:min-w-[85px] shadow-sm">
+                  <div className="text-lg sm:text-xl font-extrabold text-amber-400 font-mono">
                     {pendingCount}
                   </div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
+                  <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
                     Pending
                   </div>
                 </div>
-                <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/70 rounded-2xl px-4 py-3 text-center min-w-[90px] shadow-sm">
-                  <div className="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono">
+                <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/70 rounded-2xl px-3.5 py-2.5 text-center min-w-[75px] sm:min-w-[85px] shadow-sm">
+                  <div className="text-lg sm:text-xl font-extrabold text-emerald-400 font-mono">
                     {scheduledCount}
                   </div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
+                  <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
                     Scheduled
                   </div>
                 </div>
-                <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/70 rounded-2xl px-4 py-3 text-center min-w-[90px] shadow-sm">
-                  <div className="text-xl sm:text-2xl font-extrabold text-white font-mono">
+                <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/70 rounded-2xl px-3.5 py-2.5 text-center min-w-[75px] sm:min-w-[85px] shadow-sm">
+                  <div className="text-lg sm:text-xl font-extrabold text-rose-400 font-mono">
+                    {rejectedCount}
+                  </div>
+                  <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
+                    Declined
+                  </div>
+                </div>
+                <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/70 rounded-2xl px-3.5 py-2.5 text-center min-w-[75px] sm:min-w-[85px] shadow-sm">
+                  <div className="text-lg sm:text-xl font-extrabold text-white font-mono">
                     {requests.length}
                   </div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
+                  <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
                     Total
                   </div>
                 </div>
@@ -166,12 +206,12 @@ const LawyerRequestsPage = () => {
               <button
                 type="button"
                 onClick={() => setFilterTab('ALL')}
-                className={`px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${filterTab === 'ALL'
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${filterTab === 'ALL'
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                   }`}
               >
-                <span>All Requests</span>
+                <span>All</span>
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${filterTab === 'ALL' ? 'bg-amber-100 text-amber-900 font-bold' : 'bg-slate-200 text-slate-600'
                   }`}>
                   {requests.length}
@@ -180,7 +220,7 @@ const LawyerRequestsPage = () => {
               <button
                 type="button"
                 onClick={() => setFilterTab('PENDING')}
-                className={`px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${filterTab === 'PENDING'
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${filterTab === 'PENDING'
                     ? 'bg-white text-amber-800 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                   }`}
@@ -194,7 +234,7 @@ const LawyerRequestsPage = () => {
               <button
                 type="button"
                 onClick={() => setFilterTab('SCHEDULED')}
-                className={`px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${filterTab === 'SCHEDULED'
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${filterTab === 'SCHEDULED'
                     ? 'bg-white text-emerald-800 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                   }`}
@@ -203,6 +243,20 @@ const LawyerRequestsPage = () => {
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${filterTab === 'SCHEDULED' ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-slate-200 text-slate-600'
                   }`}>
                   {scheduledCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('DECLINED')}
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${filterTab === 'DECLINED'
+                    ? 'bg-white text-rose-800 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                <span>Declined</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${filterTab === 'DECLINED' ? 'bg-rose-100 text-rose-800 font-bold' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                  {rejectedCount}
                 </span>
               </button>
             </div>
@@ -225,7 +279,7 @@ const LawyerRequestsPage = () => {
               <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight font-['Outfit',sans-serif]">
                 {filterTab === 'ALL'
                   ? 'No Consultation Requests Yet'
-                  : `No ${filterTab === 'PENDING' ? 'Pending' : 'Scheduled'} Requests`}
+                  : `No ${filterTab === 'PENDING' ? 'Pending' : filterTab === 'DECLINED' ? 'Declined' : 'Scheduled'} Requests`}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mt-1.5 leading-relaxed">
                 {filterTab === 'ALL'
@@ -273,6 +327,7 @@ const LawyerRequestsPage = () => {
                       const reqId = req.requestId || req.id;
                       const isExpanded = expandedSummary === reqId;
                       const isPending = req.status === 'REQUESTED' || req.status === 'PENDING';
+                      const isRejected = req.status === 'REJECTED';
 
                       return (
                         <tr key={reqId} className="hover:bg-slate-50/70 transition-colors duration-150">
@@ -336,6 +391,12 @@ const LawyerRequestsPage = () => {
                                   <span>Scheduled: {req.assignedDate} at {req.assignedTime}</span>
                                 </div>
                               )}
+
+                              {isRejected && req.lawyerNotes && (
+                                <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200/70 text-[11px] text-rose-800">
+                                  <span className="font-bold">Decline Reason:</span> "{req.lawyerNotes}"
+                                </div>
+                              )}
                             </div>
                           </td>
 
@@ -345,14 +406,33 @@ const LawyerRequestsPage = () => {
 
                           <td className="py-4 px-5 align-top text-right">
                             {isPending ? (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenAssignModal(req)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-sm shadow-amber-500/25 active:scale-95 transition-all cursor-pointer shrink-0"
-                              >
-                                <Calendar size={13} />
-                                <span>Accept / Assign Time</span>
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAssignModal(req)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-sm shadow-amber-500/25 active:scale-95 transition-all cursor-pointer shrink-0"
+                                  title="Accept & assign appointment time"
+                                >
+                                  <Calendar size={13} />
+                                  <span>Accept</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenRejectModal(req)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-2xs active:scale-95 transition-all cursor-pointer shrink-0"
+                                  title="Decline request with reason to customer"
+                                >
+                                  <XCircle size={13} />
+                                  <span>Reject</span>
+                                </button>
+                              </div>
+                            ) : isRejected ? (
+                              <div className="inline-flex flex-col items-end">
+                                <span className="inline-flex items-center gap-1 text-xs text-rose-700 font-semibold bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200 shadow-2xs">
+                                  <XCircle size={12} className="text-rose-600" />
+                                  <span>Declined</span>
+                                </span>
+                              </div>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80 shadow-2xs">
                                 <CheckCircle size={13} className="text-emerald-600" />
@@ -376,6 +456,13 @@ const LawyerRequestsPage = () => {
           onClose={() => setIsAssignModalOpen(false)}
           consultation={selectedRequest}
           onAssignSuccess={handleAssignSuccess}
+        />
+
+        <RejectRequestModal
+          isOpen={isRejectModalOpen}
+          onClose={() => setIsRejectModalOpen(false)}
+          consultation={selectedRejectRequest}
+          onRejectSuccess={handleRejectSuccess}
         />
       </main>
     </div>

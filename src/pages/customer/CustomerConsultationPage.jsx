@@ -32,7 +32,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  XCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { saveLawyerRating, getLawyerRatingData } from '../../utils/ratingUtils';
@@ -195,7 +196,7 @@ const CustomerConsultationPage = () => {
             category: r.categoryDisplayName || r.category || 'Legal Consultation',
             lawyerRate: normalizedRate,
             lawyerUpiId: r.lawyerUpiId || r.lawyerUpi || (r.lawyerName ? `${r.lawyerName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@upi` : 'advocate@upi'),
-            status: (r.status || 'ACCEPTED').toUpperCase(),
+            status: (r.status || 'REQUESTED').toUpperCase(),
             customerConfirmationStatus: r.customerConfirmationStatus || 'ACCEPTED',
             assignedDate: r.assignedDate || null,
             assignedTime: r.assignedTime || null,
@@ -204,6 +205,7 @@ const CustomerConsultationPage = () => {
             paymentStatus: r.paymentStatus,
             isFreeChatTimeOver: r.isFreeChatTimeOver || false,
             caseSummary: r.caseSummary || '',
+            lawyerNotes: r.lawyerNotes || r.rejectionReason || '',
             messages: []
           };
         });
@@ -325,8 +327,25 @@ const CustomerConsultationPage = () => {
   // Helper to check if chat is locked before assigned time
   const isChatLocked = (item) => {
     if (!item) return true;
-    if (item.status === 'REQUESTED') return true; // Awaiting advocate response
-    if (item.status === 'ACCEPTED' || item.status === 'ACTIVE') {
+    const status = (item.status || '').toUpperCase();
+
+    // 1. Pending/Requested: Awaiting advocate acceptance & time assignment
+    if (status === 'REQUESTED' || status === 'PENDING') {
+      return true;
+    }
+
+    // 2. Rejected: Declined by advocate
+    if (status === 'REJECTED') {
+      return true;
+    }
+
+    // 3. Completed or Cancelled: Read-only history
+    if (status === 'COMPLETED' || status === 'CANCELLED') {
+      return true;
+    }
+
+    // 4. Accepted / Active: Check scheduled date & time
+    if (status === 'ACCEPTED' || status === 'ACTIVE' || status === 'PAYMENT_COMPLETED' || status === 'PAID') {
       if (item.assignedDate && item.assignedTime) {
         try {
           const timeParts = item.assignedTime.split(':');
@@ -351,7 +370,8 @@ const CustomerConsultationPage = () => {
       }
       return false; // Scheduled time has arrived or passed! Unlock chat!
     }
-    return false;
+
+    return true;
   };
 
   // Helpers for clean display
@@ -557,7 +577,8 @@ const CustomerConsultationPage = () => {
                   {filteredConsultationsList.map((item) => {
                     const isSelected = activeConsultation && activeConsultation.id === item.id;
                     const isCompleted = item.status === 'COMPLETED';
-                    const isRequested = item.status === 'REQUESTED';
+                    const isRequested = item.status === 'REQUESTED' || item.status === 'PENDING';
+                    const isRejected = item.status === 'REJECTED';
 
                     return (
                       <div 
@@ -615,6 +636,10 @@ const CustomerConsultationPage = () => {
                             {isCompleted ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                                 <CheckCircle size={10} className="text-emerald-600" /> Completed
+                              </span>
+                            ) : isRejected ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                                <XCircle size={10} className="text-rose-600" /> Declined
                               </span>
                             ) : isRequested ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
@@ -708,7 +733,7 @@ const CustomerConsultationPage = () => {
                     {/* Right: Actions & Timer Toolbar (Uncluttered, Single-line, Unified h-8) */}
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                       
-                      {/* Session Timer OR Scheduled Badge */}
+                      {/* Session Timer OR Scheduled / Rejected Badge */}
                       {!isChatLocked(activeConsultation) ? (
                         <ConsultationTimer 
                           consultationId={activeConsultation.id}
@@ -718,10 +743,20 @@ const CustomerConsultationPage = () => {
                           onTimerExpired={handleTimerExpired}
                           isPaid={isPaidActive}
                         />
+                      ) : activeConsultation.status === 'REJECTED' ? (
+                        <div className="h-8 px-2.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5 shadow-2xs shrink-0">
+                          <XCircle size={13} className="text-rose-600 shrink-0" />
+                          <span>Request Declined</span>
+                        </div>
+                      ) : (activeConsultation.status === 'REQUESTED' || activeConsultation.status === 'PENDING') ? (
+                        <div className="h-8 px-2.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5 shadow-2xs shrink-0">
+                          <Clock size={13} className="text-amber-600 shrink-0" />
+                          <span>Awaiting Schedule</span>
+                        </div>
                       ) : (
                         <div className="h-8 px-2.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/80 flex items-center gap-1.5 shadow-2xs shrink-0">
                           <Clock size={13} className="text-indigo-600 shrink-0" />
-                          <span>{activeConsultation.assignedTime || 'Scheduled'}</span>
+                          <span>{activeConsultation.assignedTime ? `Starts at ${activeConsultation.assignedTime}` : 'Scheduled'}</span>
                         </div>
                       )}
 
@@ -786,6 +821,28 @@ const CustomerConsultationPage = () => {
                   </div>
 
                   {/* Compact Status Banners */}
+                  {activeConsultation.status === 'REJECTED' && (
+                    <div className="mx-4 mt-3 px-3.5 py-2.5 rounded-xl bg-rose-50/95 border border-rose-200 text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+                      <div className="flex items-start sm:items-center gap-2 min-w-0">
+                        <XCircle size={16} className="text-rose-600 shrink-0 mt-0.5 sm:mt-0" />
+                        <div>
+                          <span className="font-bold text-rose-800">Consultation Request Declined: </span>
+                          <span className="text-rose-700">
+                            {activeConsultation.lawyerNotes 
+                              ? `"${activeConsultation.lawyerNotes}"` 
+                              : "The advocate was unavailable to accept this request."}
+                          </span>
+                        </div>
+                      </div>
+                      <Link 
+                        to="/customer/find-lawyers"
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs transition-all active:scale-95 text-center shrink-0"
+                      >
+                        Find Another Advocate
+                      </Link>
+                    </div>
+                  )}
+
                   {activeConsultation.status === 'ACCEPTED' && isChatLocked(activeConsultation) && (
                     <div className="mx-4 mt-3 px-3.5 py-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-900 flex items-center justify-between gap-3 text-xs shadow-2xs">
                       <div className="flex items-center gap-2 min-w-0">
@@ -800,7 +857,7 @@ const CustomerConsultationPage = () => {
                     </div>
                   )}
 
-                  {activeConsultation.status === 'REQUESTED' && (
+                  {(activeConsultation.status === 'REQUESTED' || activeConsultation.status === 'PENDING') && (
                     <div className="mx-4 mt-3 px-3.5 py-2.5 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-900 flex items-center justify-between gap-3 text-xs shadow-2xs">
                       <div className="flex items-center gap-2 min-w-0">
                         <Clock size={14} className="text-amber-600 shrink-0" />
@@ -814,7 +871,7 @@ const CustomerConsultationPage = () => {
                     </div>
                   )}
 
-                  {isFreeExpired && !isPaidActive && (
+                  {isFreeExpired && !isPaidActive && !isChatLocked(activeConsultation) && (
                     <div className="mx-4 mt-3 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex items-center justify-between gap-3 text-xs shadow-2xs">
                       <div className="flex items-center gap-2 min-w-0">
                         <AlertCircle size={15} className="text-rose-600 shrink-0" />
@@ -1076,16 +1133,18 @@ const CustomerConsultationPage = () => {
                       type="text"
                       className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-slate-800 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed font-['Outfit',sans-serif]"
                       placeholder={
-                        isChatLocked(activeConsultation) 
-                          ? (activeConsultation.status === 'REQUESTED' 
-                              ? "Consultation request pending advocate time assignment..." 
-                              : `Appointment scheduled for ${activeConsultation.assignedDate || ''} at ${activeConsultation.assignedTime || ''}. Chat unlocks automatically at scheduled time.`)
-                          : (isFreeExpired && !isPaidActive ? "Consultation paused. Complete payment to continue..." : "Type your legal query to advocate...")
+                        activeConsultation.status === 'REJECTED'
+                          ? `Request declined: ${activeConsultation.lawyerNotes || 'Advocate unavailable'}. Chat disabled.`
+                          : isChatLocked(activeConsultation) 
+                            ? (activeConsultation.status === 'REQUESTED' || activeConsultation.status === 'PENDING'
+                                ? "Consultation request pending advocate time assignment..." 
+                                : `Appointment scheduled for ${activeConsultation.assignedDate || ''} at ${activeConsultation.assignedTime || ''}. Chat unlocks automatically at scheduled time.`)
+                            : (isFreeExpired && !isPaidActive ? "Consultation paused. Complete payment to continue..." : "Type your legal query to advocate...")
                       }
                       value={inputMsg}
                       onChange={(e) => setInputMsg(e.target.value)}
                       disabled={isChatLocked(activeConsultation)}
-                      onClick={() => { if (isFreeExpired && !isPaidActive) setShowPaymentModal(true); }}
+                      onClick={() => { if (isFreeExpired && !isPaidActive && !isChatLocked(activeConsultation)) setShowPaymentModal(true); }}
                     />
 
                     <button 

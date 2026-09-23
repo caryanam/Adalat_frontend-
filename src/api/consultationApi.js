@@ -65,10 +65,11 @@ export const consultationApi = {
     });
   },
 
-  rejectLawyerRequest: (requestId, actionDTO) => {
-    return apiClient.post(`/api/lawyer/consultation-requests/${requestId}/reject`, actionDTO).catch(() => {
-      return { status: 'SUCCESS', data: { requestId } };
-    });
+  rejectLawyerRequest: (requestId, reasonOrActionDTO) => {
+    const payload = typeof reasonOrActionDTO === 'string'
+      ? { notes: reasonOrActionDTO, reason: reasonOrActionDTO }
+      : (reasonOrActionDTO || {});
+    return apiClient.post(`/api/lawyer/consultation-requests/${requestId}/reject`, payload);
   },
 
   // 8. Consultation Chat Messages

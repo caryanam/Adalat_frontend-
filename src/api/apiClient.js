@@ -26,7 +26,8 @@ apiClient.interceptors.response.use((response) => {
     const isLoginAttempt = reqUrl.includes('/auth/login') ||
                            reqUrl.includes('/api/customer/login') ||
                            reqUrl.includes('/api/lawyer/login') ||
-                           reqUrl.includes('/api/lawyers/login');
+                           reqUrl.includes('/api/lawyers/login') ||
+                           reqUrl.includes('/api/account/delete');
 
     // Only trigger session expired modal if it is NOT a regular login credential attempt
     if (!isLoginAttempt) {
