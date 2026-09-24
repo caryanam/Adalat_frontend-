@@ -57,7 +57,8 @@ const AppLayout = () => {
                            location.pathname === '/lawyer/register' ||
                            location.pathname.startsWith('/register') ||
                            location.pathname === '/verify-email' ||
-                           location.pathname === '/login';
+                           location.pathname === '/login' ||
+                           location.pathname === '/forgot-password';
 
   const hideNavbarFooter = isDashboardRoute || isRegisterRoute;
 
@@ -87,6 +88,7 @@ const AppLayout = () => {
 
           {/* Auth */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<LoginPage />} />
           <Route path="/register" element={<CustomerRegisterPage />} />
           <Route path="/verify-email" element={<EmailVerificationPage />} />
           <Route path="/lawyer/register" element={<LawyerSignupPage />} />

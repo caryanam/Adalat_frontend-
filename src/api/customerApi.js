@@ -29,6 +29,10 @@ export const customerApi = {
     return apiClient.put('/api/customer/change-password', passwordData);
   },
 
+  resetPasswordWithOtp: (email, newPassword, confirmPassword) => {
+    return apiClient.post('/api/customer/forgot-password/reset', { email, newPassword, confirmPassword });
+  },
+
   getPaymentHistory: () => {
     return apiClient.get('/api/customer/payments');
   }

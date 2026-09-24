@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { Lock, Mail, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import ForgotPasswordModal from '../../components/ForgotPasswordModal';
 import loginBg from '../../assets/login_bg.png';
 import logoImg from '../../assets/logo.png';
 import './AuthPages.css';
 
 const LoginPage = () => {
+  const location = useLocation();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(
+    location.pathname === '/forgot-password' || new URLSearchParams(location.search).get('forgot') === 'true'
+  );
 
   const { loginCustomer, loginLawyer, loginAdmin } = useAuth();
   const navigate = useNavigate();
@@ -151,7 +156,30 @@ const LoginPage = () => {
               </div>
 
               <div className="form-group-custom">
-                <label className="form-label-full">Password <span className="required">*</span></label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label className="form-label-full" style={{ marginBottom: 0 }}>
+                    Password <span className="required">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#1C1C4A',
+                      fontSize: '0.8rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => (e.target.style.textDecoration = 'underline')}
+                    onMouseLeave={(e) => (e.target.style.textDecoration = 'none')}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 <div className="input-with-icon-full">
                   <Lock size={17} className="input-icon-full" />
                   <input 
@@ -191,6 +219,18 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+        initialEmail={identifier.includes('@') ? identifier.trim() : ''}
+        onPasswordResetSuccess={(resetEmail) => {
+          setIdentifier(resetEmail);
+          setPassword('');
+          setError('');
+        }}
+      />
     </div>
   );
 };
