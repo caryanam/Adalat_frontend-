@@ -57,6 +57,18 @@ const AdminDashboardPage = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  const formatImageUrl = (lawyer) => {
+    if (!lawyer) return null;
+    const rawUrl = lawyer.profilePhotoUrl || lawyer.photoUrl || lawyer.profilePictureUrl || lawyer.profilePicture || lawyer.profilePhoto || lawyer.avatar || lawyer.avatarUrl || lawyer.lawyerProfileImageUrl || lawyer.imageUrl || lawyer.image;
+    if (!rawUrl || typeof rawUrl !== 'string') return null;
+    const url = rawUrl.trim();
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8082${cleanPath}`;
+  };
+
   const totalLawyers = approvedLawyers.length + pendingLawyers.length;
 
   return (
@@ -272,26 +284,44 @@ const AdminDashboardPage = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {pendingLawyers.map((lawyer) => (
-                        <tr
-                          key={lawyer.lawyerId}
-                          className="hover:bg-slate-50/70 transition-colors duration-150"
-                        >
-                          <td className="py-4 px-5">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-700 via-purple-800 to-indigo-900 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
-                                {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
+                      {pendingLawyers.map((lawyer) => {
+                        const lawyerImgUrl = formatImageUrl(lawyer);
+
+                        return (
+                          <tr
+                            key={lawyer.lawyerId}
+                            className="hover:bg-slate-50/70 transition-colors duration-150"
+                          >
+                            <td className="py-4 px-5">
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-9 h-9 shrink-0">
+                                  {lawyerImgUrl ? (
+                                    <img 
+                                      src={lawyerImgUrl} 
+                                      alt={lawyer.fullName || 'Advocate'} 
+                                      className="w-9 h-9 rounded-xl object-cover border border-slate-200/90 shadow-2xs shrink-0" 
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        if (e.currentTarget.nextElementSibling) {
+                                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-700 via-purple-800 to-indigo-900 text-white font-bold text-xs shadow-xs shrink-0 items-center justify-center ${lawyerImgUrl ? 'hidden' : 'flex'}`}>
+                                    {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
+                                  </div>
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="text-slate-900 font-bold block truncate">
+                                    {lawyer.fullName}
+                                  </span>
+                                  <span className="text-[11px] text-slate-400 block truncate">
+                                    {lawyer.email}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <span className="text-slate-900 font-bold block truncate">
-                                  {lawyer.fullName}
-                                </span>
-                                <span className="text-[11px] text-slate-400 block truncate">
-                                  {lawyer.email}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
+                            </td>
                           <td className="py-4 px-5 font-mono text-slate-800 font-bold text-xs">
                             <span className="px-2 py-1 rounded-lg bg-slate-100 border border-slate-200/60">
                               {lawyer.barEnrollmentNumber || 'Not Provided'}
@@ -334,7 +364,8 @@ const AdminDashboardPage = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      );
+                    })}
                     </tbody>
                   </table>
                 </div>

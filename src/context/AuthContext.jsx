@@ -37,6 +37,12 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.setItem('adalat_token', authToken);
       sessionStorage.setItem('adalat_user', JSON.stringify(customerData));
       sessionStorage.setItem('adalat_role', 'CUSTOMER');
+      localStorage.setItem('adalat_token', authToken);
+      localStorage.setItem('adalat_user', JSON.stringify(customerData));
+      localStorage.setItem('adalat_role', 'CUSTOMER');
+      if (customerData?.customerId) {
+        localStorage.setItem('adalat_customer_id', customerData.customerId);
+      }
 
       setToken(authToken);
       setUser(customerData);
@@ -56,6 +62,10 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.setItem('adalat_user', JSON.stringify(lawyerData));
       sessionStorage.setItem('adalat_role', 'LAWYER');
       sessionStorage.setItem('adalat_lawyer_id', lawyerData.lawyerId || lawyerData.id || '');
+      localStorage.setItem('adalat_token', authToken);
+      localStorage.setItem('adalat_user', JSON.stringify(lawyerData));
+      localStorage.setItem('adalat_role', 'LAWYER');
+      localStorage.setItem('adalat_lawyer_id', lawyerData.lawyerId || lawyerData.id || '');
 
       setToken(authToken);
       setUser(lawyerData);
@@ -92,6 +102,9 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.setItem('adalat_token', authToken);
       sessionStorage.setItem('adalat_user', JSON.stringify(adminData));
       sessionStorage.setItem('adalat_role', 'ADMIN');
+      localStorage.setItem('adalat_token', authToken);
+      localStorage.setItem('adalat_user', JSON.stringify(adminData));
+      localStorage.setItem('adalat_role', 'ADMIN');
 
       setToken(authToken);
       setUser(adminData);

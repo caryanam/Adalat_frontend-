@@ -59,7 +59,10 @@ const PaymentModal = ({
   amount = "99.00", 
   lawyerName = "Adalat Platform Activation", 
   lawyerUpiId = "adalat@upi", 
-  onPaymentSuccess 
+  onPaymentSuccess,
+  onSuccessFinish,
+  successButtonText,
+  successSubtitle
 }) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('QR'); // 'QR' or 'SUCCESS'
@@ -72,7 +75,15 @@ const PaymentModal = ({
     : 'advocate@upi';
   const effectiveLawyerName = (lawyerName && typeof lawyerName === 'string' && lawyerName.trim()) 
     ? lawyerName.trim() 
-    : 'Advocate';
+    : 'Adalat Platform Activation';
+
+  const isPlatformActivation = 
+    title?.toLowerCase().includes('activation') || 
+    title?.toLowerCase().includes('registration') || 
+    title?.toLowerCase().includes('platform') ||
+    effectiveLawyerName.toLowerCase().includes('adalat');
+
+  const defaultSuccessBtnText = successButtonText || (isPlatformActivation ? "Continue to Dashboard" : "Continue to Consultation Room");
 
   const baseNum = parseFloat(amount) || 99.00;
   const gstNum = Math.round((baseNum * 0.18) * 100) / 100;
@@ -108,8 +119,11 @@ const PaymentModal = ({
 
   const handleSimulatePayment = async () => {
     setLoading(true);
+    const orderId = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const gatewayPaymentId = 'PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase();
     const paymentRef = {
-      gatewayPaymentId: 'PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+      orderId: orderId,
+      gatewayPaymentId: gatewayPaymentId,
       amount: totalNum.toFixed(2),
       baseAmount: baseNum.toFixed(2),
       gstAmount: gstNum.toFixed(2),
@@ -132,7 +146,17 @@ const PaymentModal = ({
   };
 
   const handleFinishSuccess = () => {
-    if (onClose) {
+    if (onSuccessFinish) {
+      onSuccessFinish(confirmedPaymentRef);
+    } else if (onClose) {
+      onClose();
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (step === 'SUCCESS') {
+      handleFinishSuccess();
+    } else if (onClose) {
       onClose();
     }
   };
@@ -145,7 +169,7 @@ const PaymentModal = ({
         
         {/* Close Button Top Right */}
         <button 
-          onClick={onClose} 
+          onClick={handleCloseModal} 
           disabled={loading}
           className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
           title="Close dialog"
@@ -364,7 +388,11 @@ const PaymentModal = ({
             </h3>
             
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm leading-relaxed">
-              Your consultation session with <strong>{effectiveLawyerName}</strong> has been successfully unlocked and verified.
+              {successSubtitle || (isPlatformActivation ? (
+                <>Your customer account has been successfully activated and verified. You now have full access to your dashboard and all platform legal services.</>
+              ) : (
+                <>Your consultation session with <strong>{effectiveLawyerName}</strong> has been successfully unlocked and verified.</>
+              ))}
             </p>
 
             {/* Receipt Summary Box */}
@@ -396,7 +424,7 @@ const PaymentModal = ({
               onClick={handleFinishSuccess} 
               className="mt-6 w-full max-w-sm py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-indigo-500/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>Continue to Consultation Room</span>
+              <span>{defaultSuccessBtnText}</span>
               <ArrowRight size={15} />
             </button>
 

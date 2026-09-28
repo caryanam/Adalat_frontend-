@@ -45,6 +45,18 @@ const AdminVerificationsPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const formatImageUrl = (lawyer) => {
+    if (!lawyer) return null;
+    const rawUrl = lawyer.profilePhotoUrl || lawyer.photoUrl || lawyer.profilePictureUrl || lawyer.profilePicture || lawyer.profilePhoto || lawyer.avatar || lawyer.avatarUrl || lawyer.lawyerProfileImageUrl || lawyer.imageUrl || lawyer.image;
+    if (!rawUrl || typeof rawUrl !== 'string') return null;
+    const url = rawUrl.trim();
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8082${cleanPath}`;
+  };
+
   useEffect(() => {
     fetchPending();
   }, [fetchPending]);
@@ -334,17 +346,24 @@ const AdminVerificationsPage = () => {
                     {/* Header: Photo + Name + Status */}
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        {lawyer.profilePhotoUrl ? (
-                          <img 
-                            src={lawyer.profilePhotoUrl} 
-                            alt={lawyer.fullName} 
-                            className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-100 shadow-2xs shrink-0" 
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-700 via-indigo-800 to-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-2xs shrink-0">
+                        <div className="relative w-12 h-12 shrink-0">
+                          {formatImageUrl(lawyer) ? (
+                            <img 
+                              src={formatImageUrl(lawyer)} 
+                              alt={lawyer.fullName || 'Advocate'} 
+                              className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-100 shadow-2xs shrink-0" 
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.nextElementSibling) {
+                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-700 via-indigo-800 to-slate-900 text-white font-bold text-sm shadow-2xs shrink-0 items-center justify-center ${formatImageUrl(lawyer) ? 'hidden' : 'flex'}`}>
                             {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'A'}
                           </div>
-                        )}
+                        </div>
                         <div className="min-w-0">
                           <h3 className="font-bold text-slate-900 truncate text-sm leading-tight group-hover:text-indigo-600 transition-colors">
                             {lawyer.fullName}
@@ -558,17 +577,24 @@ const AdminVerificationsPage = () => {
               {/* Modal Top Header */}
               <div className="bg-gradient-to-r from-[#0d1322] via-[#111827] to-[#1e1b4b] text-white p-5 sm:p-6 flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-3.5">
-                  {selectedLawyer.profilePhotoUrl ? (
-                    <img 
-                      src={selectedLawyer.profilePhotoUrl} 
-                      alt={selectedLawyer.fullName} 
-                      className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/40 shadow-md shrink-0" 
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0">
+                  <div className="relative w-12 h-12 shrink-0">
+                    {formatImageUrl(selectedLawyer) ? (
+                      <img 
+                        src={formatImageUrl(selectedLawyer)} 
+                        alt={selectedLawyer.fullName || 'Advocate'} 
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/40 shadow-md shrink-0" 
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0 ${formatImageUrl(selectedLawyer) ? 'hidden' : 'flex'}`}>
                       {selectedLawyer.fullName ? selectedLawyer.fullName.charAt(0).toUpperCase() : 'A'}
                     </div>
-                  )}
+                  </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
                       {selectedLawyer.fullName}

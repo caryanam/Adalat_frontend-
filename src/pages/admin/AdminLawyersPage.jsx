@@ -52,6 +52,18 @@ const AdminLawyersPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const formatImageUrl = (lawyer) => {
+    if (!lawyer) return null;
+    const rawUrl = lawyer.profilePhotoUrl || lawyer.photoUrl || lawyer.profilePictureUrl || lawyer.profilePicture || lawyer.profilePhoto || lawyer.avatar || lawyer.avatarUrl || lawyer.lawyerProfileImageUrl || lawyer.imageUrl || lawyer.image;
+    if (!rawUrl || typeof rawUrl !== 'string') return null;
+    const url = rawUrl.trim();
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8082${cleanPath}`;
+  };
+
   useEffect(() => {
     fetchLawyers();
   }, [fetchLawyers]);
@@ -361,17 +373,24 @@ const AdminLawyersPage = () => {
                             {/* Lawyer Info */}
                             <td className="py-4 px-5">
                               <div className="flex items-center gap-3">
-                                {lawyer.profilePhotoUrl ? (
-                                  <img 
-                                    src={lawyer.profilePhotoUrl} 
-                                    alt={lawyer.fullName} 
-                                    className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0" 
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-700 to-indigo-900 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+                                <div className="relative w-10 h-10 shrink-0">
+                                  {formatImageUrl(lawyer) ? (
+                                    <img 
+                                      src={formatImageUrl(lawyer)} 
+                                      alt={lawyer.fullName || 'Advocate'} 
+                                      className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0" 
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        if (e.currentTarget.nextElementSibling) {
+                                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-700 to-indigo-900 text-white font-bold text-xs shadow-xs shrink-0 items-center justify-center ${formatImageUrl(lawyer) ? 'hidden' : 'flex'}`}>
                                     {lawyer.fullName ? lawyer.fullName.charAt(0).toUpperCase() : 'L'}
                                   </div>
-                                )}
+                                </div>
                                 <div className="min-w-0">
                                   <span className="font-bold text-slate-900 block truncate text-sm">
                                     {lawyer.fullName}
@@ -422,7 +441,7 @@ const AdminLawyersPage = () => {
                             <td className="py-4 px-5 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 
-                                {/* Details Button */}
+                                {/* Details Button: ALWAYS visible */}
                                 <button
                                   type="button"
                                   onClick={() => handleOpenDetails(lawyer)}
@@ -447,8 +466,8 @@ const AdminLawyersPage = () => {
                                   </button>
                                 )}
 
-                                {/* Reject Button for Pending or Approved */}
-                                {(isPending || isApproved) && (
+                                {/* Reject Button for Pending ONLY (When approved, ONLY show Details) */}
+                                {isPending && (
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -457,7 +476,7 @@ const AdminLawyersPage = () => {
                                     }}
                                     disabled={actionLoading}
                                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-                                    title="Reject or Suspend"
+                                    title="Reject Application"
                                   >
                                     <XCircle size={13} />
                                     <span>Reject</span>
@@ -485,17 +504,24 @@ const AdminLawyersPage = () => {
               {/* Modal Top Header */}
               <div className="bg-gradient-to-r from-[#0d1322] to-[#1e1b4b] text-white p-5 sm:p-6 flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
-                  {selectedLawyer.profilePhotoUrl ? (
-                    <img 
-                      src={selectedLawyer.profilePhotoUrl} 
-                      alt={selectedLawyer.fullName} 
-                      className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/50 shadow-md shrink-0" 
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0">
+                  <div className="relative w-12 h-12 shrink-0">
+                    {formatImageUrl(selectedLawyer) ? (
+                      <img 
+                        src={formatImageUrl(selectedLawyer)} 
+                        alt={selectedLawyer.fullName || 'Advocate'} 
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/50 shadow-md shrink-0" 
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold text-lg shadow-md shrink-0 items-center justify-center ${formatImageUrl(selectedLawyer) ? 'hidden' : 'flex'}`}>
                       {selectedLawyer.fullName ? selectedLawyer.fullName.charAt(0).toUpperCase() : 'A'}
                     </div>
-                  )}
+                  </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
                       {selectedLawyer.fullName}
@@ -699,25 +725,34 @@ const AdminLawyersPage = () => {
                 </button>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowRejectModal(true)}
-                    disabled={actionLoading}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <XCircle size={14} />
-                    <span>Reject Application</span>
-                  </button>
+                  {(selectedLawyer.verificationStatus || '').toUpperCase() === 'APPROVED' ? (
+                    <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                      <CheckCircle2 size={14} className="text-emerald-600" />
+                      <span>Approved Advocate</span>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectModal(true)}
+                        disabled={actionLoading}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <XCircle size={14} />
+                        <span>Reject Application</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleApprove(selectedLawyer)}
-                    disabled={actionLoading}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <CheckCircle2 size={14} />
-                    <span>Approve Advocate</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApprove(selectedLawyer)}
+                        disabled={actionLoading}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 size={14} />
+                        <span>Approve Advocate</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

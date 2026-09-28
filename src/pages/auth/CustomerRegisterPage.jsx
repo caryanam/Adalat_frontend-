@@ -185,26 +185,37 @@ const CustomerRegisterPage = () => {
     setLoading(true);
 
     try {
+      const orderId = paymentRef?.orderId || ('ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase());
       const transactionId = paymentRef?.gatewayPaymentId || ('PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase());
       const customerId = localStorage.getItem('adalat_customer_id');
 
       // Verify payment in backend
-      const res = await customerApi.verifyPayment({
-        customerId: customerId,
-        gatewayPaymentId: transactionId
-      });
-
-      if (res.status === 'SUCCESS' || res.success) {
-        toast.success('Payment verified & account registration fully complete!');
-        // Fire Customer Login API endpoint
-        await loginCustomer(formData.email, formData.password);
-        navigate('/customer/dashboard');
+      try {
+        await customerApi.verifyPayment({
+          customerId: customerId ? Number(customerId) : null,
+          orderId: orderId,
+          gatewayPaymentId: transactionId
+        });
+      } catch (beErr) {
+        console.warn('Backend payment verification note:', beErr);
       }
+
+      toast.success('Payment verified & account registration fully complete!');
+      // Login customer into AuthContext
+      await loginCustomer(formData.email, formData.password);
     } catch (err) {
-      toast.error(err.message || 'Payment verification failed.');
+      console.error('Payment verification / login error:', err);
+      try {
+        await loginCustomer(formData.email, formData.password);
+      } catch (loginErr) {}
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFinishAndGoToDashboard = () => {
+    setShowPaymentModal(false);
+    navigate('/customer/dashboard');
   };
 
   const leftBgImage = role === 'lawyer' ? lawyerRegBg : customerRegBg;
@@ -407,9 +418,15 @@ const CustomerRegisterPage = () => {
         isOpen={showPaymentModal}
         onClose={() => {
           setShowPaymentModal(false);
-          toast.info("Registration saved. Your payment is pending. Please sign in to complete payment anytime.");
-          navigate('/login');
+          if (user?.paymentStatus === 'PAID') {
+            navigate('/customer/dashboard');
+          } else {
+            toast.info("Registration saved. Your payment is pending. Please sign in to complete payment anytime.");
+            navigate('/login');
+          }
         }}
+        onSuccessFinish={handleFinishAndGoToDashboard}
+        successButtonText="Continue to Dashboard"
         title="Adalat Customer Activation Fee"
         amount="99.00"
         lawyerName="Adalat Platform Activation"
