@@ -21,6 +21,14 @@ export const customerApi = {
     return apiClient.get(`/api/customer/${id}`);
   },
 
+  getMe: () => {
+    return apiClient.get('/api/customer/me');
+  },
+
+  getStatus: () => {
+    return apiClient.get('/api/customer/status');
+  },
+
   updateProfile: (profileData) => {
     return apiClient.put('/api/customer/profile', profileData);
   },

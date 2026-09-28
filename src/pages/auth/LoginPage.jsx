@@ -32,7 +32,7 @@ const LoginPage = () => {
       const customerData = await loginCustomer(identifier, password);
       if (customerData) {
         toast.success('Welcome back! Signed in to Customer Portal.');
-        navigate('/customer/legal-assistant');
+        navigate('/customer/dashboard');
         return;
       }
     } catch (err) {
@@ -225,6 +225,7 @@ const LoginPage = () => {
         isOpen={isForgotModalOpen}
         onClose={() => setIsForgotModalOpen(false)}
         initialEmail={identifier.includes('@') ? identifier.trim() : ''}
+        initialRole={(new URLSearchParams(location.search).get('role') || new URLSearchParams(location.search).get('type') || '').toUpperCase()}
         onPasswordResetSuccess={(resetEmail) => {
           setIdentifier(resetEmail);
           setPassword('');

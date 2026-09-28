@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import SessionExpiredModal from './components/SessionExpiredModal';
+import CustomerRouteGuard from './components/CustomerRouteGuard';
 
 import HomePage from './pages/public/HomePage';
 import HowItWorksPage from './pages/public/HowItWorksPage';
@@ -97,13 +98,13 @@ const AppLayout = () => {
           <Route path="/admin/login" element={<LoginPage />} />
 
           {/* Customer */}
-          <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
-          <Route path="/customer/legal-assistant" element={<LegalAssistantPage />} />
-          <Route path="/customer/find-lawyers" element={<CustomerFindLawyersPage />} />
-          <Route path="/customer/appointments" element={<CustomerAppointmentsPage />} />
-          <Route path="/customer/consultations" element={<CustomerConsultationPage />} />
-          <Route path="/customer/payments" element={<CustomerPaymentsPage />} />
-          <Route path="/customer/profile" element={<CustomerProfilePage />} />
+          <Route path="/customer/dashboard" element={<CustomerRouteGuard><CustomerDashboardPage /></CustomerRouteGuard>} />
+          <Route path="/customer/legal-assistant" element={<CustomerRouteGuard><LegalAssistantPage /></CustomerRouteGuard>} />
+          <Route path="/customer/find-lawyers" element={<CustomerRouteGuard><CustomerFindLawyersPage /></CustomerRouteGuard>} />
+          <Route path="/customer/appointments" element={<CustomerRouteGuard><CustomerAppointmentsPage /></CustomerRouteGuard>} />
+          <Route path="/customer/consultations" element={<CustomerRouteGuard><CustomerConsultationPage /></CustomerRouteGuard>} />
+          <Route path="/customer/payments" element={<CustomerRouteGuard><CustomerPaymentsPage /></CustomerRouteGuard>} />
+          <Route path="/customer/profile" element={<CustomerRouteGuard><CustomerProfilePage /></CustomerRouteGuard>} />
 
           {/* Lawyer */}
           <Route path="/lawyer/dashboard" element={<LawyerDashboardPage />} />

@@ -198,7 +198,7 @@ const CustomerRegisterPage = () => {
         toast.success('Payment verified & account registration fully complete!');
         // Fire Customer Login API endpoint
         await loginCustomer(formData.email, formData.password);
-        navigate('/customer/legal-assistant');
+        navigate('/customer/dashboard');
       }
     } catch (err) {
       toast.error(err.message || 'Payment verification failed.');
@@ -405,7 +405,11 @@ const CustomerRegisterPage = () => {
 
       <PaymentModal 
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => {
+          setShowPaymentModal(false);
+          toast.info("Registration saved. Your payment is pending. Please sign in to complete payment anytime.");
+          navigate('/login');
+        }}
         title="Adalat Customer Activation Fee"
         amount="99.00"
         lawyerName="Adalat Platform Activation"

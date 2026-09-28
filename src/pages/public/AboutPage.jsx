@@ -168,8 +168,8 @@ const AboutPage = () => {
                   <div>
                     <span className="font-semibold text-slate-900">Direct Support:</span>
                     <p className="text-slate-600">
-                      <a href="mailto:support@adalat.legal" className="hover:text-indigo-600 transition-colors">
-                        support@adalat.legal
+                      <a href="mailto:support@adalat.com" className="hover:text-indigo-600 transition-colors">
+                        support@adalat.com
                       </a>
                     </p>
                   </div>
@@ -180,8 +180,8 @@ const AboutPage = () => {
                   <div>
                     <span className="font-semibold text-slate-900">Helpdesk:</span>
                     <p className="text-slate-600">
-                      <a href="tel:+919898989898" className="hover:text-emerald-600 transition-colors">
-                        +91 9898989898
+                      <a href="tel:+910000000000" className="hover:text-emerald-600 transition-colors">
+                        +91 0000000000
                       </a>
                     </p>
                   </div>

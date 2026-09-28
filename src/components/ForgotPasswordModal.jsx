@@ -14,14 +14,18 @@ import {
   Eye, 
   EyeOff, 
   CheckCircle2, 
-  ArrowLeft
+  ArrowLeft,
+  Scale,
+  User,
+  Sparkles
 } from 'lucide-react';
 import './ForgotPasswordModal.css';
 
 const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordResetSuccess }) => {
   const [step, setStep] = useState('EMAIL'); // 'EMAIL' | 'OTP' | 'NEW_PASSWORD' | 'SUCCESS'
   const [email, setEmail] = useState(initialEmail);
-  const [detectedRole, setDetectedRole] = useState('LAWYER'); // auto-detected role
+  const [detectedRole, setDetectedRole] = useState('LAWYER'); // auto-detected role: 'LAWYER' | 'CUSTOMER' | 'ADMIN'
+  const [detectedName, setDetectedName] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -40,6 +44,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
       setStep('EMAIL');
       setEmail(initialEmail || '');
       setDetectedRole('LAWYER');
+      setDetectedName('');
       setOtp(['', '', '', '', '', '']);
       setNewPassword('');
       setConfirmPassword('');
@@ -76,7 +81,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // ─── STEP 1: SEND OTP (Auto-detecting account role) ──────────────────────────
+  // ─── STEP 1: SEND OTP (Auto-Detect Role & Validate Account) ────────────────────
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
@@ -89,31 +94,38 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
     setLoading(true);
 
     try {
-      // 1. Try sending OTP as LAWYER
-      let activeRole = 'LAWYER';
       let res;
       try {
+        // 1. Primary dedicated Forgot Password OTP endpoint (auto-detects Advocate, Customer, Admin)
+        res = await apiClient.post('/api/auth/forgot-password/send-otp', {
+          email: cleanEmail,
+          role: null, // Auto-detect
+        });
+      } catch (primaryErr) {
+        // If 404 account not found, throw error directly to show clear message
+        if (primaryErr?.status === 404 || (primaryErr?.message && primaryErr.message.includes('No registered account found'))) {
+          throw primaryErr;
+        }
+
+        // Fallback to resend-otp
         res = await apiClient.post('/api/auth/email/resend-otp', {
           email: cleanEmail,
           role: 'LAWYER',
         });
-      } catch (lawyerErr) {
-        // 2. If lawyer fails, try CUSTOMER
-        activeRole = 'CUSTOMER';
-        res = await apiClient.post('/api/auth/email/resend-otp', {
-          email: cleanEmail,
-          role: 'CUSTOMER',
-        });
       }
 
-      if (res.status === 'SUCCESS' || res.success || res.data) {
+      if (res?.status === 'SUCCESS' || res?.success || res?.data) {
+        const activeRole = res.data?.role || 'LAWYER';
         setDetectedRole(activeRole);
+        if (res.data?.userName) {
+          setDetectedName(res.data.userName);
+        }
         toast.success(res.message || `Verification code sent to ${cleanEmail}`);
         setStep('OTP');
         setTimeLeft(res.data?.otpExpiresAfterSeconds || 300);
         setResendCooldown(res.data?.resendAvailableAfterSeconds || 120);
       } else {
-        const msg = res.message || 'Failed to dispatch verification email.';
+        const msg = res?.message || 'Failed to dispatch verification email.';
         setErrorMsg(msg);
         toast.error(msg);
       }
@@ -132,19 +144,28 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
     setResendLoading(true);
     setErrorMsg('');
 
+    const cleanEmail = email.trim().toLowerCase();
     try {
-      const res = await apiClient.post('/api/auth/email/resend-otp', {
-        email: email.trim().toLowerCase(),
-        role: detectedRole,
-      });
+      let res;
+      try {
+        res = await apiClient.post('/api/auth/forgot-password/send-otp', {
+          email: cleanEmail,
+          role: detectedRole || null,
+        });
+      } catch {
+        res = await apiClient.post('/api/auth/email/resend-otp', {
+          email: cleanEmail,
+          role: detectedRole || 'LAWYER',
+        });
+      }
 
-      if (res.status === 'SUCCESS' || res.success || res.data) {
+      if (res?.status === 'SUCCESS' || res?.success || res?.data) {
         toast.success(res.message || 'New OTP sent to your email.');
         setOtp(['', '', '', '', '', '']);
         setTimeLeft(res.data?.otpExpiresAfterSeconds || 300);
         setResendCooldown(res.data?.resendAvailableAfterSeconds || 120);
       } else {
-        toast.error(res.message || 'Failed to resend OTP.');
+        toast.error(res?.message || 'Failed to resend OTP.');
       }
     } catch (err) {
       toast.error(err.message || 'Failed to resend OTP.');
@@ -196,29 +217,18 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
     setLoading(true);
 
     try {
-      let res;
-      try {
-        res = await apiClient.post('/api/auth/email/verify-otp', {
-          email: email.trim().toLowerCase(),
-          role: detectedRole,
-          otp: enteredOtp,
-        });
-      } catch (err) {
-        // Fallback retry with other role if first role attempt failed
-        const altRole = detectedRole === 'LAWYER' ? 'CUSTOMER' : 'LAWYER';
-        res = await apiClient.post('/api/auth/email/verify-otp', {
-          email: email.trim().toLowerCase(),
-          role: altRole,
-          otp: enteredOtp,
-        });
-        setDetectedRole(altRole);
-      }
+      const cleanEmail = email.trim().toLowerCase();
+      let res = await apiClient.post('/api/auth/email/verify-otp', {
+        email: cleanEmail,
+        role: detectedRole || 'LAWYER',
+        otp: enteredOtp,
+      });
 
-      if (res.status === 'SUCCESS' || res.success || res.data?.emailVerified) {
-        toast.success(res.message || 'Email verified successfully!');
+      if (res?.status === 'SUCCESS' || res?.success || res?.data?.emailVerified || res?.data?.success) {
+        toast.success(res?.message || 'Email verified successfully!');
         setStep('NEW_PASSWORD');
       } else {
-        const msg = res.message || 'Invalid or expired OTP code.';
+        const msg = res?.message || 'Invalid or expired OTP code.';
         setErrorMsg(msg);
         toast.error(msg);
       }
@@ -252,26 +262,21 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
     try {
       let res;
       try {
-        // 1. Primary: Unified Auth Endpoint (auto-detects Customer, Advocate, Admin)
+        // 1. Primary: Unified Auth Endpoint (role-aware: Advocate, Customer, Admin)
         res = await apiClient.post('/api/auth/forgot-password/reset', {
           email: cleanEmail,
+          role: detectedRole,
           newPassword,
           confirmPassword,
         });
       } catch (authErr) {
-        // 2. Fallback to role-specific endpoints if legacy endpoint is needed
-        if (detectedRole === 'CUSTOMER') {
-          try {
-            res = await customerApi.resetPasswordWithOtp(cleanEmail, newPassword, confirmPassword);
-          } catch {
-            res = await lawyerApi.resetPasswordWithOtp(cleanEmail, newPassword, confirmPassword);
-          }
+        // 2. Fallback to specific role endpoint if unified endpoint isn't reached
+        if (detectedRole === 'LAWYER') {
+          res = await lawyerApi.resetPasswordWithOtp(cleanEmail, newPassword, confirmPassword);
+        } else if (detectedRole === 'CUSTOMER') {
+          res = await customerApi.resetPasswordWithOtp(cleanEmail, newPassword, confirmPassword);
         } else {
-          try {
-            res = await lawyerApi.resetPasswordWithOtp(cleanEmail, newPassword, confirmPassword);
-          } catch {
-            res = await customerApi.resetPasswordWithOtp(cleanEmail, newPassword, confirmPassword);
-          }
+          throw authErr;
         }
       }
 
@@ -369,11 +374,29 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
             </div>
           )}
 
-          {/* ────────── STEP 1: EMAIL ────────── */}
+          {/* ────────── STEP 1: EMAIL (AUTO-DETECT) ────────── */}
           {step === 'EMAIL' && (
             <form onSubmit={handleSendOtp}>
               <div className="fp-form-group">
-                <label className="fp-form-label">Registered Email Address</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                  <label className="fp-form-label" style={{ marginBottom: 0 }}>
+                    Registered Email Address
+                  </label>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.75rem',
+                    color: '#4338CA',
+                    background: '#EEF2FF',
+                    border: '1px solid #C7D2FE',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '12px',
+                    fontWeight: '600'
+                  }}>
+                    <Sparkles size={12} /> Auto-Detect
+                  </span>
+                </div>
                 <div className="fp-input-wrapper">
                   <Mail size={18} className="fp-input-icon" />
                   <input
@@ -399,7 +422,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
                 {loading ? (
                   <>
                     <RefreshCw size={17} className="fp-spin" />
-                    <span>Sending Code...</span>
+                    <span>Checking & Sending Code...</span>
                   </>
                 ) : (
                   <>
@@ -414,6 +437,17 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
           {/* ────────── STEP 2: ENTER OTP ────────── */}
           {step === 'OTP' && (
             <form onSubmit={handleVerifyOtp}>
+              {/* Role Indicator Pill */}
+              <div style={{ textAlign: 'center' }}>
+                <div className={`fp-role-pill ${detectedRole === 'LAWYER' ? 'lawyer' : 'customer'}`}>
+                  {detectedRole === 'LAWYER' ? <Scale size={14} /> : <User size={14} />}
+                  <span>
+                    Account Type: {detectedRole === 'LAWYER' ? 'Practicing Advocate' : 'Customer'}
+                    {detectedName ? ` (${detectedName})` : ''}
+                  </span>
+                </div>
+              </div>
+
               <div className="fp-otp-boxes" onPaste={handleOtpPaste}>
                 {otp.map((digit, idx) => (
                   <input
@@ -489,6 +523,16 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
           {/* ────────── STEP 3: NEW PASSWORD ────────── */}
           {step === 'NEW_PASSWORD' && (
             <form onSubmit={handleResetPassword}>
+              <div style={{ textAlign: 'center' }}>
+                <div className={`fp-role-pill ${detectedRole === 'LAWYER' ? 'lawyer' : 'customer'}`}>
+                  {detectedRole === 'LAWYER' ? <Scale size={14} /> : <User size={14} />}
+                  <span>
+                    Account: {detectedRole === 'LAWYER' ? 'Practicing Advocate' : 'Customer'}
+                    {detectedName ? ` (${detectedName})` : ''}
+                  </span>
+                </div>
+              </div>
+
               <div className="fp-form-group">
                 <label className="fp-form-label">New Password (min. 6 characters)</label>
                 <div className="fp-input-wrapper">
@@ -566,7 +610,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '', onPasswordRes
               </div>
               <h4 className="fp-success-title">Password Reset Complete!</h4>
               <p className="fp-success-desc">
-                Your password has been changed successfully. A security confirmation notification has also been dispatched to your email address.
+                Your password for <strong>{email}</strong> ({detectedRole === 'LAWYER' ? 'Advocate Account' : 'Customer Account'}) has been changed successfully. A security confirmation notification has also been dispatched to your email address.
               </p>
               <button
                 type="button"
