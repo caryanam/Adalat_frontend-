@@ -261,32 +261,99 @@ const LawyerRegisterWizardPage = () => {
     });
   };
 
+  // Step 1 Validation Errors (BUG-001 to BUG-005)
+  const [formErrors, setFormErrors] = useState({});
+
+  const validateStep1Fields = () => {
+    const errors = {};
+    const enrollment = (step1Data.barEnrollmentNumber || '').trim().toUpperCase();
+    if (!enrollment) {
+      errors.barEnrollmentNumber = 'Bar Council Enrollment Number is required.';
+    } else if (enrollment.length < 5) {
+      errors.barEnrollmentNumber = 'Bar Council Enrollment Number is invalid. A single letter or incomplete number is not accepted.';
+    } else if (!/^[A-Za-z]{1,5}\/\d{1,6}\/\d{4}$/.test(enrollment)) {
+      errors.barEnrollmentNumber = 'Invalid format. Expected: STATE/NUM/YEAR (e.g., MAH/1234/2020 or D/456/2018).';
+    }
+
+    const exp = step1Data.yearsOfExperience;
+    if (exp === '' || exp === null || exp === undefined) {
+      errors.yearsOfExperience = 'Years of experience is required.';
+    } else {
+      const expNum = Number(exp);
+      if (isNaN(expNum) || !Number.isInteger(expNum)) {
+        errors.yearsOfExperience = 'Years of experience must be a whole integer number.';
+      } else if (expNum < 0) {
+        errors.yearsOfExperience = 'Years of experience cannot be negative. Must be 0 or a positive number.';
+      } else if (expNum > 70) {
+        errors.yearsOfExperience = 'Years of experience cannot exceed 70 years.';
+      }
+    }
+
+    const edu = (step1Data.education || '').trim();
+    if (!edu) {
+      errors.education = 'Education / Qualifications details are required.';
+    } else if (edu.length < 2) {
+      errors.education = 'Education / Qualifications must be at least 2 characters long (e.g., LL.B., B.A. LL.B., LL.M.). A single letter is not accepted.';
+    }
+
+    const loc = (step1Data.location || '').trim();
+    if (!loc) {
+      errors.location = 'Location / Court City is required.';
+    } else if (loc.length < 2) {
+      errors.location = 'Location / Court City must be at least 2 characters long. A single letter is not accepted.';
+    } else if (!/^[a-zA-Z\s.-]+$/.test(loc)) {
+      errors.location = 'Location / Court City can only contain alphabets, spaces, and hyphens. Numbers and special characters are not allowed.';
+    }
+
+    const bio = (step1Data.bio || '').trim();
+    if (!bio) {
+      errors.bio = 'Professional Bio & Practice Summary is required.';
+    } else if (bio.length < 50) {
+      errors.bio = `Professional Bio must be at least 50 characters long to provide meaningful detail. A single letter or brief text is not accepted (currently ${bio.length} characters).`;
+    } else if (bio.length > 2000) {
+      errors.bio = 'Professional Bio cannot exceed 2000 characters.';
+    }
+
+    if (!step1Data.practiceAreas || step1Data.practiceAreas.length === 0) {
+      errors.practiceAreas = 'Please select at least one Practice Area.';
+    }
+
+    if (!step1Data.languages || step1Data.languages.length === 0) {
+      errors.languages = 'Please select at least one Language Spoken.';
+    }
+
+    setFormErrors(errors);
+    return errors;
+  };
+
   // Navigation handlers
   const handleStep1Next = async (e) => {
     e.preventDefault();
-    if (!step1Data.barEnrollmentNumber) {
-      toast.error('Please enter Bar Council Enrollment Number');
+    const errors = validateStep1Fields();
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
       return;
     }
-    if (step1Data.practiceAreas.length === 0) {
-      toast.error('Please select at least one Practice Area');
-      return;
-    }
-    if (step1Data.languages.length === 0) {
-      toast.error('Please select at least one Language Spoken');
-      return;
-    }
+
     setLoading(true);
     try {
       if (lawyerId) {
         await lawyerApi.updateStep2(lawyerId, {
           ...step1Data,
-          yearsOfExperience: parseInt(step1Data.yearsOfExperience, 10) || 5
+          barEnrollmentNumber: (step1Data.barEnrollmentNumber || '').trim().toUpperCase(),
+          yearsOfExperience: parseInt(step1Data.yearsOfExperience, 10),
+          education: (step1Data.education || '').trim(),
+          location: (step1Data.location || '').trim(),
+          bio: (step1Data.bio || '').trim()
         });
       }
+      toast.success('Professional details saved successfully!');
       setCurrentStep(2);
     } catch (err) {
-      setCurrentStep(2); // Proceed smoothly
+      const msg = err.response?.data?.message || err.message || 'Validation failed on server.';
+      toast.error(msg);
+      // Strict: Do not advance to Step 2 if backend validation fails
     } finally {
       setLoading(false);
     }
@@ -432,54 +499,102 @@ const LawyerRegisterWizardPage = () => {
 
             {/* Step 1: Professional Details */}
             {currentStep === 1 && (
-              <form onSubmit={handleStep1Next} className="wizard-step-body">
+              <form onSubmit={handleStep1Next} className="wizard-step-body" noValidate>
                 <div className="input-grid-4col">
+                  {/* BUG-001: Bar Council Enrollment Number */}
                   <div className="form-group-wiz">
                     <label className="form-label-wiz">Bar Council Enrollment Number <span className="required">*</span></label>
                     <input 
                       type="text" 
-                      className="form-input-wiz" 
+                      className={`form-input-wiz ${formErrors.barEnrollmentNumber ? 'is-invalid' : ''}`}
                       placeholder="e.g. D/2491/2012"
                       value={step1Data.barEnrollmentNumber}
-                      onChange={e => setStep1Data({ ...step1Data, barEnrollmentNumber: e.target.value })}
+                      onChange={e => {
+                        const val = e.target.value.toUpperCase();
+                        setStep1Data({ ...step1Data, barEnrollmentNumber: val });
+                        if (formErrors.barEnrollmentNumber) {
+                          setFormErrors({ ...formErrors, barEnrollmentNumber: null });
+                        }
+                      }}
+                      style={{ textTransform: 'uppercase' }}
                       required
                     />
+                    {formErrors.barEnrollmentNumber && (
+                      <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                        ⚠️ {formErrors.barEnrollmentNumber}
+                      </span>
+                    )}
                   </div>
 
+                  {/* BUG-005: Years of Experience */}
                   <div className="form-group-wiz">
                     <label className="form-label-wiz">Years of Experience <span className="required">*</span></label>
                     <input 
                       type="number" 
-                      className="form-input-wiz" 
+                      className={`form-input-wiz ${formErrors.yearsOfExperience ? 'is-invalid' : ''}`}
                       placeholder="e.g. 5"
+                      min="0"
+                      max="70"
                       value={step1Data.yearsOfExperience}
-                      onChange={e => setStep1Data({ ...step1Data, yearsOfExperience: e.target.value })}
+                      onChange={e => {
+                        setStep1Data({ ...step1Data, yearsOfExperience: e.target.value });
+                        if (formErrors.yearsOfExperience) {
+                          setFormErrors({ ...formErrors, yearsOfExperience: null });
+                        }
+                      }}
                       required
                     />
+                    {formErrors.yearsOfExperience && (
+                      <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                        ⚠️ {formErrors.yearsOfExperience}
+                      </span>
+                    )}
                   </div>
 
+                  {/* BUG-003: Education / Qualifications */}
                   <div className="form-group-wiz">
                     <label className="form-label-wiz">Education / Qualifications <span className="required">*</span></label>
                     <input 
                       type="text" 
-                      className="form-input-wiz" 
+                      className={`form-input-wiz ${formErrors.education ? 'is-invalid' : ''}`}
                       placeholder="e.g. LL.B, Delhi University"
                       value={step1Data.education}
-                      onChange={e => setStep1Data({ ...step1Data, education: e.target.value })}
+                      onChange={e => {
+                        setStep1Data({ ...step1Data, education: e.target.value });
+                        if (formErrors.education) {
+                          setFormErrors({ ...formErrors, education: null });
+                        }
+                      }}
                       required
                     />
+                    {formErrors.education && (
+                      <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                        ⚠️ {formErrors.education}
+                      </span>
+                    )}
                   </div>
 
+                  {/* BUG-002: Location / Court City */}
                   <div className="form-group-wiz">
                     <label className="form-label-wiz">Location / Court City <span className="required">*</span></label>
                     <input 
                       type="text" 
-                      className="form-input-wiz" 
+                      className={`form-input-wiz ${formErrors.location ? 'is-invalid' : ''}`}
                       placeholder="e.g. New Delhi"
                       value={step1Data.location}
-                      onChange={e => setStep1Data({ ...step1Data, location: e.target.value })}
+                      onChange={e => {
+                        setStep1Data({ ...step1Data, location: e.target.value });
+                        if (formErrors.location) {
+                          setFormErrors({ ...formErrors, location: null });
+                        }
+                      }}
                       required
                     />
+                    {formErrors.location && (
+                      <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                        ⚠️ {formErrors.location}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -500,6 +615,11 @@ const LawyerRegisterWizardPage = () => {
                       );
                     })}
                   </div>
+                  {formErrors.practiceAreas && (
+                    <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                      ⚠️ {formErrors.practiceAreas}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group-wiz">
@@ -519,6 +639,11 @@ const LawyerRegisterWizardPage = () => {
                       );
                     })}
                   </div>
+                  {formErrors.languages && (
+                    <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                      ⚠️ {formErrors.languages}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group-wiz" style={{ marginTop: '0.75rem' }}>
@@ -566,21 +691,37 @@ const LawyerRegisterWizardPage = () => {
                   </div>
                 </div>
 
+                {/* BUG-004: Professional Bio & Practice Summary */}
                 <div className="form-group-wiz" style={{ marginTop: '0.75rem' }}>
-                  <label className="form-label-wiz">Professional Bio & Practice Summary <span className="required">*</span></label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="form-label-wiz">Professional Bio & Practice Summary <span className="required">*</span></label>
+                    <span style={{ fontSize: '0.78rem', color: (step1Data.bio || '').trim().length >= 50 ? '#059669' : '#DC2626', fontWeight: 600 }}>
+                      {(step1Data.bio || '').trim().length} / 50 min characters
+                    </span>
+                  </div>
                   <textarea 
-                    className="form-input-wiz" 
+                    className={`form-input-wiz ${formErrors.bio ? 'is-invalid' : ''}`}
                     rows="3"
                     placeholder="Describe your legal practice experience, court appearances, key achievements, and specialization details..."
                     value={step1Data.bio || ''}
-                    onChange={e => setStep1Data({ ...step1Data, bio: e.target.value })}
+                    onChange={e => {
+                      setStep1Data({ ...step1Data, bio: e.target.value });
+                      if (formErrors.bio) {
+                        setFormErrors({ ...formErrors, bio: null });
+                      }
+                    }}
                     required
                   />
+                  {formErrors.bio && (
+                    <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                      ⚠️ {formErrors.bio}
+                    </span>
+                  )}
                 </div>
 
                 <div className="wizard-actions-bar" style={{ justifyContent: 'flex-end' }}>
                   <button type="submit" className="btn-wizard-next" disabled={loading}>
-                    {loading ? 'Saving...' : 'Save & Continue'} <ArrowRight size={16} />
+                    {loading ? 'Saving & Validating...' : 'Save & Continue'} <ArrowRight size={16} />
                   </button>
                 </div>
               </form>
