@@ -34,7 +34,7 @@ const HomePage = () => {
   return (
     <div className="homepage-container">
       {/* 1. HERO SECTION — Full BG Video with Lighter, Elegant Translucent Gradient Overlays */}
-      <section className="relative min-h-[88vh] sm:min-h-[90vh] lg:min-h-[94vh] flex items-center justify-center overflow-hidden bg-slate-950 pt-24 sm:pt-28 lg:pt-32 pb-14 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 font-['Outfit',sans-serif]">
+      <section className="relative min-h-[85vh] sm:min-h-[88vh] lg:min-h-[92vh] flex items-center justify-center overflow-hidden bg-slate-950 pt-24 sm:pt-28 lg:pt-32 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 font-['Outfit',sans-serif]">
         {/* Background Video */}
         <video 
           className="absolute inset-0 w-full h-full object-cover object-right md:object-[75%_center] lg:object-[82%_center] z-0 pointer-events-none filter brightness-100 contrast-105" 
@@ -58,7 +58,7 @@ const HomePage = () => {
         <div className="absolute bottom-10 right-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-1" />
 
         {/* Hero Content Container */}
-        <div className="relative z-10 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center mt-1 sm:mt-2 lg:mt-3 translate-y-[23px]">
+        <div className="relative z-10 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Hero Left — Text Content without bounding box */}
           <div className="lg:col-span-7 xl:col-span-7 flex flex-col items-start text-left">
@@ -168,29 +168,29 @@ const HomePage = () => {
       </section>
 
       {/* 3. FIND SPECIALIZED ADVOCATES SECTION — Light Theme */}
-      <section className="w-full bg-slate-50 text-slate-900 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 border-y border-slate-200 font-['Outfit',sans-serif]">
+      <section className="w-full bg-slate-50 text-slate-900 py-10 sm:py-12 lg:py-14 px-4 sm:px-6 lg:px-8 border-y border-slate-200 font-['Outfit',sans-serif]">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-10 sm:mb-14">
-            <h2 className="font-['Cinzel',serif] text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-wide mb-3">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="font-['Cinzel',serif] text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-wide mb-2.5">
               FIND SPECIALIZED <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 bg-clip-text text-transparent font-extrabold">ADVOCATES</span>
             </h2>
-            <div className="w-16 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mb-3" />
+            <div className="w-16 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mb-2.5" />
             <p className="text-slate-600 text-sm sm:text-base max-w-xl mx-auto">
               Choose from expert advocates in every legal field
             </p>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-5 mb-10 sm:mb-12">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 mb-6 sm:mb-8">
             {categories.map((cat, index) => (
               <div 
                 key={index} 
-                className="group relative flex flex-col items-center text-center p-5 sm:p-6 rounded-2xl bg-white hover:bg-white border border-slate-200 hover:border-amber-400/80 shadow-xs hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
+                className="group relative flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white hover:bg-white border border-slate-200 hover:border-amber-400/80 shadow-xs hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
                 onClick={() => navigate('/legal-categories')}
               >
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 group-hover:scale-110 group-hover:bg-amber-100 transition-all flex items-center justify-center mb-3.5 shadow-xs">
+                <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 group-hover:scale-110 group-hover:bg-amber-100 transition-all flex items-center justify-center mb-2.5 shadow-xs">
                   {cat.icon}
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-700 transition-colors mb-1.5 line-clamp-1">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-700 transition-colors mb-1 line-clamp-1">
                   {cat.name}
                 </h3>
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
@@ -247,7 +247,7 @@ const HomePage = () => {
       </section>
 
       {/* 5. DOWNLOAD MOBILE APPLICATION SECTION — Full-Width Open Display */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-b from-slate-50/80 via-white to-slate-50/80 border-b border-slate-200/80 overflow-hidden font-['Outfit',sans-serif] relative">
+      <section className="py-10 sm:py-12 lg:py-14 bg-gradient-to-b from-slate-50/80 via-white to-slate-50/80 border-b border-slate-200/80 overflow-hidden font-['Outfit',sans-serif] relative">
         
         {/* Subtle Ambient Background Glow Orbs */}
         <div className="absolute top-1/4 -left-24 w-96 h-96 bg-amber-300/10 rounded-full blur-3xl pointer-events-none" />
@@ -255,10 +255,10 @@ const HomePage = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
             {/* LEFT SIDE: Realistic Modern Flagship Smartphone Showcase */}
-            <div className="lg:col-span-5 flex justify-center relative py-4">
+            <div className="lg:col-span-5 flex justify-center relative py-2">
                 
                 {/* Floating Trust Badge 1 (Top Left) */}
                 <div className="absolute -top-1 -left-2 sm:-left-4 z-20 bg-white/95 backdrop-blur-md border border-slate-200/80 py-1.5 px-3 rounded-2xl shadow-lg flex items-center gap-2.5 transition-transform duration-300 hover:scale-105">
@@ -428,10 +428,10 @@ const HomePage = () => {
               </div>
 
               {/* RIGHT SIDE: High-Impact Typography, Feature Grid & Store CTAs */}
-              <div className="lg:col-span-7 space-y-5 text-left">
+              <div className="lg:col-span-7 space-y-4 text-left">
                 
                 {/* Pill Tag */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/90 text-xs font-bold tracking-wider uppercase text-amber-800 shadow-xs">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/90 text-xs font-bold tracking-wider uppercase text-amber-800 shadow-xs">
                   <Sparkles size={13} className="text-amber-600 animate-pulse" />
                   <span>Official Mobile App • Android & iOS</span>
                 </div>
@@ -450,12 +450,12 @@ const HomePage = () => {
                 </p>
 
                 {/* 4 Feature Value Cards (2x2 Grid) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
                   
                   {/* Feature 1 */}
-                  <div className="p-3 rounded-2xl bg-slate-50/80 hover:bg-emerald-50/40 border border-slate-200/80 hover:border-emerald-200 transition-all duration-200 flex items-start gap-3 group">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-100/80 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
-                      <Clock size={16} />
+                  <div className="p-2.5 rounded-2xl bg-slate-50/80 hover:bg-emerald-50/40 border border-slate-200/80 hover:border-emerald-200 transition-all duration-200 flex items-start gap-2.5 group">
+                    <div className="w-7 h-7 rounded-xl bg-emerald-100/80 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                      <Clock size={15} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-slate-900">10-Min Free Initial Chat</h4>
@@ -464,9 +464,9 @@ const HomePage = () => {
                   </div>
 
                   {/* Feature 2 */}
-                  <div className="p-3 rounded-2xl bg-slate-50/80 hover:bg-indigo-50/40 border border-slate-200/80 hover:border-indigo-200 transition-all duration-200 flex items-start gap-3 group">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-100/80 border border-indigo-200 flex items-center justify-center text-indigo-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
-                      <Bot size={16} />
+                  <div className="p-2.5 rounded-2xl bg-slate-50/80 hover:bg-indigo-50/40 border border-slate-200/80 hover:border-indigo-200 transition-all duration-200 flex items-start gap-2.5 group">
+                    <div className="w-7 h-7 rounded-xl bg-indigo-100/80 border border-indigo-200 flex items-center justify-center text-indigo-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                      <Bot size={15} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-slate-900">24/7 AI Legal Assistant</h4>
@@ -475,9 +475,9 @@ const HomePage = () => {
                   </div>
 
                   {/* Feature 3 */}
-                  <div className="p-3 rounded-2xl bg-slate-50/80 hover:bg-amber-50/40 border border-slate-200/80 hover:border-amber-200 transition-all duration-200 flex items-start gap-3 group">
-                    <div className="w-8 h-8 rounded-xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
-                      <Lock size={16} />
+                  <div className="p-2.5 rounded-2xl bg-slate-50/80 hover:bg-amber-50/40 border border-slate-200/80 hover:border-amber-200 transition-all duration-200 flex items-start gap-2.5 group">
+                    <div className="w-7 h-7 rounded-xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                      <Lock size={15} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-slate-900">Digital Document Vault</h4>
@@ -486,9 +486,9 @@ const HomePage = () => {
                   </div>
 
                   {/* Feature 4 */}
-                  <div className="p-3 rounded-2xl bg-slate-50/80 hover:bg-blue-50/40 border border-slate-200/80 hover:border-blue-200 transition-all duration-200 flex items-start gap-3 group">
-                    <div className="w-8 h-8 rounded-xl bg-blue-100/80 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
-                      <Video size={16} />
+                  <div className="p-2.5 rounded-2xl bg-slate-50/80 hover:bg-blue-50/40 border border-slate-200/80 hover:border-blue-200 transition-all duration-200 flex items-start gap-2.5 group">
+                    <div className="w-7 h-7 rounded-xl bg-blue-100/80 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                      <Video size={15} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-slate-900">Encrypted Video & Calls</h4>
@@ -499,18 +499,18 @@ const HomePage = () => {
                 </div>
 
                 {/* Download Store Buttons & QR Code Row */}
-                <div className="pt-2 flex flex-wrap items-center gap-3.5">
+                <div className="pt-1 flex flex-wrap items-center gap-3">
                   
                   {/* Google Play Store Button (Android) */}
                   <a
                     href="#download-android"
-                    className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-950 hover:bg-slate-800 text-white transition-all duration-200 shadow-md hover:shadow-xl hover:-translate-y-0.5 border border-slate-800 group"
+                    className="inline-flex items-center gap-2.5 px-4.5 py-2.5 rounded-2xl bg-slate-950 hover:bg-slate-800 text-white transition-all duration-200 shadow-md hover:shadow-xl hover:-translate-y-0.5 border border-slate-800 group"
                   >
-                    <svg className="w-6 h-6 fill-current text-white shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 fill-current text-white shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                       <path d="M3.609 1.814L13.793 12 3.61 22.186A2.247 2.247 0 0 1 3 20.618V3.382c0-.607.228-1.18.609-1.568zm11.232 11.234l2.52 2.52-12.06 6.947 9.54-9.467zm0-2.096L5.3 1.485l12.06 6.947-2.519 2.52zm1.463 1.463l3.52-2.028a1.5 1.5 0 0 0 0-2.614l-3.52-2.028-1.748 1.748 1.748 2.922z"/>
                     </svg>
                     <div className="text-left">
-                      <div className="text-[9px] uppercase font-semibold text-slate-400 tracking-wider">GET IT ON</div>
+                      <div className="text-[8px] uppercase font-semibold text-slate-400 tracking-wider">GET IT ON</div>
                       <div className="text-xs sm:text-sm font-bold text-white tracking-wide">Google Play</div>
                     </div>
                   </a>
@@ -518,34 +518,34 @@ const HomePage = () => {
                   {/* Apple App Store Button (iOS) */}
                   <a
                     href="#download-ios"
-                    className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-950 hover:bg-slate-800 text-white transition-all duration-200 shadow-md hover:shadow-xl hover:-translate-y-0.5 border border-slate-800 group"
+                    className="inline-flex items-center gap-2.5 px-4.5 py-2.5 rounded-2xl bg-slate-950 hover:bg-slate-800 text-white transition-all duration-200 shadow-md hover:shadow-xl hover:-translate-y-0.5 border border-slate-800 group"
                   >
-                    <svg className="w-6 h-6 fill-current text-white shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 fill-current text-white shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                       <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.74 1.04-1.8 1.01-2.87-.96.04-2.14.64-2.82 1.44-.59.69-1.12 1.76-1.01 2.82 1.07.08 2.21-.59 2.82-1.39z"/>
                     </svg>
                     <div className="text-left">
-                      <div className="text-[9px] uppercase font-semibold text-slate-400 tracking-wider">Download on the</div>
+                      <div className="text-[8px] uppercase font-semibold text-slate-400 tracking-wider">Download on the</div>
                       <div className="text-xs sm:text-sm font-bold text-white tracking-wide">App Store</div>
                     </div>
                   </a>
 
                   {/* Sleek Mini QR Code Preview Card */}
-                  <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-2xl bg-slate-50 border border-slate-200/90 text-left">
-                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
-                      <QrCode size={18} />
+                  <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200/90 text-left">
+                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
+                      <QrCode size={16} />
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-slate-900 leading-tight">Scan to Install</div>
-                      <div className="text-[8px] text-slate-500">Camera / QR Scanner</div>
+                      <div className="text-[9px] font-bold text-slate-900 leading-tight">Scan to Install</div>
+                      <div className="text-[7px] text-slate-500">Camera / Scanner</div>
                     </div>
                   </div>
 
                 </div>
 
                 {/* Bottom Trust & Compliance Indicator Strip */}
-                <div className="pt-2 flex flex-wrap items-center gap-4 text-[11px] text-slate-500 border-t border-slate-100">
+                <div className="pt-1.5 flex flex-wrap items-center gap-3 text-[10px] text-slate-500 border-t border-slate-100">
                   <span className="flex items-center gap-1 font-semibold text-slate-700">
-                    <Star size={13} className="text-amber-500 fill-amber-500" /> 4.9 Rating (15k+ Reviews)
+                    <Star size={12} className="text-amber-500 fill-amber-500" /> 4.9 Rating (15k+ Reviews)
                   </span>
                   <span>•</span>
                   <span>50,000+ Active Downloads</span>
@@ -560,42 +560,46 @@ const HomePage = () => {
       </section>
 
       {/* 6. READY TO GET LEGAL GUIDANCE BANNER */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-['Outfit',sans-serif]">
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 p-8 sm:p-12 lg:p-16 text-center">
-          <video 
-            className="absolute inset-0 w-full h-full object-cover object-center z-0 pointer-events-none filter brightness-75" 
-            autoPlay 
-            loop 
-            muted 
-            playsInline
-          >
-            <source src="/videos/hero-bg.mp4" type="video/mp4" />
-          </video>
-          
-          {/* High-Contrast Overlay */}
-          <div className="absolute inset-0 z-1 bg-gradient-to-r from-slate-950/90 via-slate-950/80 to-slate-950/90 pointer-events-none" />
-          
-          <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center">
-            <h2 className="font-['Cinzel',serif] text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-wide mb-4 drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
-              READY TO GET LEGAL GUIDANCE?
-            </h2>
-            <p className="text-slate-200 text-sm sm:text-base md:text-lg mb-8 max-w-xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-              Join thousands of people who've resolved their legal issues with verified advocate consultations.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4 w-full sm:w-auto">
-              <Link 
-                to="/register?type=customer" 
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-xl hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
-              >
-                <span>Talk to a Lawyer Now</span> 
-                <ArrowRight size={18} />
-              </Link>
-              <Link 
-                to="/lawyer/register" 
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-white font-semibold text-sm sm:text-base border border-slate-600 backdrop-blur-md shadow-lg hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
-              >
-                <span>For Advocates: Join Now</span>
-              </Link>
+      <section className="w-full bg-slate-50/60 py-8 sm:py-10 lg:py-12 px-4 sm:px-6 lg:px-8 font-['Outfit',sans-serif]">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative rounded-3xl lg:rounded-[36px] overflow-hidden shadow-2xl border border-slate-800/80 bg-slate-950 p-6 sm:p-8 lg:p-10 text-center">
+            {/* Background Image */}
+            <img 
+              src="/images/cta-legal-guidance-bg.jpg" 
+              alt="Legal Guidance Background" 
+              className="absolute inset-0 w-full h-full object-cover object-right md:object-[82%_center] z-0 pointer-events-none filter brightness-95 contrast-105" 
+            />
+            
+            {/* Balanced Vignette & Contrast Overlays */}
+            <div className="absolute inset-0 z-1 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-slate-950/35 pointer-events-none" />
+            <div className="absolute inset-0 z-1 bg-radial from-transparent via-transparent to-slate-950/60 pointer-events-none" />
+            
+            {/* Ambient Lighting Accents */}
+            <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none z-1" />
+            <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-1" />
+
+            <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center">
+              <h2 className="font-['Cinzel',serif] text-2xl sm:text-3.5xl md:text-4xl lg:text-[40px] font-bold text-white tracking-wide mb-3 drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
+                READY TO GET LEGAL GUIDANCE?
+              </h2>
+              <p className="text-slate-200 text-sm sm:text-base md:text-lg mb-6 max-w-2xl font-normal leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                Join thousands of people who've resolved their legal issues with verified advocate consultations.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
+                <Link 
+                  to="/register?type=customer" 
+                  className="inline-flex items-center justify-center gap-2.5 px-7 py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-xl hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
+                >
+                  <span>Talk to a Lawyer Now</span> 
+                  <ArrowRight size={18} />
+                </Link>
+                <Link 
+                  to="/lawyer/register" 
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-white font-semibold text-sm sm:text-base border border-slate-700/80 hover:border-slate-500 backdrop-blur-md shadow-lg hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
+                >
+                  <span>For Advocates: Join Now</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

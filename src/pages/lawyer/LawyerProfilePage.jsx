@@ -9,7 +9,7 @@ import {
   Camera, Scale, Award, ShieldCheck, MapPin, Mail, Phone,
   IndianRupee, BookOpen, Globe, CreditCard, Lock, Edit3, X, Check,
   CheckCircle2, Eye, EyeOff, Upload, ShieldAlert, Sparkles,
-  GraduationCap, Copy
+  GraduationCap, Copy, AlertCircle, RefreshCw
 } from 'lucide-react';
 import LawyerHeader from '../../components/LawyerHeader';
 
@@ -75,6 +75,11 @@ const LawyerProfilePage = () => {
   const modalFileInputRef = useRef(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+  // Real-time Email Duplication States
+  const [emailDuplicateError, setEmailDuplicateError] = useState('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState(false);
+
   // Email Change & OTP State
   const [isEmailChanged, setIsEmailChanged] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -123,7 +128,7 @@ const LawyerProfilePage = () => {
       if (user) setProfile(user);
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.lawyerId, user?.id]);
 
   // Sync profile into edit state when opening edit modal
   const openEditProfileModal = () => {
@@ -153,11 +158,70 @@ const LawyerProfilePage = () => {
     });
 
     setIsEmailChanged(false);
+    setEmailDuplicateError('');
+    setIsCheckingEmail(false);
+    setEmailAvailable(false);
     setOtpSent(false);
     setOtpCode('');
     setEmailVerified(false);
     setIsEditProfileOpen(true);
   };
+
+  // Real-time Email Duplication Pre-Check for Advocate Profile
+  useEffect(() => {
+    if (!isEditProfileOpen) return;
+
+    const trimmedEmail = (editForm.email || '').trim();
+    const originalEmail = (profile?.email || user?.email || '').trim();
+
+    if (!trimmedEmail) {
+      setEmailDuplicateError('');
+      setIsCheckingEmail(false);
+      setEmailAvailable(false);
+      return;
+    }
+
+    if (trimmedEmail.toLowerCase() === originalEmail.toLowerCase()) {
+      setEmailDuplicateError('');
+      setIsCheckingEmail(false);
+      setEmailAvailable(false);
+      return;
+    }
+
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailDuplicateError('Please enter a valid email address (e.g. name@example.com).');
+      setIsCheckingEmail(false);
+      setEmailAvailable(false);
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    setEmailDuplicateError('');
+    setEmailAvailable(false);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get(`/api/auth/check-email?email=${encodeURIComponent(trimmedEmail)}`);
+        if (res.data && res.data.exists) {
+          const errMsg = res.message || 'This email address is already registered to an existing account.';
+          setEmailDuplicateError(errMsg);
+          setEmailAvailable(false);
+        } else {
+          setEmailDuplicateError('');
+          setEmailAvailable(true);
+        }
+      } catch (err) {
+        if (err.message && (err.message.toLowerCase().includes('already registered') || err.message.toLowerCase().includes('already in use') || err.message.toLowerCase().includes('exists'))) {
+          setEmailDuplicateError(err.message);
+        }
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [editForm.email, profile?.email, user?.email, isEditProfileOpen]);
 
   // OTP Countdown Timer
   useEffect(() => {
@@ -221,8 +285,14 @@ const LawyerProfilePage = () => {
 
   // Send OTP for Email Change
   const handleSendEmailOtp = async () => {
-    if (!editForm.email || !editForm.email.includes('@')) {
+    const cleanEmail = (editForm.email || '').trim();
+    if (!cleanEmail || !cleanEmail.includes('@') || !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(cleanEmail)) {
       toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    if (emailDuplicateError) {
+      toast.error(emailDuplicateError);
       return;
     }
 
@@ -230,14 +300,26 @@ const LawyerProfilePage = () => {
     setSendingOtp(true);
 
     try {
-      await lawyerApi.sendEmailChangeOtp(lawyerId, editForm.email.trim());
+      // Pre-check email availability
+      const checkRes = await apiClient.get(`/api/auth/check-email?email=${encodeURIComponent(cleanEmail)}`);
+      if (checkRes.data && checkRes.data.exists) {
+        const errMsg = checkRes.message || 'This email address is already registered to another account.';
+        setEmailDuplicateError(errMsg);
+        toast.error(errMsg);
+        setSendingOtp(false);
+        return;
+      }
+
+      await lawyerApi.sendEmailChangeOtp(lawyerId, cleanEmail);
       setOtpSent(true);
       setOtpTimer(60);
-      toast.success(`Verification OTP sent to ${editForm.email}`);
-    } catch {
-      setOtpSent(true);
-      setOtpTimer(60);
-      toast.info(`OTP dispatched to ${editForm.email}. Check your inbox!`);
+      toast.success(`Verification OTP sent to ${cleanEmail}`);
+    } catch (err) {
+      const errMsg = err.message || `Failed to send OTP to ${cleanEmail}`;
+      if (errMsg.toLowerCase().includes('already registered') || errMsg.toLowerCase().includes('already in use') || errMsg.toLowerCase().includes('exists')) {
+        setEmailDuplicateError(errMsg);
+      }
+      toast.error(errMsg);
     } finally {
       setSendingOtp(false);
     }
@@ -264,11 +346,8 @@ const LawyerProfilePage = () => {
         if (updateUser) updateUser({ email: editForm.email.trim() });
       }
       toast.success('Email verified and updated successfully!');
-    } catch {
-      setEmailVerified(true);
-      setOtpSent(false);
-      setIsEmailChanged(false);
-      toast.success('Email verified successfully!');
+    } catch (err) {
+      toast.error(err.message || 'Invalid or expired OTP. Please try again.');
     } finally {
       setVerifyingOtp(false);
     }
@@ -283,22 +362,32 @@ const LawyerProfilePage = () => {
       return;
     }
 
+    const cleanMobile = (editForm.mobileNumber || '').replace(/\D/g, '');
+    if (!cleanMobile) {
+      toast.error('Mobile number is required.');
+      return;
+    }
+    if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
+      toast.error('Mobile number must be a valid 10-digit Indian number starting with 6, 7, 8, or 9.');
+      return;
+    }
+
     const lawyerId = profile?.lawyerId || user?.lawyerId || user?.id || 1;
     setSavingModule(true);
 
     try {
       const payload = {
-        fullName: editForm.fullName,
-        mobileNumber: editForm.mobileNumber,
-        barEnrollmentNumber: editForm.barEnrollmentNumber,
+        fullName: editForm.fullName.trim(),
+        mobileNumber: cleanMobile,
+        barEnrollmentNumber: editForm.barEnrollmentNumber.trim(),
         yearsOfExperience: parseInt(editForm.yearsOfExperience, 10) || 0,
         location: editForm.location,
-        education: editForm.education || profile?.education || advocate.education,
-        bio: profile?.bio || advocate.bio,
-        consultationFee: profile?.consultationFee || advocate.consultationFee || 99,
-        upiId: profile?.upiId || advocate.upiId,
-        practiceAreas: profile?.practiceAreas || advocate.practiceAreas,
-        languages: profile?.languages || advocate.languages,
+        education: editForm.education || profile?.education || '',
+        bio: editForm.bio || profile?.bio || '',
+        consultationFee: profile?.consultationFee || 99,
+        upiId: profile?.upiId || '',
+        practiceAreas: profile?.practiceAreas || [],
+        languages: profile?.languages || [],
         profilePhotoUrl: editForm.profilePhotoUrl || profile?.profilePhotoUrl || ''
       };
 
@@ -310,18 +399,8 @@ const LawyerProfilePage = () => {
 
       toast.success('Advocate profile updated successfully!');
       setIsEditProfileOpen(false);
-    } catch {
-      setProfile(prev => ({
-        ...prev,
-        fullName: editForm.fullName,
-        mobileNumber: editForm.mobileNumber,
-        barEnrollmentNumber: editForm.barEnrollmentNumber,
-        yearsOfExperience: parseInt(editForm.yearsOfExperience, 10) || 0,
-        location: editForm.location,
-        profilePhotoUrl: editForm.profilePhotoUrl || prev?.profilePhotoUrl
-      }));
-      toast.success('Advocate profile updated!');
-      setIsEditProfileOpen(false);
+    } catch (err) {
+      toast.error(err.message || 'Failed to update advocate profile.');
     } finally {
       setSavingModule(false);
     }
@@ -1163,11 +1242,12 @@ const LawyerProfilePage = () => {
                         Contact Phone Number <span className="text-rose-500">*</span>
                       </label>
                       <input
-                        type="text"
+                        type="tel"
+                        maxLength={10}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all bg-white"
-                        placeholder="9807234567"
+                        placeholder="10-digit mobile (e.g. 9807234567)"
                         value={editForm.mobileNumber}
-                        onChange={e => setEditForm(prev => ({ ...prev, mobileNumber: e.target.value }))}
+                        onChange={e => setEditForm(prev => ({ ...prev, mobileNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                         required
                       />
                     </div>
@@ -1197,7 +1277,13 @@ const LawyerProfilePage = () => {
                       <div className="relative flex items-center">
                         <input
                           type="email"
-                          className="w-full px-3.5 py-2.5 pr-28 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all bg-white"
+                          className={`w-full px-3.5 py-2.5 pr-28 rounded-xl border text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden transition-all bg-white ${
+                            emailDuplicateError 
+                              ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' 
+                              : emailAvailable && isEmailChanged && !emailVerified
+                                ? 'border-emerald-400 bg-emerald-50/20 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
+                                : 'border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20'
+                          }`}
                           placeholder="virat@gmail.com"
                           value={editForm.email}
                           onChange={handleEmailChange}
@@ -1206,11 +1292,15 @@ const LawyerProfilePage = () => {
                         {isEmailChanged && !emailVerified && (
                           <button
                             type="button"
-                            className="absolute right-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors disabled:opacity-50 cursor-pointer"
+                            className={`absolute right-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                              Boolean(emailDuplicateError) || isCheckingEmail || sendingOtp || otpTimer > 0
+                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                            }`}
                             onClick={handleSendEmailOtp}
-                            disabled={sendingOtp || otpTimer > 0}
+                            disabled={sendingOtp || otpTimer > 0 || isCheckingEmail || Boolean(emailDuplicateError)}
                           >
-                            {sendingOtp ? 'Sending...' : (otpTimer > 0 ? `Resend (${otpTimer}s)` : 'Verify')}
+                            {sendingOtp ? 'Sending...' : isCheckingEmail ? 'Checking...' : (otpTimer > 0 ? `Resend (${otpTimer}s)` : 'Verify')}
                           </button>
                         )}
                         {emailVerified && isEmailChanged && (
@@ -1219,6 +1309,32 @@ const LawyerProfilePage = () => {
                           </span>
                         )}
                       </div>
+
+                      {/* LIVE FEEDBACK UNDER EMAIL INPUT */}
+                      {isEmailChanged && !emailVerified && (
+                        <div className="mt-1.5 space-y-1">
+                          {emailDuplicateError ? (
+                            <p className="text-xs text-rose-600 font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
+                              <AlertCircle size={13} className="shrink-0 text-rose-500" />
+                              <span>{emailDuplicateError}</span>
+                            </p>
+                          ) : isCheckingEmail ? (
+                            <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                              <RefreshCw size={12} className="animate-spin text-amber-500 shrink-0" />
+                              <span>Checking email availability...</span>
+                            </p>
+                          ) : emailAvailable ? (
+                            <p className="text-xs text-emerald-700 font-medium flex items-center gap-1.5 animate-in fade-in duration-200">
+                              <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+                              <span>Email is available. Click 'Verify' to receive OTP.</span>
+                            </p>
+                          ) : (
+                            <p className="text-xs text-amber-600 font-medium">
+                              ⚠️ Changing your email address requires one-time OTP verification before saving.
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {/* INLINE OTP VERIFICATION PANEL */}
                       {otpSent && !emailVerified && (

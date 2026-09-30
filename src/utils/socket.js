@@ -16,8 +16,10 @@ export const getSocket = () => {
       auth: { token: token || '' },
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 3000,
+      reconnectionDelayMax: 15000,
+      timeout: 10000,
     });
 
     socket.on('connect', () => {
@@ -25,13 +27,13 @@ export const getSocket = () => {
     });
 
     socket.on('connect_error', (err) => {
-      console.warn('⚠️ Socket.IO connect error:', err.message);
+      console.warn('⚠️ Socket.IO connect error (will retry with backoff):', err.message);
     });
 
     socket.on('disconnect', (reason) => {
       console.log('❌ Socket.IO disconnected:', reason);
     });
-  } else if (socket.disconnected) {
+  } else if (socket.disconnected && token) {
     if (socket.io && socket.io.opts) {
       socket.io.opts.query = { token: token || '' };
       socket.io.opts.auth = { token: token || '' };

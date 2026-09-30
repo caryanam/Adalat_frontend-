@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
@@ -11,42 +11,53 @@ import ScrollToTop from './components/ScrollToTop';
 import SessionExpiredModal from './components/SessionExpiredModal';
 import CustomerRouteGuard from './components/CustomerRouteGuard';
 
-import HomePage from './pages/public/HomePage';
-import HowItWorksPage from './pages/public/HowItWorksPage';
-import FindLawyerPage from './pages/public/FindLawyerPage';
-import LegalCategoriesPage from './pages/public/LegalCategoriesPage';
-import AboutPage from './pages/public/AboutPage';
-import TermsPage from './pages/public/TermsPage';
-import PrivacyPage from './pages/public/PrivacyPage';
-import RefundPolicyPage from './pages/public/RefundPolicyPage';
+// Public pages (Lazy loaded)
+const HomePage = lazy(() => import('./pages/public/HomePage'));
+const HowItWorksPage = lazy(() => import('./pages/public/HowItWorksPage'));
+const FindLawyerPage = lazy(() => import('./pages/public/FindLawyerPage'));
+const LegalCategoriesPage = lazy(() => import('./pages/public/LegalCategoriesPage'));
+const AboutPage = lazy(() => import('./pages/public/AboutPage'));
+const TermsPage = lazy(() => import('./pages/public/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'));
+const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicyPage'));
 
-import LoginPage from './pages/auth/LoginPage';
-import CustomerRegisterPage from './pages/auth/CustomerRegisterPage';
-import LawyerSignupPage from './pages/auth/LawyerSignupPage';
-import LawyerRegisterWizardPage from './pages/auth/LawyerRegisterWizardPage';
-import EmailVerificationPage from './pages/auth/EmailVerificationPage';
+// Auth pages (Lazy loaded)
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const CustomerRegisterPage = lazy(() => import('./pages/auth/CustomerRegisterPage'));
+const LawyerSignupPage = lazy(() => import('./pages/auth/LawyerSignupPage'));
+const LawyerRegisterWizardPage = lazy(() => import('./pages/auth/LawyerRegisterWizardPage'));
+const EmailVerificationPage = lazy(() => import('./pages/auth/EmailVerificationPage'));
 
-import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
-import LegalAssistantPage from './pages/customer/LegalAssistantPage';
-import CustomerConsultationPage from './pages/customer/CustomerConsultationPage';
-import CustomerAppointmentsPage from './pages/customer/CustomerAppointmentsPage';
-import CustomerPaymentsPage from './pages/customer/CustomerPaymentsPage';
-import CustomerProfilePage from './pages/customer/CustomerProfilePage';
-import CustomerFindLawyersPage from './pages/customer/CustomerFindLawyersPage';
+// Customer pages (Lazy loaded)
+const CustomerDashboardPage = lazy(() => import('./pages/customer/CustomerDashboardPage'));
+const LegalAssistantPage = lazy(() => import('./pages/customer/LegalAssistantPage'));
+const CustomerConsultationPage = lazy(() => import('./pages/customer/CustomerConsultationPage'));
+const CustomerAppointmentsPage = lazy(() => import('./pages/customer/CustomerAppointmentsPage'));
+const CustomerPaymentsPage = lazy(() => import('./pages/customer/CustomerPaymentsPage'));
+const CustomerProfilePage = lazy(() => import('./pages/customer/CustomerProfilePage'));
+const CustomerFindLawyersPage = lazy(() => import('./pages/customer/CustomerFindLawyersPage'));
 
-import LawyerDashboardPage from './pages/lawyer/LawyerDashboardPage';
-import LawyerRequestsPage from './pages/lawyer/LawyerRequestsPage';
-import LawyerConsultationsPage from './pages/lawyer/LawyerConsultationsPage';
-import LawyerEarningsPage from './pages/lawyer/LawyerEarningsPage';
-import LawyerDocumentsPage from './pages/lawyer/LawyerDocumentsPage';
-import LawyerProfilePage from './pages/lawyer/LawyerProfilePage';
+// Lawyer pages (Lazy loaded)
+const LawyerDashboardPage = lazy(() => import('./pages/lawyer/LawyerDashboardPage'));
+const LawyerRequestsPage = lazy(() => import('./pages/lawyer/LawyerRequestsPage'));
+const LawyerConsultationsPage = lazy(() => import('./pages/lawyer/LawyerConsultationsPage'));
+const LawyerEarningsPage = lazy(() => import('./pages/lawyer/LawyerEarningsPage'));
+const LawyerDocumentsPage = lazy(() => import('./pages/lawyer/LawyerDocumentsPage'));
+const LawyerProfilePage = lazy(() => import('./pages/lawyer/LawyerProfilePage'));
 
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import AdminVerificationsPage from './pages/admin/AdminVerificationsPage';
-import AdminLawyersPage from './pages/admin/AdminLawyersPage';
-import AdminCustomersPage from './pages/admin/AdminCustomersPage';
-import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
-import AdminReportsPage from './pages/admin/AdminReportsPage';
+// Admin pages (Lazy loaded)
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminVerificationsPage = lazy(() => import('./pages/admin/AdminVerificationsPage'));
+const AdminLawyersPage = lazy(() => import('./pages/admin/AdminLawyersPage'));
+const AdminCustomersPage = lazy(() => import('./pages/admin/AdminCustomersPage'));
+const AdminPaymentsPage = lazy(() => import('./pages/admin/AdminPaymentsPage'));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[50vh] w-full">
+    <div className="w-8 h-8 border-3 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+  </div>
+);
 
 const AppLayout = () => {
   const location = useLocation();
@@ -69,7 +80,8 @@ const AppLayout = () => {
       <SessionExpiredModal />
       {!hideNavbarFooter && <Navbar />}
       <div className="page-wrapper" style={{ transition: 'opacity 0.3s ease-in-out' }}>
-        <Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
           {/* Public */}
           <Route path="/" element={<HomePage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -125,6 +137,7 @@ const AppLayout = () => {
           <Route path="/admin/payments" element={<AdminPaymentsPage />} />
           <Route path="/admin/reports" element={<AdminReportsPage />} />
         </Routes>
+        </Suspense>
       </div>
       {!hideNavbarFooter && <Footer />}
     </>

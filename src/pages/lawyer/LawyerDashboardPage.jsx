@@ -21,26 +21,26 @@ const LawyerDashboardPage = () => {
   const [scheduledCount, setScheduledCount] = useState(0);
   const [totalEarnings, setTotalEarnings] = useState('₹0.00');
 
+  const lawyerId = user?.lawyerId || user?.id || 1;
+
   // Fetch latest lawyer profile from backend to ensure real-time status reflection
   const fetchLiveProfile = useCallback(() => {
-    const lawyerId = user?.lawyerId || user?.id || 1;
     lawyerApi.getLawyerById(lawyerId)
       .then(res => {
         if (res && res.data) {
           const data = res.data.data || res.data;
           setProfile(data);
-          if (updateUser) {
+          if (updateUser && user && (user.verificationStatus !== data.verificationStatus || user.accountStatus !== data.accountStatus)) {
             updateUser(data);
           }
         }
       })
       .catch(() => {});
-  }, [user?.lawyerId, user?.id, updateUser]);
+  }, [lawyerId, user?.verificationStatus, user?.accountStatus, updateUser]);
 
   useEffect(() => {
     fetchLiveProfile();
 
-    const lawyerId = user?.lawyerId || user?.id || 1;
     consultationApi.getLawyerRequests()
       .then(res => {
         const raw = res && res.data ? (res.data.data || res.data) : [];
@@ -86,7 +86,7 @@ const LawyerDashboardPage = () => {
         }
       })
       .catch(() => {});
-  }, [user?.lawyerId, user?.id, fetchLiveProfile]);
+  }, [lawyerId, fetchLiveProfile]);
 
   const [ratingInfo, setRatingInfo] = useState(() => {
     const local = getLawyerRatingData(user?.lawyerId || user?.id || 1);

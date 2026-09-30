@@ -117,105 +117,108 @@ const LoginPage = () => {
 
         {/* Right Side Form Panel */}
         <div className="full-right-form-panel">
-          {/* Form Header */}
-          <div className="register-form-header-full">
-            <Link to="/" className="register-brand-header">
-              <img src={logoImg} alt="Adalat Logo" className="register-logo-img" />
-              <div className="register-brand-text">
-                <span className="register-brand-name">ADALAT</span>
-                <span className="register-brand-tagline">Justice. Guidance. Connection.</span>
-              </div>
-            </Link>
-            <h2>Sign In to Adalat</h2>
-            <p>Enter your registered Email or Mobile Number and Password</p>
-          </div>
-
-          {error && (
-            <div className="auth-error-alert" style={{ marginBottom: '1rem', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', padding: '0.65rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <AlertCircle size={16} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Form Fields */}
-          <form onSubmit={handleSubmit}>
-            <div className="register-form-grid-full" style={{ gridTemplateColumns: '1fr', gap: '1.15rem' }}>
-              <div className="form-group-custom">
-                <label className="form-label-full">Email Address or Mobile Number <span className="required">*</span></label>
-                <div className="input-with-icon-full">
-                  <Mail size={17} className="input-icon-full" />
-                  <input 
-                    type="text"
-                    className="input-full"
-                    placeholder="e.g. user@gmail.com or 9876543210"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    required
-                  />
+          <div className="auth-card-ambient-glow" />
+          <div className="auth-form-card-box">
+            {/* Form Header */}
+            <div className="register-form-header-full">
+              <Link to="/" className="register-brand-header">
+                <img src={logoImg} alt="Adalat Logo" className="register-logo-img" />
+                <div className="register-brand-text">
+                  <span className="register-brand-name">ADALAT</span>
+                  <span className="register-brand-tagline">Justice. Guidance. Connection.</span>
                 </div>
-              </div>
-
-              <div className="form-group-custom">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <label className="form-label-full" style={{ marginBottom: 0 }}>
-                    Password <span className="required">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsForgotModalOpen(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#1C1C4A',
-                      fontSize: '0.8rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      padding: 0,
-                      textDecoration: 'none',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => (e.target.style.textDecoration = 'underline')}
-                    onMouseLeave={(e) => (e.target.style.textDecoration = 'none')}
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-                <div className="input-with-icon-full">
-                  <Lock size={17} className="input-icon-full" />
-                  <input 
-                    type={showPassword ? "text" : "password"}
-                    className="input-full"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    style={{ paddingRight: '2.5rem' }}
-                  />
-                  <button 
-                    type="button"
-                    className="password-toggle-btn-full"
-                    onClick={() => setShowPassword(!showPassword)}
-                    title={showPassword ? "Hide Password" : "Show Password"}
-                  >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-              </div>
+              </Link>
+              <h2>Sign In to Adalat</h2>
+              <p>Enter your registered Email or Mobile Number and Password</p>
             </div>
 
-            <button 
-              type="submit" 
-              className="btn-submit-pill-full" 
-              disabled={loading}
-              style={{ marginTop: '1rem' }}
-            >
-              {loading ? 'Signing In...' : 'Sign In'} <ArrowRight size={17} />
-            </button>
-          </form>
+            {error && (
+              <div className="auth-error-alert" style={{ marginBottom: '1rem', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', padding: '0.65rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
+            )}
 
-          <div className="register-footer-text-full" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '1.5rem' }}>
-            <p style={{ margin: 0 }}>New Customer? <Link to="/register?type=customer" className="register-footer-link-full">Register Account (₹99)</Link></p>
-            <p style={{ margin: 0 }}>Practicing Advocate? <Link to="/register?type=lawyer" className="register-footer-link-full">Free Lawyer Signup</Link></p>
+            {/* Form Fields */}
+            <form onSubmit={handleSubmit}>
+              <div className="register-form-grid-full" style={{ gridTemplateColumns: '1fr', gap: '1.15rem' }}>
+                <div className="form-group-custom">
+                  <label className="form-label-full">Email Address or Mobile Number <span className="required">*</span></label>
+                  <div className="input-with-icon-full">
+                    <Mail size={17} className="input-icon-full" />
+                    <input 
+                      type="text"
+                      className="input-full"
+                      placeholder="e.g. user@gmail.com or 9876543210"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group-custom">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <label className="form-label-full" style={{ marginBottom: 0 }}>
+                      Password <span className="required">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotModalOpen(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#1C1C4A',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        padding: 0,
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => (e.target.style.textDecoration = 'underline')}
+                      onMouseLeave={(e) => (e.target.style.textDecoration = 'none')}
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                  <div className="input-with-icon-full">
+                    <Lock size={17} className="input-icon-full" />
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      className="input-full"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      style={{ paddingRight: '2.5rem' }}
+                    />
+                    <button 
+                      type="button"
+                      className="password-toggle-btn-full"
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? "Hide Password" : "Show Password"}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-submit-pill-full" 
+                disabled={loading}
+                style={{ marginTop: '1rem' }}
+              >
+                {loading ? 'Signing In...' : 'Sign In'} <ArrowRight size={17} />
+              </button>
+            </form>
+
+            <div className="register-footer-text-full" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '1.25rem' }}>
+              <p style={{ margin: 0 }}>New Customer? <Link to="/register?type=customer" className="register-footer-link-full">Register Account (₹99)</Link></p>
+              <p style={{ margin: 0 }}>Practicing Advocate? <Link to="/register?type=lawyer" className="register-footer-link-full">Free Lawyer Signup</Link></p>
+            </div>
           </div>
         </div>
       </div>

@@ -1,5 +1,9 @@
 import apiClient from './apiClient';
 
+let unreadCountPromise = null;
+let lastUnreadCount = 0;
+let lastFetchTime = 0;
+
 export const notificationApi = {
   // Get list of notifications for the authenticated user
   getMyNotifications: async () => {
@@ -7,10 +11,28 @@ export const notificationApi = {
     return res.data || [];
   },
 
-  // Get unread notifications count
-  getUnreadCount: async () => {
-    const res = await apiClient.get('/api/notifications/unread-count');
-    return res.data?.unreadCount || 0;
+  // Get unread notifications count (with in-flight deduplication & 20s memoization)
+  getUnreadCount: async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastFetchTime < 20000) {
+      return lastUnreadCount;
+    }
+    if (unreadCountPromise) {
+      return unreadCountPromise;
+    }
+
+    unreadCountPromise = apiClient.get('/api/notifications/unread-count')
+      .then(res => {
+        lastUnreadCount = res.data?.unreadCount || 0;
+        lastFetchTime = Date.now();
+        return lastUnreadCount;
+      })
+      .catch(() => lastUnreadCount)
+      .finally(() => {
+        unreadCountPromise = null;
+      });
+
+    return unreadCountPromise;
   },
 
   // Mark single notification as read

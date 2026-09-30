@@ -358,8 +358,11 @@ export const subscribeToChat = (consultationId, onUpdate, isLawyer = false, isCh
   window.addEventListener('click', handleFocusOrVisible);
   document.addEventListener('visibilitychange', handleFocusOrVisible);
 
-  // 6. Polling fallback (every 2s) to guarantee database consistency
-  const intervalId = setInterval(syncFromDb, 2000);
+  // 6. Polling fallback (every 20s when visible or if socket is reconnecting)
+  const intervalId = setInterval(() => {
+    if (typeof document !== 'undefined' && document.hidden) return;
+    syncFromDb();
+  }, 20000);
 
   return () => {
     window.removeEventListener('adalat_chat_update', windowListener);

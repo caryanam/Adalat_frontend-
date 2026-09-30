@@ -12,7 +12,8 @@ export const useCustomerRequests = () => {
       const raw = res && res.data ? (res.data.data || res.data) : [];
       return Array.isArray(raw) ? raw : [];
     },
-    refetchInterval: 3000, // Poll every 3 seconds for real-time updates
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -25,7 +26,8 @@ export const useLawyerRequests = () => {
       const raw = res && res.data ? (res.data.data || res.data) : [];
       return Array.isArray(raw) ? raw : [];
     },
-    refetchInterval: 3000,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -42,7 +44,8 @@ export const useConsultationMessages = (requestId, isLawyer = false) => {
       return Array.isArray(raw) ? raw : [];
     },
     enabled: !!requestId,
-    refetchInterval: 1500,
+    staleTime: 10000,
+    refetchOnWindowFocus: false,
   });
 };
 

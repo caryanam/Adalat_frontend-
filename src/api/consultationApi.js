@@ -1,5 +1,8 @@
 import apiClient from './apiClient';
 
+let lawyerRequestsPromise = null;
+let customerRequestsPromise = null;
+
 export const consultationApi = {
   // 1. Direct Consultation Booking
   createConsultation: (data) => {
@@ -12,9 +15,11 @@ export const consultationApi = {
   },
 
   getRequestsForCustomer: () => {
-    return apiClient.get('/api/customer/consultations').catch(() => {
-      return { status: 'SUCCESS', data: [] };
-    });
+    if (customerRequestsPromise) return customerRequestsPromise;
+    customerRequestsPromise = apiClient.get('/api/customer/consultations')
+      .catch(() => ({ status: 'SUCCESS', data: [] }))
+      .finally(() => { customerRequestsPromise = null; });
+    return customerRequestsPromise;
   },
 
   // 3. Consultation Detail
@@ -54,9 +59,11 @@ export const consultationApi = {
 
   // 7. Lawyer Consultation Request Actions
   getLawyerRequests: () => {
-    return apiClient.get('/api/lawyer/consultation-requests').catch(() => {
-      return { status: 'SUCCESS', data: [] };
-    });
+    if (lawyerRequestsPromise) return lawyerRequestsPromise;
+    lawyerRequestsPromise = apiClient.get('/api/lawyer/consultation-requests')
+      .catch(() => ({ status: 'SUCCESS', data: [] }))
+      .finally(() => { lawyerRequestsPromise = null; });
+    return lawyerRequestsPromise;
   },
 
   acceptLawyerRequest: (requestId, assignedDate, assignedTime) => {

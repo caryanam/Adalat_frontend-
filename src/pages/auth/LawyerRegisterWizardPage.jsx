@@ -106,11 +106,14 @@ const LawyerRegisterWizardPage = () => {
           const res = await lawyerApi.uploadDocument(lawyerId, 'PHOTO', file);
           if (res && res.data && res.data.fileUrl) {
             setStep1Data(prev => ({ ...prev, profilePhotoUrl: res.data.fileUrl }));
-            toast.success('Profile photo uploaded successfully!');
           }
+          toast.success('Profile photo uploaded successfully!');
         } catch (err) {
           console.log('Profile photo upload error:', err);
+          toast.error('Failed to upload profile photo. Please try again.');
         }
+      } else {
+        toast.success('Profile photo uploaded successfully!');
       }
     }
   };
@@ -136,16 +139,6 @@ const LawyerRegisterWizardPage = () => {
         expCert: 'DEGREE_CERTIFICATE'
       };
 
-      // Direct backend API upload
-      if (lawyerId) {
-        try {
-          await lawyerApi.uploadDocument(lawyerId, docTypeMap[key] || 'BAR_COUNCIL_CERTIFICATE', file);
-          toast.success(`${file.name} saved to database successfully!`);
-        } catch (uploadErr) {
-          console.log('Document upload error:', uploadErr);
-        }
-      }
-
       const reader = new FileReader();
       reader.onload = (event) => {
         const fileData = {
@@ -165,10 +158,21 @@ const LawyerRegisterWizardPage = () => {
           } catch (err) {}
           return updated;
         });
-
-        toast.success(`${file.name} uploaded successfully!`);
       };
       reader.readAsDataURL(file);
+
+      // Direct backend API upload
+      if (lawyerId) {
+        try {
+          await lawyerApi.uploadDocument(lawyerId, docTypeMap[key] || 'BAR_COUNCIL_CERTIFICATE', file);
+          toast.success(`${file.name} uploaded successfully!`);
+        } catch (uploadErr) {
+          console.log('Document upload error:', uploadErr);
+          toast.error(`Failed to upload ${file.name}. Please try again.`);
+        }
+      } else {
+        toast.success(`${file.name} uploaded successfully!`);
+      }
     }
   };
 

@@ -56,6 +56,8 @@ const NotificationDropdown = ({ role = 'CUSTOMER', defaultLink = '/customer/cons
   };
 
   const fetchUnreadCount = async () => {
+    const token = sessionStorage.getItem('adalat_token') || localStorage.getItem('adalat_token');
+    if (!token) return;
     try {
       const count = await notificationApi.getUnreadCount();
       setUnreadCount(count);
@@ -65,9 +67,26 @@ const NotificationDropdown = ({ role = 'CUSTOMER', defaultLink = '/customer/cons
   };
 
   useEffect(() => {
+    const token = sessionStorage.getItem('adalat_token') || localStorage.getItem('adalat_token');
+    if (!token) return;
+
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 15000); // 15s polling
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchUnreadCount();
+    }, 45000); // 45s background polling
+
+    const handleFocus = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchUnreadCount();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   useEffect(() => {

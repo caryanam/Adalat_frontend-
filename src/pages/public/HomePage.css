@@ -3,7 +3,7 @@
   background-color: #F3F3FB;
   color: #292966;
   font-family: 'Outfit', sans-serif;
-  margin: -65px 0 0 0 !important;
+  margin: 0 !important;
   padding: 0 !important;
 }
 
@@ -199,14 +199,14 @@
 
 /* 2. HOW ADALAT WORKS */
 .how-it-works-section {
-  padding: 5rem 2rem;
+  padding: 3rem 1.5rem;
   max-width: 1280px;
   margin: 0 auto;
 }
 
 .section-title-wrapper {
   text-align: center;
-  margin-bottom: 3.5rem;
+  margin-bottom: 2rem;
 }
 
 .section-title-wrapper h2 {
@@ -215,7 +215,7 @@
   color: #292966;
   font-weight: 700;
   letter-spacing: 1px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .section-subtitle {
@@ -247,13 +247,13 @@
 .steps-grid-mockup {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.75rem;
+  gap: 1.25rem;
 }
 
 .step-card-mockup {
   background: #FFFFFF;
   border-radius: 14px;
-  padding: 2.25rem 1.5rem;
+  padding: 1.5rem 1.25rem;
   text-align: center;
   border: 1px solid #E8E8FA;
   box-shadow: 0 4px 15px rgba(41, 41, 102, 0.04);
@@ -390,7 +390,7 @@
 
 /* 4. WHY CHOOSE ADALAT */
 .why-choose-section-purple {
-  padding: 4rem 2rem 5rem;
+  padding: 3rem 1.5rem;
   max-width: 1280px;
   margin: 0 auto;
 }
@@ -398,13 +398,13 @@
 .features-grid-mockup {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .feature-card-mockup {
   background: #FFFFFF;
   border-radius: 12px;
-  padding: 2.25rem 1.5rem;
+  padding: 1.5rem 1.25rem;
   text-align: center;
   border: 1px solid #E8E8FA;
   box-shadow: 0 4px 15px rgba(41, 41, 102, 0.03);

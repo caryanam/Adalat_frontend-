@@ -29,7 +29,8 @@ import {
   Globe,
   Clock,
   Check,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
 
@@ -46,6 +47,11 @@ const CustomerProfilePage = () => {
   const [editMobile, setEditMobile] = useState(user?.mobileNumber || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Real-time Email Duplication States
+  const [emailDuplicateError, setEmailDuplicateError] = useState('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState(false);
 
   // OTP Email Verification States
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -174,6 +180,9 @@ const CustomerProfilePage = () => {
     setEditEmail(user?.email || '');
     setEditMobile(user?.mobileNumber || '');
     setError('');
+    setEmailDuplicateError('');
+    setIsCheckingEmail(false);
+    setEmailAvailable(false);
     setIsNewEmailVerified(false);
     setVerifiedEmailValue('');
     setShowEditProfileModal(true);
@@ -182,41 +191,123 @@ const CustomerProfilePage = () => {
   const handleCloseEditModal = () => {
     setShowEditProfileModal(false);
     setError('');
+    setEmailDuplicateError('');
+    setIsCheckingEmail(false);
+    setEmailAvailable(false);
     setIsNewEmailVerified(false);
     setVerifiedEmailValue('');
   };
 
+  // Real-time Email Duplication Pre-Check
+  useEffect(() => {
+    if (!showEditProfileModal) return;
+
+    const trimmedEmail = (editEmail || '').trim();
+    const currentEmail = (user?.email || '').trim();
+
+    if (!trimmedEmail) {
+      setEmailDuplicateError('');
+      setIsCheckingEmail(false);
+      setEmailAvailable(false);
+      return;
+    }
+
+    // If email is unchanged, no duplication error
+    if (trimmedEmail.toLowerCase() === currentEmail.toLowerCase()) {
+      setEmailDuplicateError('');
+      setIsCheckingEmail(false);
+      setEmailAvailable(false);
+      return;
+    }
+
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailDuplicateError('Please enter a valid email address (e.g. name@example.com).');
+      setIsCheckingEmail(false);
+      setEmailAvailable(false);
+      return;
+    }
+
+    // Debounce backend availability check
+    setIsCheckingEmail(true);
+    setEmailDuplicateError('');
+    setEmailAvailable(false);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get(`/api/auth/check-email?email=${encodeURIComponent(trimmedEmail)}`);
+        if (res.data && res.data.exists) {
+          const errMsg = res.message || `This email address is already registered to an existing account.`;
+          setEmailDuplicateError(errMsg);
+          setEmailAvailable(false);
+        } else {
+          setEmailDuplicateError('');
+          setEmailAvailable(true);
+        }
+      } catch (err) {
+        if (err.message && (err.message.toLowerCase().includes('already registered') || err.message.toLowerCase().includes('already in use') || err.message.toLowerCase().includes('exists'))) {
+          setEmailDuplicateError(err.message);
+        }
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [editEmail, user?.email, showEditProfileModal]);
+
   const handleTriggerEmailOtp = async (emailToVerify, purpose = 'UPDATE_EMAIL') => {
-    if (!emailToVerify || !emailToVerify.trim()) {
+    const cleanEmail = (emailToVerify || '').trim();
+    if (!cleanEmail) {
       toast.error('Please enter a valid email address.');
       return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailToVerify.trim())) {
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(cleanEmail)) {
       toast.error('Please enter a valid email address format.');
       return false;
     }
+
+    if (purpose === 'UPDATE_EMAIL' && emailDuplicateError) {
+      toast.error(emailDuplicateError);
+      return false;
+    }
+
     setOtpSending(true);
     try {
-      const res = await apiClient.post('/api/auth/email/resend-otp', {
-        email: emailToVerify.trim(),
+      if (purpose === 'UPDATE_EMAIL') {
+        const checkRes = await apiClient.get(`/api/auth/check-email?email=${encodeURIComponent(cleanEmail)}`);
+        if (checkRes.data && checkRes.data.exists) {
+          const errMsg = checkRes.message || 'This email address is already registered to an existing account.';
+          setEmailDuplicateError(errMsg);
+          setError(errMsg);
+          toast.error(errMsg);
+          return false;
+        }
+      }
+
+      const endpoint = purpose === 'UPDATE_EMAIL' ? '/api/auth/email/send-otp' : '/api/auth/email/resend-otp';
+      const res = await apiClient.post(endpoint, {
+        email: cleanEmail,
         role: 'CUSTOMER'
       });
       if (res.status === 'SUCCESS' || (res.data && res.data.success)) {
-        toast.success(`Verification OTP sent to ${emailToVerify.trim()}`);
+        toast.success(`Verification OTP sent to ${cleanEmail}`);
       } else {
-        toast.info(res.message || `Please enter the OTP sent to ${emailToVerify.trim()}`);
+        toast.info(res.message || `Please enter the OTP sent to ${cleanEmail}`);
       }
       setOtpPurpose(purpose);
-      setTargetOtpEmail(emailToVerify.trim());
+      setTargetOtpEmail(cleanEmail);
       setShowOtpModal(true);
       return true;
     } catch (err) {
-      toast.info(err.message || `Opening OTP verification for ${emailToVerify.trim()}`);
-      setOtpPurpose(purpose);
-      setTargetOtpEmail(emailToVerify.trim());
-      setShowOtpModal(true);
-      return true;
+      const errMsg = err.message || `Failed to send verification code to ${cleanEmail}`;
+      if (errMsg.toLowerCase().includes('already registered') || errMsg.toLowerCase().includes('already in use') || errMsg.toLowerCase().includes('exists')) {
+        setEmailDuplicateError(errMsg);
+      }
+      setError(errMsg);
+      toast.error(errMsg);
+      return false;
     } finally {
       setOtpSending(false);
     }
@@ -225,6 +316,7 @@ const CustomerProfilePage = () => {
   const handleSaveProfile = async () => {
     const trimmedEmail = editEmail.trim();
     const currentEmail = (user?.email || '').trim();
+    const cleanMobile = editMobile.replace(/\D/g, '');
 
     if (!editName.trim()) {
       setError('Full name is required.');
@@ -236,9 +328,19 @@ const CustomerProfilePage = () => {
       toast.error('Email address is required.');
       return;
     }
-    if (!editMobile.trim()) {
+    if (emailDuplicateError) {
+      setError(emailDuplicateError);
+      toast.error(emailDuplicateError);
+      return;
+    }
+    if (!cleanMobile) {
       setError('Mobile number is required.');
       toast.error('Mobile number is required.');
+      return;
+    }
+    if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
+      setError('Mobile number must be a valid 10-digit Indian number starting with 6, 7, 8, or 9.');
+      toast.error('Mobile number must be a valid 10-digit number.');
       return;
     }
 
@@ -251,17 +353,18 @@ const CustomerProfilePage = () => {
       return;
     }
 
-    await executeSaveProfile(trimmedEmail);
+    await executeSaveProfile(trimmedEmail, cleanMobile);
   };
 
-  const executeSaveProfile = async (targetEmail) => {
+  const executeSaveProfile = async (targetEmail, targetMobile) => {
     try {
       setLoading(true);
       setError('');
+      const cleanMobile = (targetMobile || editMobile).replace(/\D/g, '');
       const response = await customerApi.updateProfile({
         fullName: editName.trim(),
         email: targetEmail || editEmail.trim(),
-        mobileNumber: editMobile.trim()
+        mobileNumber: cleanMobile
       });
       
       const updatedData = response.data || response;
@@ -1049,7 +1152,13 @@ const CustomerProfilePage = () => {
                         }}
                         required
                         placeholder="your.email@example.com"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs font-medium"
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-slate-900 text-sm focus:outline-none transition-all shadow-2xs font-medium ${
+                          emailDuplicateError 
+                            ? 'border-rose-400 bg-rose-50/30 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' 
+                            : emailAvailable && !isNewEmailVerified 
+                              ? 'border-emerald-400 bg-emerald-50/20 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20' 
+                              : 'border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                        }`}
                       />
                     </div>
 
@@ -1062,19 +1171,42 @@ const CustomerProfilePage = () => {
                         <button
                           type="button"
                           onClick={() => handleTriggerEmailOtp(editEmail.trim(), 'UPDATE_EMAIL')}
-                          disabled={otpSending || !editEmail.trim()}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs shrink-0 transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+                          disabled={otpSending || !editEmail.trim() || isCheckingEmail || Boolean(emailDuplicateError)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold shadow-2xs shrink-0 transition-colors cursor-pointer active:scale-95 ${
+                            Boolean(emailDuplicateError) || isCheckingEmail || !editEmail.trim()
+                              ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                              : 'text-white bg-indigo-600 hover:bg-indigo-700'
+                          }`}
                         >
-                          {otpSending ? 'Sending...' : 'Verify OTP'}
+                          {otpSending ? 'Sending...' : isCheckingEmail ? 'Checking...' : 'Verify OTP'}
                         </button>
                       )
                     )}
                   </div>
 
-                  {editEmail.trim().toLowerCase() !== userEmail.toLowerCase() && (!isNewEmailVerified || verifiedEmailValue.toLowerCase() !== editEmail.trim().toLowerCase()) && (
-                    <p className="text-xs text-amber-600 font-medium">
-                      ⚠️ Changing your email address requires one-time OTP verification before saving.
-                    </p>
+                  {editEmail.trim().toLowerCase() !== userEmail.toLowerCase() && (
+                    <>
+                      {emailDuplicateError ? (
+                        <p className="text-xs text-rose-600 font-semibold flex items-center gap-1.5 pt-0.5 animate-in fade-in duration-200">
+                          <AlertCircle size={13} className="shrink-0 text-rose-500" />
+                          <span>{emailDuplicateError}</span>
+                        </p>
+                      ) : isCheckingEmail ? (
+                        <p className="text-xs text-indigo-600 font-medium flex items-center gap-1.5 pt-0.5">
+                          <RefreshCw size={12} className="animate-spin text-indigo-600 shrink-0" />
+                          <span>Checking email availability...</span>
+                        </p>
+                      ) : emailAvailable && !isNewEmailVerified ? (
+                        <p className="text-xs text-emerald-700 font-medium flex items-center gap-1.5 pt-0.5 animate-in fade-in duration-200">
+                          <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+                          <span>Email is available. Click 'Verify OTP' to verify this address before saving.</span>
+                        </p>
+                      ) : !isNewEmailVerified ? (
+                        <p className="text-xs text-amber-600 font-medium pt-0.5">
+                          ⚠️ Changing your email address requires one-time OTP verification before saving.
+                        </p>
+                      ) : null}
+                    </>
                   )}
                 </div>
               </div>
@@ -1090,10 +1222,11 @@ const CustomerProfilePage = () => {
                   </div>
                   <input 
                     type="tel" 
+                    maxLength={10}
                     value={editMobile}
-                    onChange={(e) => setEditMobile(e.target.value)}
+                    onChange={(e) => setEditMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     required
-                    placeholder="+91 98765 43210"
+                    placeholder="10-digit mobile number (e.g. 9876543210)"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs font-medium"
                   />
                 </div>

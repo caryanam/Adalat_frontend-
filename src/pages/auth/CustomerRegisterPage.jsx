@@ -7,7 +7,7 @@ import apiClient from '../../api/apiClient';
 import PaymentModal from '../../components/PaymentModal';
 import OtpModal from '../../components/OtpModal';
 import { toast } from 'react-toastify';
-import { Scale, Lock, Mail, User, Phone, ShieldCheck, ArrowRight, Eye, EyeOff, Award } from 'lucide-react';
+import { Scale, Lock, Mail, User, Phone, ShieldCheck, ArrowRight, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import customerRegBg from '../../assets/customer_reg_bg.png';
 import lawyerRegBg from '../../assets/lawyer_reg_bg.png';
 import logoImg from '../../assets/logo.png';
@@ -19,10 +19,17 @@ const CustomerRegisterPage = () => {
 
   // Determine initial role from URL query param e.g. /register?type=lawyer
   const queryParams = new URLSearchParams(location.search);
-  const initialType = queryParams.get('type');
+  const initialType = queryParams.get('type') || (location.pathname.includes('/lawyer/') ? 'lawyer' : 'customer');
   const [role, setRole] = useState(initialType === 'lawyer' ? 'lawyer' : 'customer');
 
   const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    mobileNumber: '',
+    password: ''
+  });
+
+  const [errors, setErrors] = useState({
     fullName: '',
     email: '',
     mobileNumber: '',
@@ -38,7 +45,7 @@ const CustomerRegisterPage = () => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [policyModalContent, setPolicyModalContent] = useState(null);
 
-  const { loginCustomer, loginLawyer } = useAuth();
+  const { loginCustomer, loginLawyer, user } = useAuth();
 
   useEffect(() => {
     if (initialType === 'lawyer') {
@@ -50,13 +57,19 @@ const CustomerRegisterPage = () => {
 
   const handleRoleChange = (newRole) => {
     setRole(newRole);
-    // Reset form fields
     setFormData({
       fullName: '',
       email: '',
       mobileNumber: '',
       password: ''
     });
+    setErrors({
+      fullName: '',
+      email: '',
+      mobileNumber: '',
+      password: ''
+    });
+    setIsEmailVerified(false);
   };
 
   const calculatePasswordStrength = (pwd) => {
@@ -74,41 +87,179 @@ const CustomerRegisterPage = () => {
 
   const pwdStrength = calculatePasswordStrength(formData.password);
 
+  // Email format validation
+  const validateEmailFormat = (emailStr) => {
+    if (!emailStr || !emailStr.trim()) return false;
+    return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(emailStr.trim());
+  };
+
+  // Mobile number validation (10 digit Indian number)
+  const validateMobileFormat = (mobileStr) => {
+    if (!mobileStr) return false;
+    const cleaned = mobileStr.replace(/\D/g, '');
+    return /^[6-9]\d{9}$/.test(cleaned);
+  };
+
+  // Real-time mobile input change
+  const handleMobileChange = (e) => {
+    const rawVal = e.target.value;
+    const digitsOnly = rawVal.replace(/\D/g, '').slice(0, 10);
+    setFormData(prev => ({ ...prev, mobileNumber: digitsOnly }));
+
+    if (digitsOnly.length === 10) {
+      if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+        setErrors(prev => ({ ...prev, mobileNumber: 'Mobile number must start with 6, 7, 8, or 9.' }));
+      } else {
+        setErrors(prev => ({ ...prev, mobileNumber: '' }));
+        checkMobileDuplicate(digitsOnly);
+      }
+    } else if (digitsOnly.length > 0 && digitsOnly.length < 10) {
+      setErrors(prev => ({ ...prev, mobileNumber: 'Mobile number must be 10 digits.' }));
+    } else {
+      setErrors(prev => ({ ...prev, mobileNumber: '' }));
+    }
+  };
+
+  // Pre-check mobile duplication with backend
+  const checkMobileDuplicate = async (mobileDigits) => {
+    try {
+      const res = await apiClient.get(`/api/auth/check-mobile?mobile=${encodeURIComponent(mobileDigits)}`);
+      if (res.data && res.data.exists) {
+        setErrors(prev => ({
+          ...prev,
+          mobileNumber: res.message || `This mobile number is already registered to ${res.data.role === 'LAWYER' ? 'an Advocate' : 'a Customer'} account.`
+        }));
+      } else {
+        setErrors(prev => ({ ...prev, mobileNumber: '' }));
+      }
+    } catch (err) {
+      if (err.message && err.message.toLowerCase().includes('already registered')) {
+        setErrors(prev => ({ ...prev, mobileNumber: err.message }));
+      }
+    }
+  };
+
+  // Real-time email input change
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setFormData(prev => ({ ...prev, email: val }));
+    setIsEmailVerified(false);
+    setErrors(prev => ({ ...prev, email: '' }));
+  };
+
+  // Send OTP inline when user clicks "Verify"
+  const handleSendOtpInline = async () => {
+    const cleanEmail = (formData.email || '').trim();
+
+    if (!cleanEmail) {
+      setErrors(prev => ({ ...prev, email: 'Please enter an email address first.' }));
+      toast.error('Please enter an email address first.');
+      return;
+    }
+
+    if (!validateEmailFormat(cleanEmail)) {
+      setErrors(prev => ({ ...prev, email: 'Please provide a valid email address (e.g. name@example.com).' }));
+      toast.error('Please provide a valid email address.');
+      return;
+    }
+
+    setOtpSending(true);
+    setErrors(prev => ({ ...prev, email: '' }));
+
+    try {
+      // Backend validates if email is already registered before generating OTP
+      const res = await apiClient.post('/api/auth/email/send-otp', {
+        email: cleanEmail,
+        role: role === 'lawyer' ? 'LAWYER' : 'CUSTOMER'
+      });
+
+      if (res.status === 'SUCCESS' || res.success) {
+        toast.success(res.message || 'Verification code sent to your email.');
+        setShowOtpModal(true);
+      } else {
+        const errMsg = res.message || 'Failed to send verification code.';
+        setErrors(prev => ({ ...prev, email: errMsg }));
+        toast.error(errMsg);
+      }
+    } catch (err) {
+      const errMsg = err.message || 'Failed to send verification code.';
+      setErrors(prev => ({ ...prev, email: errMsg }));
+      toast.error(errMsg);
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleOtpSuccess = async () => {
+    setShowOtpModal(false);
+    setIsEmailVerified(true);
+    setErrors(prev => ({ ...prev, email: '' }));
+    toast.success('Email verified successfully!');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long.');
-      return;
+
+    const newErrors = {};
+
+    // 1. Full Name check
+    if (!formData.fullName || formData.fullName.trim().length < 2) {
+      newErrors.fullName = 'Full name must be at least 2 characters.';
     }
-    if (!/[0-9]/.test(formData.password) || !/[a-zA-Z]/.test(formData.password)) {
-      toast.error('Password must contain both letters and numbers for security.');
-      return;
+
+    // 2. Email format & verification check
+    const cleanEmail = (formData.email || '').trim();
+    if (!cleanEmail) {
+      newErrors.email = 'Email address is required.';
+    } else if (!validateEmailFormat(cleanEmail)) {
+      newErrors.email = 'Please provide a valid email address.';
+    } else if (!isEmailVerified) {
+      newErrors.email = 'Please click Verify to verify your email before registering.';
+      toast.error('Please verify your email address before proceeding.');
     }
+
+    // 3. Mobile Number check
+    const cleanMobile = formData.mobileNumber.replace(/\D/g, '');
+    if (!cleanMobile) {
+      newErrors.mobileNumber = 'Mobile number is required.';
+    } else if (!validateMobileFormat(cleanMobile)) {
+      newErrors.mobileNumber = 'Mobile number must be a valid 10-digit Indian number (e.g. 9876543210).';
+    }
+
+    // 4. Password checks
+    if (!formData.password || formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters long.';
+    } else if (!/[0-9]/.test(formData.password) || !/[a-zA-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain both letters and numbers for security.';
+    }
+
+    // 5. Terms acceptance
     if (!agreeTerms) {
       toast.error('You must accept the Terms & Conditions and Privacy Policy.');
       return;
     }
-    if (!isEmailVerified) {
-      toast.error('Please verify your email address before proceeding.');
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstError = Object.values(newErrors)[0];
+      if (firstError) toast.error(firstError);
       return;
     }
 
     if (role === 'customer') {
-      handleCustomerRegisterInitial();
+      handleCustomerRegisterInitial(cleanEmail, cleanMobile);
     } else {
-      // Lawyer registration
-      handleLawyerSubmit();
+      handleLawyerSubmit(cleanEmail, cleanMobile);
     }
   };
 
-  const handleCustomerRegisterInitial = async () => {
+  const handleCustomerRegisterInitial = async (cleanEmail, cleanMobile) => {
     setLoading(true);
     try {
-      // Register without payment
       const res = await customerApi.register({
-        fullName: formData.fullName,
-        email: formData.email,
-        mobileNumber: formData.mobileNumber,
+        fullName: formData.fullName.trim(),
+        email: cleanEmail,
+        mobileNumber: cleanMobile,
         password: formData.password,
         confirmPassword: formData.password,
         termsAccepted: true,
@@ -116,23 +267,30 @@ const CustomerRegisterPage = () => {
       });
       
       if (res.status === 'SUCCESS' && res.data) {
-        localStorage.setItem('adalat_customer_id', res.data.customerId); // Temporary store
+        localStorage.setItem('adalat_customer_id', res.data.customerId);
         setShowPaymentModal(true);
       }
     } catch (err) {
-      toast.error(err.message || 'Registration failed.');
+      const msg = err.message || 'Registration failed.';
+      if (msg.toLowerCase().includes('email')) {
+        setErrors(prev => ({ ...prev, email: msg }));
+      }
+      if (msg.toLowerCase().includes('mobile')) {
+        setErrors(prev => ({ ...prev, mobileNumber: msg }));
+      }
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLawyerSubmit = async () => {
+  const handleLawyerSubmit = async (cleanEmail, cleanMobile) => {
     setLoading(true);
     try {
       const res = await lawyerApi.registerStep1({
-        fullName: formData.fullName,
-        email: formData.email,
-        mobileNumber: formData.mobileNumber,
+        fullName: formData.fullName.trim(),
+        email: cleanEmail,
+        mobileNumber: cleanMobile,
         password: formData.password,
         confirmPassword: formData.password,
         termsAccepted: true,
@@ -143,53 +301,31 @@ const CustomerRegisterPage = () => {
         const lawyerId = res.data.lawyerId;
         localStorage.setItem('adalat_lawyer_id', lawyerId);
         try {
-          await loginLawyer(formData.email, formData.password);
+          await loginLawyer(cleanEmail, formData.password);
         } catch (err) {}
         navigate(`/lawyer/onboarding?lawyerId=${lawyerId}`);
       }
     } catch (err) {
-      toast.error(err.message || 'Lawyer signup failed.');
+      const msg = err.message || 'Lawyer signup failed.';
+      if (msg.toLowerCase().includes('email')) {
+        setErrors(prev => ({ ...prev, email: msg }));
+      }
+      if (msg.toLowerCase().includes('mobile')) {
+        setErrors(prev => ({ ...prev, mobileNumber: msg }));
+      }
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSendOtpInline = async () => {
-    if (!formData.email) {
-      toast.error("Please enter an email address first.");
-      return;
-    }
-    setOtpSending(true);
-    try {
-        const res = await apiClient.post('/api/auth/email/resend-otp', {
-            email: formData.email,
-            role: role === 'lawyer' ? 'LAWYER' : 'CUSTOMER'
-        });
-        if (res.success || res.status === 'SUCCESS') {
-            toast.success("Verification code sent to your email.");
-            setShowOtpModal(true);
-        }
-    } catch (err) {
-        toast.error(err.message || "Failed to send verification code.");
-    } finally {
-        setOtpSending(false);
-    }
-  };
-
-  const handleOtpSuccess = async () => {
-    setShowOtpModal(false);
-    setIsEmailVerified(true);
-  };
-
   const handlePaymentSuccess = async (paymentRef) => {
     setLoading(true);
-
     try {
       const orderId = paymentRef?.orderId || ('ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase());
       const transactionId = paymentRef?.gatewayPaymentId || ('PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase());
       const customerId = localStorage.getItem('adalat_customer_id');
 
-      // Verify payment in backend
       try {
         await customerApi.verifyPayment({
           customerId: customerId ? Number(customerId) : null,
@@ -201,12 +337,11 @@ const CustomerRegisterPage = () => {
       }
 
       toast.success('Payment verified & account registration fully complete!');
-      // Login customer into AuthContext
-      await loginCustomer(formData.email, formData.password);
+      await loginCustomer(formData.email.trim(), formData.password);
     } catch (err) {
       console.error('Payment verification / login error:', err);
       try {
-        await loginCustomer(formData.email, formData.password);
+        await loginCustomer(formData.email.trim(), formData.password);
       } catch (loginErr) {}
     } finally {
       setLoading(false);
@@ -240,168 +375,192 @@ const CustomerRegisterPage = () => {
 
         {/* Right Side Form Panel */}
         <div className="full-right-form-panel">
-          {/* Top Row: Brand Header & Role Toggle */}
-          <div className="register-top-row">
-            <Link to="/" className="register-brand-header" style={{ marginBottom: 0 }}>
-              <img src={logoImg} alt="Adalat Logo" className="register-logo-img" />
-              <div className="register-brand-text">
-                <span className="register-brand-name">ADALAT</span>
-                <span className="register-brand-tagline">Justice. Guidance. Connection.</span>
-              </div>
-            </Link>
-
-            <div className="role-toggle-pill-full">
-              <button 
-                type="button"
-                className={`role-btn-full ${role === 'customer' ? 'active' : ''}`}
-                onClick={() => handleRoleChange('customer')}
-              >
-                <User size={15} />
-                <span>Customer</span>
-              </button>
-              <button 
-                type="button"
-                className={`role-btn-full ${role === 'lawyer' ? 'active' : ''}`}
-                onClick={() => handleRoleChange('lawyer')}
-              >
-                <Scale size={15} />
-                <span>Lawyer</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Form Header */}
-          <div className="register-form-header-full">
-            <h2>{role === 'customer' ? 'Customer Account Registration' : 'Lawyer / Advocate Registration'}</h2>
-            <p>
-              {role === 'customer' 
-                ? 'One-Time ₹99 Platform Account Activation Fee Required'
-                : 'Join India’s Premier Legal Consultation Platform'
-              }
-            </p>
-          </div>
-
-          {/* Form Fields */}
-          <form onSubmit={handleSubmit}>
-            <div className="register-form-grid-full">
-              <div className="form-group-custom">
-                <label className="form-label-full">Full Name <span className="required">*</span></label>
-                <div className="input-with-icon-full">
-                  <User size={17} className="input-icon-full" />
-                  <input 
-                    type="text"
-                    className="input-full"
-                    placeholder={role === 'customer' ? 'e.g. Ramesh Kumar' : 'e.g. Adv. Rajesh Verma'}
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    required
-                  />
+          <div className="auth-card-ambient-glow" />
+          <div className="auth-form-card-box" key={role}>
+            {/* Top Row: Brand Header & Role Toggle */}
+            <div className="register-top-row">
+              <Link to="/" className="register-brand-header" style={{ marginBottom: 0 }}>
+                <img src={logoImg} alt="Adalat Logo" className="register-logo-img" />
+                <div className="register-brand-text">
+                  <span className="register-brand-name">ADALAT</span>
+                  <span className="register-brand-tagline">Justice. Guidance. Connection.</span>
                 </div>
-              </div>
+              </Link>
 
-              <div className="form-group-custom">
-                <label className="form-label-full">Email Address <span className="required">*</span></label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <div className="input-with-icon-full" style={{ flex: 1, marginBottom: 0 }}>
+              <div className="role-toggle-pill-full">
+                <button 
+                  type="button"
+                  className={`role-btn-full ${role === 'customer' ? 'active' : ''}`}
+                  onClick={() => handleRoleChange('customer')}
+                >
+                  <User size={15} />
+                  <span>Customer</span>
+                </button>
+                <button 
+                  type="button"
+                  className={`role-btn-full ${role === 'lawyer' ? 'active' : ''}`}
+                  onClick={() => handleRoleChange('lawyer')}
+                >
+                  <Scale size={15} />
+                  <span>Lawyer</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Form Header */}
+            <div className="register-form-header-full">
+              <h2>{role === 'customer' ? 'Customer Account Registration' : 'Lawyer / Advocate Registration'}</h2>
+              <p>
+                {role === 'customer' 
+                  ? 'One-Time ₹99 Platform Account Activation Fee Required'
+                  : 'Join India’s Premier Legal Consultation Platform'
+                }
+              </p>
+            </div>
+
+            {/* Form Fields */}
+            <form onSubmit={handleSubmit}>
+              <div className="register-form-grid-full">
+                <div className="form-group-custom">
+                  <label className="form-label-full">Full Name <span className="required">*</span></label>
+                  <div className="input-with-icon-full">
+                    <User size={17} className="input-icon-full" />
+                    <input 
+                      type="text"
+                      className={`input-full ${errors.fullName ? 'input-error' : ''}`}
+                      placeholder={role === 'customer' ? 'e.g. Ramesh Kumar' : 'e.g. Adv. Rajesh Verma'}
+                      value={formData.fullName}
+                      onChange={(e) => {
+                        setFormData({ ...formData, fullName: e.target.value });
+                        if (errors.fullName) setErrors(prev => ({ ...prev, fullName: '' }));
+                      }}
+                      required
+                    />
+                  </div>
+                  {errors.fullName && (
+                    <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={12} /> {errors.fullName}
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-group-custom">
+                  <label className="form-label-full">Email Address <span className="required">*</span></label>
+                  <div className="input-with-icon-full">
                     <Mail size={17} className="input-icon-full" />
                     <input 
                       type="email"
-                      className="input-full"
+                      className={`input-full ${errors.email ? 'input-error' : ''}`}
+                      style={{ paddingRight: isEmailVerified ? '5.6rem' : '4.6rem' }}
                       placeholder={role === 'customer' ? 'e.g. customer@gmail.com' : 'e.g. advocate@adalat.legal'}
                       value={formData.email}
-                      onChange={(e) => {
-                        setFormData({ ...formData, email: e.target.value });
-                        setIsEmailVerified(false);
-                      }}
+                      title={formData.email || 'Email Address'}
+                      onChange={handleEmailChange}
                       required
                       disabled={isEmailVerified}
                     />
+                    <button
+                      type="button"
+                      onClick={handleSendOtpInline}
+                      disabled={isEmailVerified || otpSending || !formData.email}
+                      className={`inline-verify-btn ${isEmailVerified ? 'verified' : 'unverified'}`}
+                      title={isEmailVerified ? 'Email Verified' : 'Verify Email with OTP'}
+                    >
+                      {otpSending ? 'Sending...' : isEmailVerified ? '✓ Verified' : 'Verify'}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleSendOtpInline}
-                    disabled={isEmailVerified || otpSending || !formData.email}
-                    style={{
-                      padding: '0 16px',
-                      background: isEmailVerified ? '#10B981' : '#1e3a8a',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '600',
-                      cursor: (isEmailVerified || otpSending || !formData.email) ? 'not-allowed' : 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {otpSending ? 'Sending...' : isEmailVerified ? 'Verified' : 'Verify'}
-                  </button>
+                  {errors.email && (
+                    <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={12} /> {errors.email}
+                    </p>
+                  )}
+                  {isEmailVerified && (
+                    <p style={{ color: '#10B981', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckCircle2 size={12} /> Email verified successfully
+                    </p>
+                  )}
                 </div>
-              </div>
 
-              <div className="form-group-custom">
-                <label className="form-label-full">Mobile Number <span className="required">*</span></label>
-                <div className="input-with-icon-full">
-                  <Phone size={17} className="input-icon-full" />
-                  <input 
-                    type="tel"
-                    className="input-full"
-                    placeholder="e.g. 9876543210"
-                    value={formData.mobileNumber}
-                    onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
-                    required
-                  />
+                <div className="form-group-custom">
+                  <label className="form-label-full">Mobile Number <span className="required">*</span></label>
+                  <div className="input-with-icon-full">
+                    <Phone size={17} className="input-icon-full" />
+                    <input 
+                      type="tel"
+                      className={`input-full ${errors.mobileNumber ? 'input-error' : ''}`}
+                      placeholder="e.g. 9876543210"
+                      value={formData.mobileNumber}
+                      onChange={handleMobileChange}
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+                  {errors.mobileNumber && (
+                    <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={12} /> {errors.mobileNumber}
+                    </p>
+                  )}
                 </div>
-              </div>
 
-              <div className="form-group-custom">
-                <label className="form-label-full">Password <span className="required">*</span></label>
-                <div className="input-with-icon-full">
-                  <Lock size={17} className="input-icon-full" />
-                  <input 
-                    type={showPassword ? "text" : "password"}
-                    className="input-full"
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    style={{ paddingRight: '2.5rem' }}
-                  />
-                  <button 
-                    type="button"
-                    className="password-toggle-btn-full"
-                    onClick={() => setShowPassword(!showPassword)}
-                    title={showPassword ? "Hide Password" : "Show Password"}
-                  >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-                {formData.password && (
-                  <div style={{ marginTop: '0.25rem' }}>
-                    <div style={{ height: '3px', background: '#E2E8F0', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(pwdStrength.score / 4) * 100}%`, background: pwdStrength.color, transition: 'all 0.3s' }}></div>
+                <div className="form-group-custom">
+                  <label className="form-label-full">Password <span className="required">*</span></label>
+                  <div className="input-with-icon-full">
+                    <Lock size={17} className="input-icon-full" />
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      className={`input-full ${errors.password ? 'input-error' : ''}`}
+                      placeholder="Enter password (6+ chars)"
+                      value={formData.password}
+                      onChange={(e) => {
+                        setFormData({ ...formData, password: e.target.value });
+                        if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                      }}
+                      required
+                      style={{ paddingRight: '2.5rem' }}
+                    />
+                    <button 
+                      type="button"
+                      className="password-toggle-btn-full"
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? "Hide Password" : "Show Password"}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={12} /> {errors.password}
+                    </p>
+                  )}
+                  {formData.password && (
+                    <div style={{ marginTop: '0.25rem' }}>
+                      <div style={{ height: '3px', background: '#E2E8F0', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${(pwdStrength.score / 4) * 100}%`, background: pwdStrength.color, transition: 'all 0.3s' }}></div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
+
+              <button 
+                type="submit" 
+                className="btn-submit-pill-full" 
+                disabled={loading || !agreeTerms}
+              >
+                {loading ? (
+                  'Processing...'
+                ) : (
+                  <>
+                    {role === 'customer' ? 'Proceed to ₹99 Account Activation' : 'Proceed to Advocate Onboarding'}
+                    <ArrowRight size={17} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="register-footer-text-full">
+              Already have an account? <Link to="/login" className="register-footer-link-full">Sign In</Link>
             </div>
-
-            <button 
-              type="submit" 
-              className="btn-submit-pill-full" 
-              disabled={loading || !agreeTerms}
-            >
-              {loading ? (
-                'Processing...'
-              ) : (
-                <>
-                  {role === 'customer' ? 'Proceed to ₹99 Account Activation' : 'Proceed to Advocate Onboarding'}
-                  <ArrowRight size={17} />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="register-footer-text-full">
-            Already have an account? <Link to="/login" className="register-footer-link-full">Sign In</Link>
           </div>
         </div>
       </div>
