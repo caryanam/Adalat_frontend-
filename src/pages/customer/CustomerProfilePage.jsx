@@ -318,9 +318,21 @@ const CustomerProfilePage = () => {
     const currentEmail = (user?.email || '').trim();
     const cleanMobile = editMobile.replace(/\D/g, '');
 
-    if (!editName.trim()) {
+    const cleanName = editName.trim();
+    if (!cleanName) {
       setError('Full name is required.');
       toast.error('Full name is required.');
+      return;
+    }
+    if (cleanName.length < 3) {
+      setError('Full Name must be at least 3 characters.');
+      toast.error('Full Name must be at least 3 characters.');
+      return;
+    }
+    const letters = (cleanName.match(/[a-zA-Z]/g) || []).length;
+    if (letters < 3 || !/^[a-zA-Z][a-zA-Z\s.'-]*[a-zA-Z.]$/.test(cleanName)) {
+      setError('Full Name must contain at least 3 alphabetic characters and cannot be single letters or dots (e.g. Ramesh Kumar).');
+      toast.error('Full Name must contain at least 3 alphabetic characters.');
       return;
     }
     if (!trimmedEmail) {

@@ -190,6 +190,32 @@ const LawyerRegisterWizardPage = () => {
     upiId: '',
     accountHolderName: ''
   });
+  const [upiErrors, setUpiErrors] = useState({});
+
+  const validateStep4Fields = () => {
+    const errors = {};
+    const upi = (upiData.upiId || '').trim();
+    if (!upi) {
+      errors.upiId = 'UPI ID is required.';
+    } else if (!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(upi)) {
+      errors.upiId = 'UPI ID must be in valid format: username@bankhandle (e.g. name@upi, 9876543210@paytm).';
+    }
+
+    const holderName = (upiData.accountHolderName || '').trim();
+    if (!holderName) {
+      errors.accountHolderName = 'Account Holder Name is required.';
+    } else if (holderName.length < 3) {
+      errors.accountHolderName = 'Account Holder Name must be at least 3 characters.';
+    } else {
+      const letters = (holderName.match(/[a-zA-Z]/g) || []).length;
+      if (letters < 3 || !/^[a-zA-Z][a-zA-Z\s.'-]*[a-zA-Z.]$/.test(holderName)) {
+        errors.accountHolderName = 'Account Holder Name must contain at least 3 alphabetic characters and cannot be single letters or dots (e.g. Adv. Rajesh Verma).';
+      }
+    }
+
+    setUpiErrors(errors);
+    return errors;
+  };
 
   // Step 5 Verification
   const [declared, setDeclared] = useState(true);
@@ -390,18 +416,22 @@ const LawyerRegisterWizardPage = () => {
 
   const handleStep4Next = async (e) => {
     e.preventDefault();
-    if (!upiData.upiId) {
-      toast.error('Please enter a valid UPI ID for receiving payouts.');
+    const errors = validateStep4Fields();
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
       return;
     }
     setLoading(true);
     try {
       if (lawyerId) {
-        await lawyerApi.updateStep5(lawyerId, upiData.upiId);
+        await lawyerApi.updateStep5(lawyerId, upiData.upiId.trim());
       }
+      toast.success('UPI details saved successfully!');
       setCurrentStep(5);
     } catch (err) {
-      setCurrentStep(5);
+      const msg = err.response?.data?.message || err.message || 'Validation failed on server.';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -967,24 +997,44 @@ const LawyerRegisterWizardPage = () => {
                       <label className="form-label-wiz">UPI ID <span className="required">*</span></label>
                       <input 
                         type="text" 
-                        className="form-input-wiz" 
-                        placeholder="e.g. yourname@upi or 9876543210@upi"
+                        className={`form-input-wiz ${upiErrors.upiId ? 'is-invalid' : ''}`}
+                        placeholder="e.g. yourname@upi or 9876543210@paytm"
                         value={upiData.upiId}
-                        onChange={e => setUpiData({ ...upiData, upiId: e.target.value })}
+                        onChange={e => {
+                          setUpiData({ ...upiData, upiId: e.target.value });
+                          if (upiErrors.upiId) {
+                            setUpiErrors(prev => ({ ...prev, upiId: null }));
+                          }
+                        }}
                         required
                       />
+                      {upiErrors.upiId && (
+                        <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                          ⚠️ {upiErrors.upiId}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group-wiz">
                       <label className="form-label-wiz">Account Holder Name <span className="required">*</span></label>
                       <input 
                         type="text" 
-                        className="form-input-wiz" 
+                        className={`form-input-wiz ${upiErrors.accountHolderName ? 'is-invalid' : ''}`}
                         placeholder="e.g. Adv. Rajesh Verma"
                         value={upiData.accountHolderName}
-                        onChange={e => setUpiData({ ...upiData, accountHolderName: e.target.value })}
+                        onChange={e => {
+                          setUpiData({ ...upiData, accountHolderName: e.target.value });
+                          if (upiErrors.accountHolderName) {
+                            setUpiErrors(prev => ({ ...prev, accountHolderName: null }));
+                          }
+                        }}
                         required
                       />
+                      {upiErrors.accountHolderName && (
+                        <span className="field-error-text" style={{ color: '#DC2626', fontSize: '0.78rem', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                          ⚠️ {upiErrors.accountHolderName}
+                        </span>
+                      )}
                     </div>
 
                     <div className="info-note-box" style={{ marginTop: '0.75rem' }}>

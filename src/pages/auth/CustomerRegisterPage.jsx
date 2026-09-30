@@ -87,6 +87,16 @@ const CustomerRegisterPage = () => {
 
   const pwdStrength = calculatePasswordStrength(formData.password);
 
+  // Name validation (min 3 letters, no single letters or dots)
+  const validateNameFormat = (nameStr) => {
+    if (!nameStr) return false;
+    const trimmed = nameStr.trim();
+    if (trimmed.length < 3) return false;
+    const letters = (trimmed.match(/[a-zA-Z]/g) || []).length;
+    if (letters < 3) return false;
+    return /^[a-zA-Z][a-zA-Z\s.'-]*[a-zA-Z.]$/.test(trimmed);
+  };
+
   // Email format validation
   const validateEmailFormat = (emailStr) => {
     if (!emailStr || !emailStr.trim()) return false;
@@ -203,8 +213,13 @@ const CustomerRegisterPage = () => {
     const newErrors = {};
 
     // 1. Full Name check
-    if (!formData.fullName || formData.fullName.trim().length < 2) {
-      newErrors.fullName = 'Full name must be at least 2 characters.';
+    const cleanName = (formData.fullName || '').trim();
+    if (!cleanName) {
+      newErrors.fullName = 'Full name is required.';
+    } else if (cleanName.length < 3) {
+      newErrors.fullName = 'Full Name must be at least 3 characters.';
+    } else if (!validateNameFormat(cleanName)) {
+      newErrors.fullName = 'Full Name must contain at least 3 alphabetic characters and cannot be single letters or dots (e.g. ' + (role === 'customer' ? 'Ramesh Kumar' : 'Adv. Rajesh Verma') + ').';
     }
 
     // 2. Email format & verification check
@@ -431,8 +446,13 @@ const CustomerRegisterPage = () => {
                       placeholder={role === 'customer' ? 'e.g. Ramesh Kumar' : 'e.g. Adv. Rajesh Verma'}
                       value={formData.fullName}
                       onChange={(e) => {
-                        setFormData({ ...formData, fullName: e.target.value });
-                        if (errors.fullName) setErrors(prev => ({ ...prev, fullName: '' }));
+                        const val = e.target.value;
+                        setFormData({ ...formData, fullName: val });
+                        if (errors.fullName) {
+                          if (validateNameFormat(val)) {
+                            setErrors(prev => ({ ...prev, fullName: '' }));
+                          }
+                        }
                       }}
                       required
                     />

@@ -362,6 +362,21 @@ const LawyerProfilePage = () => {
       return;
     }
 
+    const cleanName = (editForm.fullName || '').trim();
+    if (!cleanName) {
+      toast.error('Full name is required.');
+      return;
+    }
+    if (cleanName.length < 3) {
+      toast.error('Full Name must be at least 3 characters.');
+      return;
+    }
+    const letters = (cleanName.match(/[a-zA-Z]/g) || []).length;
+    if (letters < 3 || !/^[a-zA-Z][a-zA-Z\s.'-]*[a-zA-Z.]$/.test(cleanName)) {
+      toast.error('Full Name must contain at least 3 alphabetic characters and cannot be single letters or dots (e.g. Adv. Rajesh Verma).');
+      return;
+    }
+
     const cleanMobile = (editForm.mobileNumber || '').replace(/\D/g, '');
     if (!cleanMobile) {
       toast.error('Mobile number is required.');
@@ -514,14 +529,23 @@ const LawyerProfilePage = () => {
   };
 
   const handleSaveUpi = async () => {
+    const trimmedUpi = (quickUpi || '').trim();
+    if (!trimmedUpi) {
+      toast.error('UPI ID is required.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(trimmedUpi)) {
+      toast.error('UPI ID must be in valid format: username@bankhandle (e.g. name@upi, 9876543210@paytm).');
+      return;
+    }
     const lawyerId = profile?.lawyerId || user?.lawyerId || user?.id || 1;
-    setProfile(prev => ({ ...prev, upiId: quickUpi.trim() }));
-    setIsUpiModalOpen(false);
     try {
-      await lawyerApi.updateUpi(lawyerId, quickUpi.trim());
+      await lawyerApi.updateUpi(lawyerId, trimmedUpi);
+      setProfile(prev => ({ ...prev, upiId: trimmedUpi }));
+      setIsUpiModalOpen(false);
       toast.success('UPI ID updated and saved!');
-    } catch {
-      toast.info('UPI ID updated.');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update UPI ID.');
     }
   };
 
