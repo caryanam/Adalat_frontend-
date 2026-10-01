@@ -24,6 +24,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useCustomerRequests } from '../../hooks/useConsultationQueries';
+import { formatImageUrl } from '../../utils/imageUrl';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 
 const CustomerAppointmentsPage = () => {
   const navigate = useNavigate();
@@ -33,15 +35,7 @@ const CustomerAppointmentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('GRID'); // 'GRID' | 'TABLE'
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-
-  const formatImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
-      return url;
-    }
-    const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8082${cleanPath}`;
-  };
+  const [previewLawyerPhoto, setPreviewLawyerPhoto] = useState(null);
 
   const appointments = useMemo(() => {
     return requests.map(r => ({
@@ -424,7 +418,20 @@ const CustomerAppointmentsPage = () => {
                     {/* Card Top: Avatar + Name + Status */}
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative w-12 h-12 shrink-0">
+                        <div 
+                          className={`relative w-12 h-12 shrink-0 ${app.lawyerProfileImageUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+                          onClick={(e) => {
+                            if (app.lawyerProfileImageUrl) {
+                              e.stopPropagation();
+                              setPreviewLawyerPhoto({
+                                url: app.lawyerProfileImageUrl,
+                                title: app.lawyerName || 'Advocate Profile',
+                                subtitle: app.category || 'Scheduled Appointment'
+                              });
+                            }
+                          }}
+                          title={app.lawyerProfileImageUrl ? 'Click to view photo' : ''}
+                        >
                           {app.lawyerProfileImageUrl ? (
                             <img 
                               src={app.lawyerProfileImageUrl} 
@@ -534,7 +541,20 @@ const CustomerAppointmentsPage = () => {
                       <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="py-3.5 px-4 sm:px-6">
                           <div className="flex items-center gap-3">
-                            <div className="relative w-9 h-9 shrink-0">
+                            <div 
+                              className={`relative w-9 h-9 shrink-0 ${app.lawyerProfileImageUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+                              onClick={(e) => {
+                                if (app.lawyerProfileImageUrl) {
+                                  e.stopPropagation();
+                                  setPreviewLawyerPhoto({
+                                    url: app.lawyerProfileImageUrl,
+                                    title: app.lawyerName || 'Advocate Profile',
+                                    subtitle: app.category || 'Scheduled Appointment'
+                                  });
+                                }
+                              }}
+                              title={app.lawyerProfileImageUrl ? 'Click to view photo' : ''}
+                            >
                               {app.lawyerProfileImageUrl ? (
                                 <img 
                                   src={app.lawyerProfileImageUrl} 
@@ -642,7 +662,19 @@ const CustomerAppointmentsPage = () => {
 
             {/* Header */}
             <div className="flex items-center gap-3.5 mb-5 pr-8">
-              <div className="relative w-14 h-14 shrink-0">
+              <div 
+                className={`relative w-14 h-14 shrink-0 ${selectedAppointment.lawyerProfileImageUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+                onClick={() => {
+                  if (selectedAppointment.lawyerProfileImageUrl) {
+                    setPreviewLawyerPhoto({
+                      url: selectedAppointment.lawyerProfileImageUrl,
+                      title: selectedAppointment.lawyerName || 'Advocate Profile',
+                      subtitle: selectedAppointment.category || 'Appointment Details'
+                    });
+                  }
+                }}
+                title={selectedAppointment.lawyerProfileImageUrl ? 'Click to view photo' : ''}
+              >
                 {selectedAppointment.lawyerProfileImageUrl ? (
                   <img 
                     src={selectedAppointment.lawyerProfileImageUrl} 
@@ -735,6 +767,14 @@ const CustomerAppointmentsPage = () => {
         </div>
       )}
 
+      {/* Lawyer Profile Photo Preview Modal */}
+      <ImagePreviewModal
+        isOpen={Boolean(previewLawyerPhoto)}
+        imageUrl={previewLawyerPhoto?.url}
+        title={previewLawyerPhoto?.title}
+        subtitle={previewLawyerPhoto?.subtitle}
+        onClose={() => setPreviewLawyerPhoto(null)}
+      />
     </div>
   );
 };

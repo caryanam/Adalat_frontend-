@@ -12,6 +12,8 @@ import {
   MapPin, BookOpen, Globe, FileText, X, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { formatImageUrl } from '../../utils/imageUrl';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 
 const AdminLawyersPage = () => {
   const [lawyers, setLawyers] = useState([]);
@@ -25,6 +27,7 @@ const AdminLawyersPage = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   
   // Document preview state in modal
   const [fetchedDocs, setFetchedDocs] = useState([]);
@@ -68,7 +71,7 @@ const AdminLawyersPage = () => {
     fetchLawyers();
   }, [fetchLawyers]);
 
-  // Document fetching for modal
+  // Document fetching for modal - Strictly from Database / Backend API
   const handleOpenDetails = (lawyer) => {
     setSelectedLawyer(lawyer);
     setShowDetailsModal(true);
@@ -77,21 +80,20 @@ const AdminLawyersPage = () => {
 
     let docs = [];
     if (lawyer && lawyer.documents && Array.isArray(lawyer.documents) && lawyer.documents.length > 0) {
-      docs = lawyer.documents;
+      docs = [...lawyer.documents];
     } else if (lawyer && lawyer.lawyerDocuments && Array.isArray(lawyer.lawyerDocuments) && lawyer.lawyerDocuments.length > 0) {
-      docs = lawyer.lawyerDocuments;
+      docs = [...lawyer.lawyerDocuments];
     }
 
-    if (docs.length === 0) {
-      try {
-        const stored = localStorage.getItem(`adalat_lawyer_docs_${lawyer.lawyerId}`) || localStorage.getItem('adalat_latest_lawyer_docs');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.barCert && (parsed.barCert.dataUrl || parsed.barCert.fileUrl)) {
-            docs = [parsed.barCert];
-          }
-        }
-      } catch (e) {}
+    const photoUrl = formatImageUrl(lawyer);
+    const hasPhotoDoc = docs.some(d => (d.documentType || d.type) === 'PHOTO');
+    if (photoUrl && !hasPhotoDoc) {
+      docs.unshift({
+        documentType: 'PHOTO',
+        fileName: 'profile_photo.jpg',
+        originalFileName: 'profile_photo.jpg',
+        fileUrl: photoUrl
+      });
     }
 
     setFetchedDocs(docs);
@@ -373,12 +375,26 @@ const AdminLawyersPage = () => {
                             {/* Lawyer Info */}
                             <td className="py-4 px-5">
                               <div className="flex items-center gap-3">
-                                <div className="relative w-10 h-10 shrink-0">
+                                <div 
+                                  className="relative w-10 h-10 shrink-0 cursor-pointer group/avatar"
+                                  onClick={(e) => {
+                                    const imgUrl = formatImageUrl(lawyer);
+                                    if (imgUrl) {
+                                      e.stopPropagation();
+                                      setPreviewImage({
+                                        url: imgUrl,
+                                        title: lawyer.fullName,
+                                        subtitle: `Bar Reg: ${lawyer.barEnrollmentNumber || 'N/A'} • ${lawyer.location || 'India'}`
+                                      });
+                                    }
+                                  }}
+                                  title={formatImageUrl(lawyer) ? "Click to view full profile photo" : lawyer.fullName}
+                                >
                                   {formatImageUrl(lawyer) ? (
                                     <img 
                                       src={formatImageUrl(lawyer)} 
                                       alt={lawyer.fullName || 'Advocate'} 
-                                      className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0" 
+                                      className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0 group-hover/avatar:ring-2 group-hover/avatar:ring-indigo-500 group-hover/avatar:scale-105 transition-all" 
                                       onError={(e) => {
                                         e.currentTarget.style.display = 'none';
                                         if (e.currentTarget.nextElementSibling) {
@@ -504,12 +520,25 @@ const AdminLawyersPage = () => {
               {/* Modal Top Header */}
               <div className="bg-gradient-to-r from-[#0d1322] to-[#1e1b4b] text-white p-5 sm:p-6 flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
-                  <div className="relative w-12 h-12 shrink-0">
+                  <div 
+                    className="relative w-12 h-12 shrink-0 cursor-pointer group/modalavatar"
+                    onClick={() => {
+                      const imgUrl = formatImageUrl(selectedLawyer);
+                      if (imgUrl) {
+                        setPreviewImage({
+                          url: imgUrl,
+                          title: selectedLawyer.fullName,
+                          subtitle: `Bar Reg: ${selectedLawyer.barEnrollmentNumber || 'Not Provided'} • ${selectedLawyer.location || 'India'}`
+                        });
+                      }
+                    }}
+                    title={formatImageUrl(selectedLawyer) ? "Click to view full profile photo" : selectedLawyer.fullName}
+                  >
                     {formatImageUrl(selectedLawyer) ? (
                       <img 
                         src={formatImageUrl(selectedLawyer)} 
                         alt={selectedLawyer.fullName || 'Advocate'} 
-                        className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/50 shadow-md shrink-0" 
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/50 shadow-md shrink-0 group-hover/modalavatar:scale-105 transition-all" 
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           if (e.currentTarget.nextElementSibling) {
@@ -813,6 +842,15 @@ const AdminLawyersPage = () => {
             </div>
           </div>
         )}
+
+        {/* Global Image Preview Modal */}
+        <ImagePreviewModal
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          imageUrl={previewImage?.url}
+          title={previewImage?.title}
+          subtitle={previewImage?.subtitle}
+        />
 
       </main>
     </div>

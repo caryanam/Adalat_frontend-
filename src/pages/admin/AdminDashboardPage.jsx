@@ -14,6 +14,8 @@ import {
   RefreshCw, Sparkles, Check
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { formatImageUrl } from '../../utils/imageUrl';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 
 const AdminDashboardPage = () => {
   const [pendingLawyers, setPendingLawyers] = useState([]);
@@ -21,6 +23,7 @@ const AdminDashboardPage = () => {
   const [totalVolume, setTotalVolume] = useState(0);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const fetchDashboardData = useCallback(() => {
     setLoading(true);
@@ -294,12 +297,24 @@ const AdminDashboardPage = () => {
                           >
                             <td className="py-4 px-5">
                               <div className="flex items-center gap-3">
-                                <div className="relative w-9 h-9 shrink-0">
+                                <div 
+                                  className="relative w-9 h-9 shrink-0 cursor-pointer group/avatar"
+                                  onClick={() => {
+                                    if (lawyerImgUrl) {
+                                      setPreviewImage({
+                                        url: lawyerImgUrl,
+                                        title: lawyer.fullName,
+                                        subtitle: lawyer.barEnrollmentNumber ? `Bar Reg: ${lawyer.barEnrollmentNumber}` : 'Advocate'
+                                      });
+                                    }
+                                  }}
+                                  title={lawyerImgUrl ? "Click to view full profile photo" : lawyer.fullName}
+                                >
                                   {lawyerImgUrl ? (
                                     <img 
                                       src={lawyerImgUrl} 
                                       alt={lawyer.fullName || 'Advocate'} 
-                                      className="w-9 h-9 rounded-xl object-cover border border-slate-200/90 shadow-2xs shrink-0" 
+                                      className="w-9 h-9 rounded-xl object-cover border border-slate-200/90 shadow-2xs shrink-0 group-hover/avatar:ring-2 group-hover/avatar:ring-indigo-500 group-hover/avatar:scale-105 transition-all" 
                                       onError={(e) => {
                                         e.currentTarget.style.display = 'none';
                                         if (e.currentTarget.nextElementSibling) {
@@ -373,6 +388,15 @@ const AdminDashboardPage = () => {
             </div>
           </div>
         </div>
+        {/* Global Image Preview Modal */}
+        <ImagePreviewModal
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          imageUrl={previewImage?.url}
+          title={previewImage?.title}
+          subtitle={previewImage?.subtitle}
+        />
+
       </main>
     </div>
   );

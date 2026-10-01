@@ -12,6 +12,8 @@ import {
   GraduationCap, Copy, AlertCircle, RefreshCw
 } from 'lucide-react';
 import LawyerHeader from '../../components/LawyerHeader';
+import { formatImageUrl } from '../../utils/imageUrl';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 
 const PRACTICE_CATEGORY_OPTIONS = [
   { id: 'CRIMINAL_LAW', label: 'Criminal Defense & Bail' },
@@ -44,6 +46,7 @@ const LawyerProfilePage = () => {
   const [profile, setProfile] = useState(null);
   const [_loading, setLoading] = useState(true);
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Modals state
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -118,6 +121,9 @@ const LawyerProfilePage = () => {
           if (res && res.data) {
             const data = res.data.data || res.data;
             setProfile(data);
+            if (data?.profilePhotoUrl && updateUser) {
+              updateUser({ profilePhotoUrl: data.profilePhotoUrl });
+            }
           }
         })
         .catch(() => {
@@ -252,19 +258,17 @@ const LawyerProfilePage = () => {
       const updated = res.data?.data || res.data || res;
       if (updated && updated.profilePhotoUrl) {
         setProfile(prev => ({ ...prev, profilePhotoUrl: updated.profilePhotoUrl }));
+        setEditForm(prev => ({ ...prev, profilePhotoUrl: updated.profilePhotoUrl }));
         if (updateUser) updateUser({ profilePhotoUrl: updated.profilePhotoUrl });
         toast.success('Profile photo updated successfully!');
       } else {
-        const previewUrl = URL.createObjectURL(file);
-        setProfile(prev => ({ ...prev, profilePhotoUrl: previewUrl }));
-        toast.success('Profile photo updated!');
+        toast.error('Failed to get updated profile photo from server.');
       }
-    } catch {
-      const previewUrl = URL.createObjectURL(file);
-      setProfile(prev => ({ ...prev, profilePhotoUrl: previewUrl }));
-      toast.info('Profile photo updated locally.');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Failed to upload profile photo to server.');
     } finally {
       setUploadingPhoto(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -403,7 +407,9 @@ const LawyerProfilePage = () => {
         upiId: profile?.upiId || '',
         practiceAreas: profile?.practiceAreas || [],
         languages: profile?.languages || [],
-        profilePhotoUrl: editForm.profilePhotoUrl || profile?.profilePhotoUrl || ''
+        profilePhotoUrl: (editForm.profilePhotoUrl && !editForm.profilePhotoUrl.startsWith('blob:') && !editForm.profilePhotoUrl.startsWith('data:')) 
+          ? editForm.profilePhotoUrl 
+          : (profile?.profilePhotoUrl && !profile.profilePhotoUrl.startsWith('blob:') ? profile.profilePhotoUrl : '')
       };
 
       const res = await lawyerApi.updateProfile(lawyerId, payload);
@@ -714,9 +720,25 @@ const LawyerProfilePage = () => {
               <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-5">
                 {/* Avatar with Camera Overlay Button */}
                 <div className="relative shrink-0 group">
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black flex items-center justify-center text-3xl sm:text-4xl shadow-xl overflow-hidden border-4 border-white ring-2 ring-slate-100/80 bg-white">
+                  <div 
+                    className={`w-24 h-24 sm:w-32 sm:h-32 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black flex items-center justify-center text-3xl sm:text-4xl shadow-xl overflow-hidden border-4 border-white ring-2 ring-slate-100/80 bg-white ${advocate.profilePhotoUrl ? 'cursor-pointer hover:opacity-95 transition-opacity' : ''}`}
+                    onClick={() => {
+                      if (advocate.profilePhotoUrl) {
+                        setPreviewImage({
+                          url: advocate.profilePhotoUrl,
+                          title: advocate.fullName || 'Advocate Profile Photo',
+                          subtitle: `Bar Reg: ${advocate.barEnrollmentNumber || 'Verified Advocate'}`
+                        });
+                      }
+                    }}
+                    title={advocate.profilePhotoUrl ? 'Click to view full photo' : ''}
+                  >
                     {advocate.profilePhotoUrl ? (
-                      <img src={advocate.profilePhotoUrl} alt={advocate.fullName} className="w-full h-full object-cover" />
+                      <img 
+                        src={formatImageUrl(advocate.profilePhotoUrl)} 
+                        alt={advocate.fullName} 
+                        className="w-full h-full object-cover" 
+                      />
                     ) : (
                       <span>{advocate.fullName ? advocate.fullName.replace('Adv.', '').trim().charAt(0) : 'V'}</span>
                     )}
@@ -730,9 +752,12 @@ const LawyerProfilePage = () => {
                   />
                   <button
                     type="button"
-                    className="absolute bottom-1 right-1 p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg border-2 border-white cursor-pointer active:scale-95 transition-all disabled:opacity-50 group-hover:scale-105"
+                    className="absolute bottom-1 right-1 p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg border-2 border-white cursor-pointer active:scale-95 transition-all disabled:opacity-50 group-hover:scale-105 z-10"
                     title="Change profile picture"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
                     disabled={uploadingPhoto}
                   >
                     <Camera size={14} className={uploadingPhoto ? 'animate-spin' : ''} />
@@ -1207,9 +1232,26 @@ const LawyerProfilePage = () => {
                 
                 {/* PROFILE PHOTO ROW */}
                 <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-bold flex items-center justify-center text-xl shadow-xs overflow-hidden border-2 border-white shrink-0">
+                  <div 
+                    className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-bold flex items-center justify-center text-xl shadow-xs overflow-hidden border-2 border-white shrink-0 cursor-pointer"
+                    onClick={() => {
+                      const photo = editForm.profilePhotoUrl || advocate.profilePhotoUrl;
+                      if (photo) {
+                        setPreviewImage({
+                          url: photo,
+                          title: advocate.fullName || 'Advocate Profile Photo',
+                          subtitle: 'Profile Photo Preview'
+                        });
+                      }
+                    }}
+                    title={editForm.profilePhotoUrl || advocate.profilePhotoUrl ? 'Click to preview' : ''}
+                  >
                     {editForm.profilePhotoUrl || advocate.profilePhotoUrl ? (
-                      <img src={editForm.profilePhotoUrl || advocate.profilePhotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      <img 
+                        src={formatImageUrl(editForm.profilePhotoUrl || advocate.profilePhotoUrl)} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover" 
+                      />
                     ) : (
                       <span>{editForm.fullName ? editForm.fullName.replace('Adv.', '').trim().charAt(0) : 'V'}</span>
                     )}
@@ -1220,14 +1262,7 @@ const LawyerProfilePage = () => {
                       ref={modalFileInputRef}
                       className="hidden"
                       accept="image/png, image/jpeg, image/jpg"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const url = URL.createObjectURL(file);
-                          setEditForm(prev => ({ ...prev, profilePhotoUrl: url }));
-                          handlePhotoUpload(e);
-                        }
-                      }}
+                      onChange={handlePhotoUpload}
                     />
                     <button
                       type="button"
@@ -1897,6 +1932,14 @@ const LawyerProfilePage = () => {
           </div>
         </div>
       )}
+      {/* Image Preview Modal for Lawyer Profile */}
+      <ImagePreviewModal
+        isOpen={Boolean(previewImage)}
+        imageUrl={previewImage?.url}
+        title={previewImage?.title}
+        subtitle={previewImage?.subtitle}
+        onClose={() => setPreviewImage(null)}
+      />
     </div>
   );
 };

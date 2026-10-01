@@ -25,6 +25,8 @@ import LawyerCard from '../../components/LawyerCard';
 import LoadingState from '../../components/LoadingState';
 import EmptyState from '../../components/EmptyState';
 import { getLawyerRatingData } from '../../utils/ratingUtils';
+import { formatImageUrl } from '../../utils/imageUrl';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All Specializations' },
@@ -48,6 +50,7 @@ const CustomerFindLawyersPage = () => {
   const [sortBy, setSortBy] = useState('FEATURED');
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState(null);
 
   useEffect(() => {
     fetchLawyers();
@@ -420,8 +423,36 @@ const CustomerFindLawyersPage = () => {
             {/* Top Identity Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100 pr-10">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center text-xl sm:text-2xl font-bold shrink-0 shadow-md">
-                  {getInitials(selectedLawyer.fullName)}
+                <div 
+                  className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden shrink-0 shadow-md border-2 border-indigo-100 cursor-pointer group/modalavatar"
+                  onClick={() => {
+                    const imgUrl = formatImageUrl(selectedLawyer);
+                    if (imgUrl) {
+                      setPreviewPhoto({
+                        url: imgUrl,
+                        title: formatName(selectedLawyer.fullName),
+                        subtitle: selectedLawyer.barEnrollmentNumber ? `Bar Reg: ${selectedLawyer.barEnrollmentNumber}` : 'Verified Legal Advocate'
+                      });
+                    }
+                  }}
+                  title={formatImageUrl(selectedLawyer) ? "Click to view full photo" : formatName(selectedLawyer.fullName)}
+                >
+                  {formatImageUrl(selectedLawyer) ? (
+                    <img 
+                      src={formatImageUrl(selectedLawyer)} 
+                      alt={formatName(selectedLawyer.fullName)} 
+                      className="w-full h-full object-cover group-hover/modalavatar:scale-105 transition-transform duration-200"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white items-center justify-center text-xl sm:text-2xl font-bold ${formatImageUrl(selectedLawyer) ? 'hidden' : 'flex'}`}>
+                    {getInitials(selectedLawyer.fullName)}
+                  </div>
                 </div>
                 <div className="min-w-0">
                   <div className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -576,6 +607,14 @@ const CustomerFindLawyersPage = () => {
           </div>
         </div>
       )}
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        isOpen={!!previewPhoto}
+        onClose={() => setPreviewPhoto(null)}
+        imageUrl={previewPhoto?.url}
+        title={previewPhoto?.title}
+        subtitle={previewPhoto?.subtitle}
+      />
     </div>
   );
 };

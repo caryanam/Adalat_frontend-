@@ -40,6 +40,7 @@ import { saveLawyerRating, getLawyerRatingData } from '../../utils/ratingUtils';
 import { getChatMessages, sendChatMessage, subscribeToChat } from '../../utils/chatStore';
 import { useCompleteConsultation } from '../../hooks/useConsultationQueries';
 import MessageStatusTick from '../../components/MessageStatusTick';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 
 const CustomerConsultationPage = () => {
   const { user } = useAuth();
@@ -78,6 +79,7 @@ const CustomerConsultationPage = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [previewLawyerPhoto, setPreviewLawyerPhoto] = useState(null);
 
   const formatImageUrl = (url) => {
     if (!url) return null;
@@ -591,7 +593,20 @@ const CustomerConsultationPage = () => {
                         onClick={() => handleSelectConsultation(item)}
                       >
                         {/* Avatar */}
-                        <div className="relative w-10 h-10 shrink-0">
+                        <div 
+                          className={`relative w-10 h-10 shrink-0 ${item.lawyerProfileImageUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+                          onClick={(e) => {
+                            if (item.lawyerProfileImageUrl) {
+                              e.stopPropagation();
+                              setPreviewLawyerPhoto({
+                                url: item.lawyerProfileImageUrl,
+                                title: item.lawyerName || 'Advocate Profile',
+                                subtitle: item.category || 'Verified Legal Advocate'
+                              });
+                            }
+                          }}
+                          title={item.lawyerProfileImageUrl ? 'Click to view photo' : ''}
+                        >
                           {item.lawyerProfileImageUrl ? (
                             <img 
                               src={item.lawyerProfileImageUrl} 
@@ -683,7 +698,19 @@ const CustomerConsultationPage = () => {
                       >
                         <ArrowLeft size={18} />
                       </button>
-                      <div className="relative w-9 h-9 sm:w-10 sm:h-10 shrink-0">
+                      <div 
+                        className={`relative w-9 h-9 sm:w-10 sm:h-10 shrink-0 ${activeConsultation.lawyerProfileImageUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+                        onClick={() => {
+                          if (activeConsultation.lawyerProfileImageUrl) {
+                            setPreviewLawyerPhoto({
+                              url: activeConsultation.lawyerProfileImageUrl,
+                              title: activeConsultation.lawyerName || 'Advocate Profile',
+                              subtitle: activeConsultation.category || 'Verified Legal Advocate'
+                            });
+                          }
+                        }}
+                        title={activeConsultation.lawyerProfileImageUrl ? 'Click to view full photo' : ''}
+                      >
                         {activeConsultation.lawyerProfileImageUrl ? (
                           <img 
                             src={activeConsultation.lawyerProfileImageUrl} 
@@ -1521,6 +1548,15 @@ const CustomerConsultationPage = () => {
           </div>
         </div>
       )}
+
+      {/* Lawyer Profile Photo Preview Modal */}
+      <ImagePreviewModal
+        isOpen={Boolean(previewLawyerPhoto)}
+        imageUrl={previewLawyerPhoto?.url}
+        title={previewLawyerPhoto?.title}
+        subtitle={previewLawyerPhoto?.subtitle}
+        onClose={() => setPreviewLawyerPhoto(null)}
+      />
     </div>
   );
 };

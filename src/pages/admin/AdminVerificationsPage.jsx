@@ -12,6 +12,8 @@ import {
   ExternalLink, Sparkles, Check, ChevronRight, User
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { formatImageUrl } from '../../utils/imageUrl';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 
 const AdminVerificationsPage = () => {
   const [pendingLawyers, setPendingLawyers] = useState([]);
@@ -23,6 +25,7 @@ const AdminVerificationsPage = () => {
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   
@@ -61,6 +64,7 @@ const AdminVerificationsPage = () => {
     fetchPending();
   }, [fetchPending]);
 
+  // Document fetching for modal - Strictly from Database / Backend API
   const handleOpenDetails = (lawyer) => {
     setSelectedLawyer(lawyer);
     setShowDetailsModal(true);
@@ -69,21 +73,20 @@ const AdminVerificationsPage = () => {
 
     let docs = [];
     if (lawyer && lawyer.documents && Array.isArray(lawyer.documents) && lawyer.documents.length > 0) {
-      docs = lawyer.documents;
+      docs = [...lawyer.documents];
     } else if (lawyer && lawyer.lawyerDocuments && Array.isArray(lawyer.lawyerDocuments) && lawyer.lawyerDocuments.length > 0) {
-      docs = lawyer.lawyerDocuments;
+      docs = [...lawyer.lawyerDocuments];
     }
 
-    if (docs.length === 0) {
-      try {
-        const stored = localStorage.getItem(`adalat_lawyer_docs_${lawyer.lawyerId}`) || localStorage.getItem('adalat_latest_lawyer_docs');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.barCert && (parsed.barCert.dataUrl || parsed.barCert.fileUrl)) {
-            docs = [parsed.barCert];
-          }
-        }
-      } catch (e) {}
+    const photoUrl = formatImageUrl(lawyer);
+    const hasPhotoDoc = docs.some(d => (d.documentType || d.type) === 'PHOTO');
+    if (photoUrl && !hasPhotoDoc) {
+      docs.unshift({
+        documentType: 'PHOTO',
+        fileName: 'profile_photo.jpg',
+        originalFileName: 'profile_photo.jpg',
+        fileUrl: photoUrl
+      });
     }
 
     setFetchedDocs(docs);
@@ -346,12 +349,26 @@ const AdminVerificationsPage = () => {
                     {/* Header: Photo + Name + Status */}
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative w-12 h-12 shrink-0">
+                        <div 
+                          className="relative w-12 h-12 shrink-0 cursor-pointer group/avatar"
+                          onClick={(e) => {
+                            const imgUrl = formatImageUrl(lawyer);
+                            if (imgUrl) {
+                              e.stopPropagation();
+                              setPreviewImage({
+                                url: imgUrl,
+                                title: lawyer.fullName,
+                                subtitle: `Bar Reg: ${lawyer.barEnrollmentNumber || 'Not Provided'} • ${lawyer.location || 'India'}`
+                              });
+                            }
+                          }}
+                          title={formatImageUrl(lawyer) ? "Click to view full profile photo" : lawyer.fullName}
+                        >
                           {formatImageUrl(lawyer) ? (
                             <img 
                               src={formatImageUrl(lawyer)} 
                               alt={lawyer.fullName || 'Advocate'} 
-                              className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-100 shadow-2xs shrink-0" 
+                              className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-100 shadow-2xs shrink-0 group-hover/avatar:ring-2 group-hover/avatar:ring-indigo-500 group-hover/avatar:scale-105 transition-all" 
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 if (e.currentTarget.nextElementSibling) {
@@ -577,12 +594,25 @@ const AdminVerificationsPage = () => {
               {/* Modal Top Header */}
               <div className="bg-gradient-to-r from-[#0d1322] via-[#111827] to-[#1e1b4b] text-white p-5 sm:p-6 flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-3.5">
-                  <div className="relative w-12 h-12 shrink-0">
+                  <div 
+                    className="relative w-12 h-12 shrink-0 cursor-pointer group/modalavatar"
+                    onClick={() => {
+                      const imgUrl = formatImageUrl(selectedLawyer);
+                      if (imgUrl) {
+                        setPreviewImage({
+                          url: imgUrl,
+                          title: selectedLawyer.fullName,
+                          subtitle: `Bar Reg: ${selectedLawyer.barEnrollmentNumber || 'Not Provided'} • ${selectedLawyer.location || 'India'}`
+                        });
+                      }
+                    }}
+                    title={formatImageUrl(selectedLawyer) ? "Click to view full profile photo" : selectedLawyer.fullName}
+                  >
                     {formatImageUrl(selectedLawyer) ? (
                       <img 
                         src={formatImageUrl(selectedLawyer)} 
                         alt={selectedLawyer.fullName || 'Advocate'} 
-                        className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/40 shadow-md shrink-0" 
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-400/40 shadow-md shrink-0 group-hover/modalavatar:scale-105 transition-all" 
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           if (e.currentTarget.nextElementSibling) {
@@ -890,6 +920,15 @@ const AdminVerificationsPage = () => {
             </div>
           </div>
         )}
+
+        {/* Global Image Preview Modal */}
+        <ImagePreviewModal
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          imageUrl={previewImage?.url}
+          title={previewImage?.title}
+          subtitle={previewImage?.subtitle}
+        />
 
       </main>
     </div>

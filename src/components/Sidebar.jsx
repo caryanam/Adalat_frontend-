@@ -7,12 +7,15 @@ import {
   TrendingUp, Scale, Bot, FileText, ChevronRight, Sparkles, X
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
+import { formatImageUrl } from '../utils/imageUrl';
+import ImagePreviewModal from './ImagePreviewModal';
 
 const Sidebar = ({ portalType = 'customer' }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [logoError, setLogoError] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     const handleToggle = () => setIsMobileDrawerOpen(prev => !prev);
@@ -216,8 +219,28 @@ const Sidebar = ({ portalType = 'customer' }) => {
           {/* User Details */}
           <div className="flex items-center gap-2.5">
             <div className="relative shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold flex items-center justify-center text-xs shadow-md border border-indigo-400/20">
-                {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+              <div 
+                className={`w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold flex items-center justify-center text-xs shadow-md border border-indigo-400/20 overflow-hidden ${user?.profilePhotoUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+                onClick={() => {
+                  if (user?.profilePhotoUrl) {
+                    setPreviewImage({
+                      url: user.profilePhotoUrl,
+                      title: user.fullName || 'User Profile',
+                      subtitle: portalInfo.title
+                    });
+                  }
+                }}
+                title={user?.profilePhotoUrl ? 'Click to view photo' : ''}
+              >
+                {user?.profilePhotoUrl ? (
+                  <img
+                    src={formatImageUrl(user.profilePhotoUrl)}
+                    alt={user?.fullName || 'Avatar'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}</span>
+                )}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#111726] shadow-[0_0_4px_#34d399]" />
             </div>
@@ -318,6 +341,14 @@ const Sidebar = ({ portalType = 'customer' }) => {
           })}
         </nav>
       )}
+      {/* Profile Photo Preview Modal */}
+      <ImagePreviewModal
+        isOpen={Boolean(previewImage)}
+        imageUrl={previewImage?.url}
+        title={previewImage?.title}
+        subtitle={previewImage?.subtitle}
+        onClose={() => setPreviewImage(null)}
+      />
     </>
   );
 };

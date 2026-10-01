@@ -30,7 +30,7 @@ const LawyerDashboardPage = () => {
         if (res && res.data) {
           const data = res.data.data || res.data;
           setProfile(data);
-          if (updateUser && user && (user.verificationStatus !== data.verificationStatus || user.accountStatus !== data.accountStatus)) {
+          if (updateUser && user && (user.verificationStatus !== data.verificationStatus || user.accountStatus !== data.accountStatus || user.profilePhotoUrl !== data.profilePhotoUrl)) {
             updateUser(data);
           }
         }

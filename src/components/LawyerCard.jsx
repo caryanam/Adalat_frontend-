@@ -10,10 +10,13 @@ import {
 } from 'lucide-react';
 import { getLawyerRatingData } from '../utils/ratingUtils';
 import apiClient from '../api/apiClient';
+import { formatImageUrl } from '../utils/imageUrl';
+import ImagePreviewModal from './ImagePreviewModal';
 
 const LawyerCard = ({ lawyer, onViewProfile }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
 
   const ratingInfo = getLawyerRatingData(lawyer.lawyerId || lawyer.id || 1);
 
@@ -92,51 +95,52 @@ const LawyerCard = ({ lawyer, onViewProfile }) => {
   const initials = getInitials(lawyer.fullName);
   const displayName = formatName(lawyer.fullName);
 
-  const formatImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
-      return url;
-    }
-    const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8082${cleanPath}`;
-  };
-
-  const lawyerImgUrl = formatImageUrl(lawyer.profilePhotoUrl || lawyer.photoUrl || lawyer.avatar || lawyer.lawyerProfileImageUrl);
+  const lawyerImgUrl = formatImageUrl(lawyer);
 
   return (
-    <div 
-      onClick={() => onViewProfile && onViewProfile(lawyer)}
-      className="bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-md transition-all duration-200 p-5 flex flex-col justify-between h-full group cursor-pointer font-['Outfit',sans-serif]"
-    >
-      {/* Top Header Row: Avatar + Name + Specialization */}
-      <div>
-        <div className="flex items-start gap-3.5">
-          {/* Avatar with smart initials & online dot */}
-          <div className="relative shrink-0 mt-0.5">
-            <div className="relative w-12 h-12">
-              {lawyerImgUrl ? (
-                <img 
-                  src={lawyerImgUrl} 
-                  alt={displayName} 
-                  className="w-12 h-12 rounded-xl object-cover shadow-xs border border-slate-200"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    if (e.currentTarget.nextElementSibling) {
-                      e.currentTarget.nextElementSibling.style.display = 'flex';
-                    }
-                  }}
-                />
-              ) : null}
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-sm sm:text-base items-center justify-center shadow-xs ${
-                lawyerImgUrl ? 'hidden' : 'flex'
-              }`}>
-                {initials}
+    <>
+      <div 
+        onClick={() => onViewProfile && onViewProfile(lawyer)}
+        className="bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-md transition-all duration-200 p-5 flex flex-col justify-between h-full group cursor-pointer font-['Outfit',sans-serif]"
+      >
+        {/* Top Header Row: Avatar + Name + Specialization */}
+        <div>
+          <div className="flex items-start gap-3.5">
+            {/* Avatar with smart initials & online dot */}
+            <div className="relative shrink-0 mt-0.5">
+              <div 
+                className="relative w-12 h-12 rounded-xl overflow-hidden cursor-pointer group/avatar ring-1 ring-slate-200 hover:ring-2 hover:ring-indigo-500 transition-all"
+                onClick={(e) => {
+                  if (lawyerImgUrl) {
+                    e.stopPropagation();
+                    setShowPhotoPreview(true);
+                  }
+                }}
+                title={lawyerImgUrl ? "Click to view full photo" : displayName}
+              >
+                {lawyerImgUrl ? (
+                  <img 
+                    src={lawyerImgUrl} 
+                    alt={displayName} 
+                    className="w-12 h-12 rounded-xl object-cover shadow-xs border border-slate-200 group-hover/avatar:scale-105 transition-transform duration-200"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-sm sm:text-base items-center justify-center shadow-xs ${
+                  lawyerImgUrl ? 'hidden' : 'flex'
+                }`}>
+                  {initials}
+                </div>
               </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" title="Online" />
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" title="Online" />
-          </div>
 
-          {/* Name & Specialization */}
+            {/* Name & Specialization */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="font-['Outfit',sans-serif] font-bold text-slate-900 text-sm sm:text-base group-hover:text-indigo-600 transition-colors truncate">
@@ -205,7 +209,15 @@ const LawyerCard = ({ lawyer, onViewProfile }) => {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+      <ImagePreviewModal
+        isOpen={showPhotoPreview}
+        onClose={() => setShowPhotoPreview(false)}
+        imageUrl={lawyerImgUrl}
+        title={displayName}
+        subtitle={lawyer.barEnrollmentNumber ? `Bar Reg: ${lawyer.barEnrollmentNumber} • ${categoryLabel}` : categoryLabel}
+      />
+    </>
   );
 };
 

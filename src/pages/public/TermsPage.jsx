@@ -113,46 +113,46 @@ const TermsPage = () => {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-['Outfit',sans-serif] selection:bg-amber-500 selection:text-slate-950">
       
       {/* Hero Header */}
-      <section className="relative pt-20 pb-14 md:pt-28 md:pb-20 overflow-hidden bg-gradient-to-b from-amber-50/40 via-white to-slate-50 border-b border-slate-200">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative pt-20 pb-6 md:pt-24 md:pb-8 overflow-hidden bg-gradient-to-b from-amber-50/40 via-white to-slate-50 border-b border-slate-200">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-xs font-bold tracking-wider uppercase text-amber-800 shadow-xs mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-xs font-bold tracking-wider uppercase text-amber-800 shadow-xs mb-3">
             <Sparkles size={13} className="text-amber-600" />
             <span>Legal Framework & Terms</span>
           </div>
 
-          <h1 className="font-['Cinzel',serif] text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 mb-4">
+          <h1 className="font-['Cinzel',serif] text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-2">
             Terms of Service
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
             Last Updated: March 2026 • Governing Caryanamindia Pvt Ltd & Adalat Platform
           </p>
         </div>
       </section>
 
       {/* Main Content Sections */}
-      <section className="py-14 md:py-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-6 md:py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="space-y-6">
+        <div className="space-y-3.5 sm:space-y-4">
           {terms.map((item) => {
             const Icon = item.icon;
             return (
               <div 
                 key={item.id}
-                className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4"
+                className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2.5"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
-                    <Icon size={18} />
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                    <Icon size={16} />
                   </div>
-                  <h2 className="font-['Cinzel',serif] text-lg sm:text-xl font-bold text-slate-900">
+                  <h2 className="font-['Cinzel',serif] text-base sm:text-lg font-bold text-slate-900">
                     {item.title}
                   </h2>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-600 leading-relaxed pl-0 sm:pl-12">
+                <div className="text-xs sm:text-sm text-slate-600 leading-relaxed pl-0 sm:pl-11">
                   {item.content}
                 </div>
               </div>
@@ -161,7 +161,7 @@ const TermsPage = () => {
         </div>
 
         {/* Back to Home / Portal links */}
-        <div className="mt-12 pt-8 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="mt-8 pt-5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
           <Link to="/" className="text-amber-700 hover:text-amber-800 font-bold inline-flex items-center gap-1.5">
             <span>← Return to Home</span>
           </Link>
