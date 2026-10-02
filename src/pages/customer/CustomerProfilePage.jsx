@@ -91,6 +91,23 @@ const CustomerProfilePage = () => {
         list = res.data.data;
       }
 
+      if (list.length > 0) {
+        // Backend/Frontend deduplication & filtering protection
+        // Only show successful PAID/SUCCESS payments
+        const successfulPayments = list.filter(p => p.status === 'PAID' || p.status === 'SUCCESS');
+        
+        // Deduplicate by orderId if PENDING + PAID existed
+        const uniquePayments = new Map();
+        successfulPayments.forEach(p => {
+          const key = p.orderId || p.id;
+          if (key) {
+            uniquePayments.set(key, p);
+          }
+        });
+        
+        list = Array.from(uniquePayments.values());
+      }
+
       // Default registration activation payment fallback if empty
       if (list.length === 0) {
         list = [
@@ -498,15 +515,7 @@ const CustomerProfilePage = () => {
                     {initial}
                   </div>
                   
-                  {/* Photo Change Badge */}
-                  <button 
-                    type="button" 
-                    onClick={() => toast.info('Profile picture upload available in next version.')}
-                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center justify-center text-indigo-600 hover:bg-slate-50 transition-transform active:scale-95 cursor-pointer"
-                    title="Update Profile Photo"
-                  >
-                    <Camera size={13} />
-                  </button>
+
 
                   {/* Online Status Dot */}
                   <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 absolute top-0 -right-1" title="Account Online" />
@@ -1044,14 +1053,16 @@ const CustomerProfilePage = () => {
                             )}
                           </td>
                           <td className="p-3.5 text-right">
-                            <button 
-                              type="button"
-                              onClick={() => handleViewReceipt(p)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
-                            >
-                              <FileText size={12} />
-                              <span>Receipt</span>
-                            </button>
+                            {(p.status === 'PAID' || p.status === 'SUCCESS') && (
+                              <button 
+                                type="button"
+                                onClick={() => handleViewReceipt(p)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+                              >
+                                <FileText size={12} />
+                                <span>Receipt</span>
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}

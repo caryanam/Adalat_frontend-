@@ -28,6 +28,23 @@ const CustomerPaymentsPage = () => {
         list = res.data.data;
       }
 
+      if (list.length > 0) {
+        // Backend/Frontend deduplication & filtering protection
+        // Only show successful PAID/SUCCESS payments
+        const successfulPayments = list.filter(p => p.status === 'PAID' || p.status === 'SUCCESS');
+        
+        // Deduplicate by orderId if PENDING + PAID existed
+        const uniquePayments = new Map();
+        successfulPayments.forEach(p => {
+          const key = p.orderId || p.id;
+          if (key) {
+            uniquePayments.set(key, p);
+          }
+        });
+        
+        list = Array.from(uniquePayments.values());
+      }
+
       if (list.length === 0) {
         list = [
           {
@@ -249,14 +266,16 @@ const CustomerPaymentsPage = () => {
                           )}
                         </td>
                         <td className="p-3.5 text-right">
-                          <button 
-                            type="button"
-                            onClick={() => handleViewReceipt(p)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
-                          >
-                            <FileText size={12} />
-                            <span>Receipt</span>
-                          </button>
+                          {(p.status === 'PAID' || p.status === 'SUCCESS') && (
+                            <button 
+                              type="button"
+                              onClick={() => handleViewReceipt(p)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+                            >
+                              <FileText size={12} />
+                              <span>Receipt</span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
