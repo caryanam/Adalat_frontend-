@@ -94,7 +94,6 @@ const OtpModal = ({ isOpen, onClose, email, role, onSuccess }) => {
             });
 
             if (res.status === 'SUCCESS' || (res.data && res.data.success)) {
-                toast.success(res.message || "Email verified successfully!");
                 onSuccess();
             } else {
                 toast.error(res.message || "Invalid OTP. Please try again.");

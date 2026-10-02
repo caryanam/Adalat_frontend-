@@ -9,7 +9,7 @@ import { lawyerApi } from '../../api/lawyerApi';
 import { 
   User, ShieldCheck, UserCheck, RefreshCw, Scale, CheckCircle2, 
   XCircle, Eye, Search, Filter, Briefcase, DollarSign, Award, 
-  MapPin, BookOpen, Globe, FileText, X, AlertTriangle
+  MapPin, BookOpen, Globe, FileText, X, AlertTriangle, Star, MessageSquare
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatImageUrl } from '../../utils/imageUrl';
@@ -33,6 +33,28 @@ const AdminLawyersPage = () => {
   const [fetchedDocs, setFetchedDocs] = useState([]);
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [docBlobUrl, setDocBlobUrl] = useState(null);
+
+  // Ratings & Feedback
+  const [lawyerRatings, setLawyerRatings] = useState({ averageRating: 0, ratingCount: 0, reviews: [] });
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+
+  useEffect(() => {
+    if (showDetailsModal && selectedLawyer) {
+      setRatingsLoading(true);
+      lawyerApi.getRatings(selectedLawyer.lawyerId)
+        .then(res => {
+          setLawyerRatings(res);
+        })
+        .catch(() => {
+          setLawyerRatings({ averageRating: 0, ratingCount: 0, reviews: [] });
+        })
+        .finally(() => {
+          setRatingsLoading(false);
+        });
+    } else {
+      setLawyerRatings({ averageRating: 0, ratingCount: 0, reviews: [] });
+    }
+  }, [showDetailsModal, selectedLawyer]);
 
   const fetchLawyers = useCallback(() => {
     setLoading(true);
@@ -660,6 +682,51 @@ const AdminLawyersPage = () => {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Ratings & Feedback */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Star size={14} className="text-amber-500" /> Ratings & Feedback</span>
+                    <span className="bg-amber-100 text-amber-800 py-0.5 px-2 rounded-full text-[10px] font-bold">
+                      {lawyerRatings.averageRating > 0 ? lawyerRatings.averageRating.toFixed(1) : 'No'} / 5.0 ({lawyerRatings.ratingCount} Reviews)
+                    </span>
+                  </h4>
+                  
+                  {ratingsLoading ? (
+                    <div className="flex items-center justify-center p-4 text-slate-400 text-xs">
+                      <RefreshCw size={14} className="animate-spin mr-2" /> Loading reviews...
+                    </div>
+                  ) : lawyerRatings.reviews && lawyerRatings.reviews.length > 0 ? (
+                    <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                      {lawyerRatings.reviews.map((review, idx) => (
+                        <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                          <div className="flex justify-between items-start mb-1.5">
+                            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                              <User size={12} className="text-slate-400" />
+                              {review.customerName || 'Anonymous Client'}
+                            </span>
+                            <div className="flex text-amber-400">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} size={10} fill={i < (review.rating || 5) ? 'currentColor' : 'none'} className={i >= (review.rating || 5) ? 'text-slate-300' : ''} />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-600 italic">"{review.comment || 'No feedback provided.'}"</p>
+                          {review.createdAt && (
+                            <div className="text-[10px] text-slate-400 mt-1.5 text-right">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center p-4 border border-dashed border-slate-200 rounded-lg bg-slate-50">
+                      <MessageSquare size={20} className="mx-auto text-slate-300 mb-1" />
+                      <p className="text-xs text-slate-500">No client reviews yet.</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Uploaded Documents */}
