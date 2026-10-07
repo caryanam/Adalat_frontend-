@@ -31,7 +31,9 @@ import {
   ExternalLink,
   Loader2,
   Bell,
-  XCircle
+  XCircle,
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 
 const LawyerConsultationsPage = () => {
@@ -67,7 +69,7 @@ const LawyerConsultationsPage = () => {
       return url;
     }
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8082${cleanPath}`;
+    return `http://${window.location.hostname}:8082${cleanPath}`;
   };
 
   // Convert PDF URLs to local blob URLs for flawless inline preview
@@ -160,8 +162,8 @@ const LawyerConsultationsPage = () => {
     };
   };
 
-  const fetchLawyerConsultations = () => {
-    setLoading(true);
+  const fetchLawyerConsultations = (silent = false) => {
+    if (!silent) setLoading(true);
     consultationApi.getLawyerRequests()
       .then(res => {
         const raw = res && res.data ? (res.data.data || res.data) : [];
@@ -170,6 +172,15 @@ const LawyerConsultationsPage = () => {
           const pending = raw.filter(r => r.status === 'REQUESTED' || r.status === 'PENDING');
           setConsultations(accepted);
           setPendingRequests(pending);
+          
+          setActiveChatConsultation(prev => {
+            if (!prev) return prev;
+            const updated = accepted.find(c => String(c.id || c.requestId) === String(prev.id || prev.requestId));
+            if (updated) {
+              return updated;
+            }
+            return prev;
+          });
         }
       })
       .catch(() => {})
@@ -178,6 +189,13 @@ const LawyerConsultationsPage = () => {
 
   useEffect(() => {
     fetchLawyerConsultations();
+    
+    // Auto-refresh/poll every 5 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchLawyerConsultations(true);
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleOpenAssignModal = (req) => {
@@ -458,25 +476,34 @@ const LawyerConsultationsPage = () => {
         {/* LIVE CHAT MODAL FOR ADVOCATE */}
         {activeChatConsultation && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-150">
-            <div className="bg-white rounded-2xl w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden font-['Outfit',sans-serif]">
+            <div className="bg-[#f8fafc] rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden font-['Outfit',sans-serif] relative">
               
-              {/* Header Bar */}
-              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between gap-3 border-b border-slate-800 shrink-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
-                    {activeChatConsultation.customerName ? activeChatConsultation.customerName.charAt(0).toUpperCase() : 'C'}
+              {/* Clean, Non-Messy Active Consultation Topbar (Matched to Customer UI) */}
+              <div className="h-16 px-3 sm:px-6 border-b border-slate-200/80 bg-white flex items-center justify-between gap-2 sm:gap-3 shrink-0 z-10">
+                
+                {/* Left: Customer Identity */}
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="relative w-9 h-9 sm:w-10 sm:h-10 shrink-0">
+                    <div className="w-full h-full rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs">
+                      {activeChatConsultation.customerName ? activeChatConsultation.customerName.charAt(0).toUpperCase() : 'C'}
+                    </div>
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-sm sm:text-base font-bold text-white truncate">
-                      {activeChatConsultation.customerName || 'Customer'}
-                    </h4>
-                    <span className="text-[11px] text-slate-300 block truncate">
-                      Category: {activeChatConsultation.categoryDisplayName || activeChatConsultation.category || 'Legal Consultation'}
-                    </span>
+                    <div className="text-sm font-bold text-slate-900 truncate flex items-center gap-1.5 font-['Outfit',sans-serif]">
+                      <span className="truncate">{activeChatConsultation.customerName || 'Customer'}</span>
+                      <CheckCircle2 size={15} className="text-emerald-500 shrink-0" title="Verified Client" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5 flex-wrap">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Client Online" />
+                      <span className="truncate max-w-[120px] sm:max-w-[180px] font-medium text-slate-600">
+                        {activeChatConsultation.categoryDisplayName || activeChatConsultation.category || 'Legal Consultation'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Right: Actions & Timer Toolbar */}
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <ConsultationTimer 
                     consultationId={activeChatConsultation.id || activeChatConsultation.requestId}
                     initialSeconds={activeChatConsultation.remainingSeconds != null ? activeChatConsultation.remainingSeconds : 120} 
@@ -487,6 +514,20 @@ const LawyerConsultationsPage = () => {
                     isLawyer={true}
                   />
                   
+                  <div className="h-5 w-px bg-slate-200 mx-0.5 hidden sm:block shrink-0" />
+
+                  {/* Case Assessment Facts Button (matched to Facts button in customer UI) */}
+                  <button
+                    type="button"
+                    onClick={handleNotifyCustomerWaiting}
+                    disabled={notifyingWaiting || notifiedCooldown}
+                    className="h-8 px-2.5 rounded-xl text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95 disabled:opacity-60"
+                    title="Notify Client (I'm Waiting)"
+                  >
+                    <Bell size={13} className={notifyingWaiting ? "animate-spin text-amber-600 shrink-0" : "text-amber-600 shrink-0"} />
+                    <span className="hidden md:inline">{notifiedCooldown ? "Notified" : "Ping"}</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -499,49 +540,49 @@ const LawyerConsultationsPage = () => {
                         });
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                     disabled={completeMutation.isPending || activeChatConsultation?.status === 'COMPLETED'}
+                    className="h-8 px-2.5 sm:px-3 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-50 shrink-0 active:scale-95"
                   >
-                    <CheckSquare size={13} />
-                    <span>{completeMutation.isPending ? 'Ending...' : 'End Session'}</span>
+                    <CheckSquare size={13} className="text-rose-600 shrink-0" />
+                    <span>{completeMutation.isPending ? 'Ending...' : 'End'}</span>
                   </button>
 
                   <button 
                     onClick={() => setActiveChatConsultation(null)} 
-                    className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    className="ml-1 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     <X size={18} />
                   </button>
                 </div>
               </div>
 
-              {/* Case Summary & Ping Client Bar */}
-              <div className="bg-amber-50 px-3.5 py-2 border-b border-amber-200/80 text-[11px] sm:text-xs text-amber-900 flex items-center justify-between gap-2 shrink-0">
-                <div className="flex items-center gap-2 truncate min-w-0">
-                  <FileText size={13} className="text-amber-700 shrink-0" />
-                  <span className="truncate">
-                    Brief: <strong>{activeChatConsultation.caseSummary || activeChatConsultation.summary || 'Legal summary attached by customer.'}</strong>
-                  </span>
+              {/* Case Summary Bar */}
+              {activeChatConsultation.caseSummary && (
+                <div className="bg-amber-50 px-3.5 py-2 border-b border-amber-200/80 text-[11px] sm:text-xs text-amber-900 flex items-center justify-between gap-2 shrink-0">
+                  <div className="flex items-center gap-2 truncate min-w-0">
+                    <FileText size={13} className="text-amber-700 shrink-0" />
+                    <span className="truncate">
+                      Brief: <strong>{activeChatConsultation.caseSummary || activeChatConsultation.summary}</strong>
+                    </span>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleNotifyCustomerWaiting}
-                  disabled={notifyingWaiting || notifiedCooldown}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-slate-950 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0"
-                  title="Send notification alert to customer that you are waiting in the consultation room"
-                >
-                  <Bell size={11} className={notifyingWaiting ? "animate-spin text-slate-950" : "text-slate-950"} />
-                  <span>{notifiedCooldown ? "Client Notified ✓" : notifyingWaiting ? "Pinging..." : "Notify Client (I'm Waiting)"}</span>
-                </button>
-              </div>
+              )}
 
               {/* Chat Messages Body */}
-              <div className="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+              <div className="flex-1 p-4 sm:p-5 overflow-y-auto bg-[#f8fafc] flex flex-col gap-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
                 {chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl)).length === 0 ? (
-                  <div className="text-center text-slate-400 my-auto py-8">
-                    <MessageSquare size={36} className="mx-auto text-slate-300 mb-2" />
-                    <p className="text-sm font-bold text-slate-700">Real-time Consultation Room</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Send a greeting message or review case documents with your client.</p>
+                  <div className="max-w-xl mx-auto my-6 p-6 rounded-2xl bg-white border border-slate-200/80 shadow-2xs text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto shadow-2xs">
+                      <Sparkles size={22} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-slate-900 font-['Outfit',sans-serif]">
+                        Consultation Room with {activeChatConsultation.customerName || 'Customer'}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Your secure legal consultation room is ready. Send a greeting message or review case documents with your client.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl)).map((msg, index) => {
@@ -550,25 +591,30 @@ const LawyerConsultationsPage = () => {
                     const attachment = getAttachmentDetails(msg);
 
                     return (
-                      <div 
-                        key={msg.id || index}
-                        className={`flex flex-col ${isLawyerMsg ? 'items-end' : 'items-start'}`}
-                      >
-                        <div 
-                          className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words space-y-1.5 ${
-                            isLawyerMsg 
-                              ? 'bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl rounded-tr-xs shadow-sm font-normal' 
-                              : 'bg-white text-slate-800 border border-slate-200/90 rounded-2xl rounded-tl-xs shadow-xs'
-                          }`}
-                        >
+                      <div key={msg.id || index} className={`flex w-full items-end gap-2 ${isLawyerMsg ? 'justify-end' : 'justify-start'}`}>
+                        
+                        {/* Customer Avatar next to message */}
+                        {!isLawyerMsg && (
+                          <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0 mb-1 overflow-hidden relative border border-indigo-200/80">
+                            <span>
+                              {activeChatConsultation.customerName ? activeChatConsultation.customerName.charAt(0).toUpperCase() : 'C'}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl shadow-2xs space-y-1.5 ${
+                          isLawyerMsg 
+                            ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-xs' 
+                            : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs'
+                        }`}>
                           <span className={`text-[10px] font-bold uppercase tracking-wider block ${
-                            isLawyerMsg ? 'text-indigo-300' : 'text-indigo-600'
+                            isLawyerMsg ? 'text-indigo-200' : 'text-indigo-600'
                           }`}>
-                            {isLawyerMsg ? 'You (Advocate)' : (activeChatConsultation.customerName || 'Client')}
+                            {isLawyerMsg ? 'You' : (activeChatConsultation.customerName || 'Client').toUpperCase()}
                           </span>
 
                           {msgText && (
-                            <p className="leading-relaxed">
+                            <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-line break-words">
                               {msgText}
                             </p>
                           )}
@@ -579,7 +625,7 @@ const LawyerConsultationsPage = () => {
                               {attachment.isImage ? (
                                 <div 
                                   onClick={() => setPreviewAttachment(attachment)}
-                                  className="group relative cursor-pointer rounded-xl overflow-hidden border border-white/20 bg-slate-900 shadow-2xs transition-all hover:shadow-md max-w-sm"
+                                  className="group relative cursor-pointer rounded-xl overflow-hidden border border-slate-200/80 bg-slate-900 shadow-2xs transition-all hover:shadow-md max-w-sm"
                                 >
                                   <img 
                                     src={attachment.url || `https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80`} 
@@ -594,7 +640,7 @@ const LawyerConsultationsPage = () => {
                                       <Paperclip size={12} className="text-indigo-300 shrink-0" />
                                       <span className="text-xs font-medium truncate">{attachment.name}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full shrink-0 group-hover:bg-indigo-500 transition-colors shadow-2xs">
+                                    <span className="text-[10px] font-bold bg-indigo-600/90 text-white px-2 py-0.5 rounded-full shrink-0 group-hover:bg-indigo-500 transition-colors shadow-2xs">
                                       View Image
                                     </span>
                                   </div>
@@ -604,8 +650,8 @@ const LawyerConsultationsPage = () => {
                                   onClick={() => setPreviewAttachment(attachment)}
                                   className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs transition-all hover:shadow-sm ${
                                     isLawyerMsg 
-                                      ? 'bg-white/10 hover:bg-white/15 border-white/20 text-white' 
-                                      : 'bg-rose-50/80 hover:bg-rose-100/80 border-rose-200/80 text-slate-800'
+                                      ? 'bg-indigo-800/50 hover:bg-indigo-800/70 border-indigo-400/40 text-white' 
+                                      : 'bg-rose-50/70 hover:bg-rose-100/70 border-rose-200/80 text-slate-800'
                                   }`}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
@@ -622,7 +668,7 @@ const LawyerConsultationsPage = () => {
                                     </div>
                                   </div>
                                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${
-                                    isLawyerMsg ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-rose-600 text-white hover:bg-rose-700'
+                                    isLawyerMsg ? 'bg-white text-indigo-700 hover:bg-indigo-50' : 'bg-rose-600 text-white hover:bg-rose-700'
                                   }`}>
                                     Preview PDF
                                   </span>
@@ -632,7 +678,7 @@ const LawyerConsultationsPage = () => {
                                   onClick={() => setPreviewAttachment(attachment)}
                                   className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs transition-all hover:shadow-sm ${
                                     isLawyerMsg 
-                                      ? 'bg-white/10 hover:bg-white/15 border-white/20 text-white' 
+                                      ? 'bg-indigo-800/50 hover:bg-indigo-800/70 border-indigo-400/40 text-white' 
                                       : 'bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-800'
                                   }`}
                                 >
@@ -645,12 +691,12 @@ const LawyerConsultationsPage = () => {
                                     <div className="min-w-0">
                                       <div className="text-xs font-bold truncate">{attachment.name}</div>
                                       <div className={`text-[10px] ${isLawyerMsg ? 'text-indigo-200' : 'text-slate-500'}`}>
-                                        Legal Attachment {attachment.size ? `• ${attachment.size}` : ''}
+                                        Legal File {attachment.size ? `• ${attachment.size}` : ''}
                                       </div>
                                     </div>
                                   </div>
                                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg shrink-0 transition-colors ${
-                                    isLawyerMsg ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                    isLawyerMsg ? 'bg-white text-indigo-700 hover:bg-indigo-50' : 'bg-indigo-600 text-white hover:bg-indigo-700'
                                   }`}>
                                     Download
                                   </span>
@@ -658,15 +704,17 @@ const LawyerConsultationsPage = () => {
                               )}
                             </div>
                           )}
-                        </div>
 
-                        <div className={`flex items-center gap-1 mt-1 px-1 ${isLawyerMsg ? 'justify-end' : 'justify-start'}`}>
-                          <span className="text-[10px] text-slate-400">
-                            {msg.time || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.timestamp || 'Now'))}
-                          </span>
-                          {isLawyerMsg && (
-                            <MessageStatusTick status={msg.status || 'SENT'} isLawyer={true} />
-                          )}
+                          <div className={`flex items-center justify-end gap-1 pt-0.5 ${
+                            isLawyerMsg ? 'text-indigo-200/80' : 'text-slate-400'
+                          }`}>
+                            <span className="text-[9px]">
+                              {msg.time || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.timestamp || 'Just now'))}
+                            </span>
+                            {isLawyerMsg && (
+                              <MessageStatusTick status={msg.status || 'SENT'} isLawyer={true} />
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -676,9 +724,9 @@ const LawyerConsultationsPage = () => {
 
               {/* Attached File Preview Bar */}
               {attachedLawyerFile && (
-                <div className="px-4 py-2 bg-amber-50 border-t border-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-between shrink-0">
+                <div className="px-4 py-2 bg-amber-50 border-t border-amber-200 text-amber-800 text-xs font-semibold flex items-center justify-between shrink-0">
                   <span className="flex items-center gap-1.5 truncate">
-                    <Paperclip size={14} className="text-amber-700 shrink-0" /> 
+                    <Paperclip size={14} className="text-amber-600 shrink-0" /> 
                     <span>Ready to send: <strong>{attachedLawyerFile.name}</strong> ({Math.round(attachedLawyerFile.size / 1024)} KB)</span>
                   </span>
                   <button type="button" onClick={() => setAttachedLawyerFile(null)} className="text-amber-800 hover:text-amber-950 p-1 cursor-pointer">
@@ -687,8 +735,8 @@ const LawyerConsultationsPage = () => {
                 </div>
               )}
 
-              {/* Chat Input Bar */}
-              <form onSubmit={handleSendLawyerMessage} className="p-3 sm:p-4 bg-white border-t border-slate-200/90 flex items-center gap-2 shrink-0">
+              {/* Chat Input Bar (Matched to Customer UI) */}
+              <form onSubmit={handleSendLawyerMessage} className="p-3 sm:p-4 border-t border-slate-200/80 bg-white flex items-center gap-2 shrink-0">
                 <input
                   type="file"
                   id="lawyer-file-input"
@@ -701,34 +749,34 @@ const LawyerConsultationsPage = () => {
                     }
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={() => document.getElementById('lawyer-file-input').click()}
-                  className={`p-2.5 rounded-xl border transition-colors cursor-pointer shrink-0 shadow-2xs ${
-                    attachedLawyerFile
-                      ? 'border-amber-400 bg-amber-50 text-amber-800'
-                      : 'border-slate-200/80 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-indigo-600'
+                
+                <label 
+                  htmlFor="lawyer-file-input" 
+                  title="Attach File (Images, PDF, Word documents)"
+                  className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center shrink-0 ${
+                    attachedLawyerFile 
+                    ? 'border-amber-300 bg-amber-50 text-amber-700 cursor-pointer'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 cursor-pointer'
                   }`}
-                  title="Attach Legal Document or Image"
                 >
                   <Paperclip size={18} />
-                </button>
+                </label>
 
                 <input
                   type="text"
                   value={lawyerInput}
                   onChange={(e) => setLawyerInput(e.target.value)}
                   placeholder="Type your legal advice or response here..."
-                  className="flex-1 bg-slate-50 text-slate-900 placeholder-slate-400 text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-200/90 focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 font-medium transition-all"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-slate-800 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs font-['Outfit',sans-serif]"
                 />
 
-                <button
-                  type="submit"
+                <button 
+                  type="submit" 
                   disabled={!lawyerInput.trim() && !attachedLawyerFile}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:from-slate-200 disabled:to-slate-200 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-sm shadow-amber-500/20 active:scale-95 disabled:shadow-none cursor-pointer shrink-0"
+                  className="p-2.5 sm:px-4 rounded-xl sm:rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white disabled:text-slate-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
                 >
-                  <Send size={14} />
-                  <span>Send</span>
+                  <Send size={16} />
+                  <span className="hidden sm:inline">Send</span>
                 </button>
               </form>
             </div>

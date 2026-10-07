@@ -2,7 +2,8 @@
 .auth-page-full {
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: fixed;
   top: 0;
   left: 0;
@@ -32,17 +33,13 @@
   pointer-events: none;
 }
 
-/* Right side form container */
 .full-right-form-panel {
   flex: 0.85;
   height: 100%;
-  padding: 1.5rem 3.5rem 1.5rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  padding: 4vh 3.5rem 4vh 0.5rem;
   position: relative;
   z-index: 10;
+  overflow-y: auto;
 }
 
 /* Floating Card/Box Container for Auth Forms with Entrance Animation */
@@ -55,7 +52,7 @@
   border: 1.5px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 25px 50px -12px rgba(28, 28, 74, 0.2), 0 10px 25px -5px rgba(28, 28, 74, 0.08);
   width: 100%;
-  max-width: 560px;
+  max-width: 520px;
   margin: 0 auto;
   animation: authCardEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   position: relative;
@@ -276,9 +273,9 @@
 /* Form Grid */
 .register-form-grid-full {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.15rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.15rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group-full-span {
@@ -323,6 +320,7 @@
 
 .input-full {
   width: 100%;
+  box-sizing: border-box;
   padding: 0.7rem 0.85rem 0.7rem 2.35rem;
   border-radius: 10px;
   border: 1.5px solid #E2E8F0;

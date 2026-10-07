@@ -193,7 +193,7 @@ const CustomerPaymentsPage = () => {
                               <>
                                 {p.lawyerProfileImageUrl ? (
                                   <img 
-                                    src={p.lawyerProfileImageUrl.startsWith('http') ? p.lawyerProfileImageUrl : `http://localhost:8082${p.lawyerProfileImageUrl}`}
+                                    src={p.lawyerProfileImageUrl.startsWith('http') ? p.lawyerProfileImageUrl.replace(/https?:\/\/localhost:\d+/i, `http://${window.location.hostname}:8082`) : `http://${window.location.hostname}:8082${p.lawyerProfileImageUrl}`}
                                     alt={p.lawyerName}
                                     className="w-8 h-8 rounded-full object-cover border border-indigo-200 shrink-0"
                                     onError={(e) => {

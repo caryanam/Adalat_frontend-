@@ -159,7 +159,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <ToastContainer position="top-right" autoClose={3000} theme="colored" />
+          <ToastContainer position="top-right" autoClose={3000} theme="colored" limit={1} />
           <AppLayout />
         </BrowserRouter>
       </AuthProvider>

@@ -41,7 +41,8 @@ export const formatImageUrl = (raw) => {
 
   // Already a full HTTP/HTTPS URL
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
+    // If the database has hardcoded localhost URLs, dynamically replace them so they work on local network devices
+    return url.replace(/https?:\/\/localhost:\d+/i, `http://${window.location.hostname}:8082`);
   }
 
   // Temporary client-side preview (blob or base64) if used strictly during active file picking
@@ -51,7 +52,7 @@ export const formatImageUrl = (raw) => {
 
   // Relative path like '/uploads/lawyers/...' or 'uploads/lawyers/...'
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `http://localhost:8082${cleanPath}`;
+  return `http://${window.location.hostname}:8082${cleanPath}`;
 };
 
 export default formatImageUrl;

@@ -230,7 +230,6 @@ const CustomerRegisterPage = () => {
       newErrors.email = 'Please provide a valid email address.';
     } else if (!isEmailVerified) {
       newErrors.email = 'Please click Verify to verify your email before registering.';
-      toast.error('Please verify your email address before proceeding.');
     }
 
     // 3. Mobile Number check
@@ -465,6 +464,27 @@ const CustomerRegisterPage = () => {
                 </div>
 
                 <div className="form-group-custom">
+                  <label className="form-label-full">Mobile Number <span className="required">*</span></label>
+                  <div className="input-with-icon-full">
+                    <Phone size={17} className="input-icon-full" />
+                    <input 
+                      type="tel"
+                      className={`input-full ${errors.mobileNumber ? 'input-error' : ''}`}
+                      placeholder="e.g. 9876543210"
+                      value={formData.mobileNumber}
+                      onChange={handleMobileChange}
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+                  {errors.mobileNumber && (
+                    <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={12} /> {errors.mobileNumber}
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-group-custom form-group-full-span">
                   <label className="form-label-full">Email Address <span className="required">*</span></label>
                   <div className="input-with-icon-full">
                     <Mail size={17} className="input-icon-full" />
@@ -501,28 +521,7 @@ const CustomerRegisterPage = () => {
                   )}
                 </div>
 
-                <div className="form-group-custom">
-                  <label className="form-label-full">Mobile Number <span className="required">*</span></label>
-                  <div className="input-with-icon-full">
-                    <Phone size={17} className="input-icon-full" />
-                    <input 
-                      type="tel"
-                      className={`input-full ${errors.mobileNumber ? 'input-error' : ''}`}
-                      placeholder="e.g. 9876543210"
-                      value={formData.mobileNumber}
-                      onChange={handleMobileChange}
-                      maxLength={10}
-                      required
-                    />
-                  </div>
-                  {errors.mobileNumber && (
-                    <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <AlertCircle size={12} /> {errors.mobileNumber}
-                    </p>
-                  )}
-                </div>
-
-                <div className="form-group-custom">
+                <div className="form-group-custom form-group-full-span">
                   <label className="form-label-full">Password <span className="required">*</span></label>
                   <div className="input-with-icon-full">
                     <Lock size={17} className="input-icon-full" />
@@ -560,6 +559,18 @@ const CustomerRegisterPage = () => {
                     </div>
                   )}
                 </div>
+              </div>
+              
+              <div className="checkbox-container-full">
+                <input 
+                  type="checkbox" 
+                  id="agreeTerms" 
+                  checked={agreeTerms} 
+                  onChange={(e) => setAgreeTerms(e.target.checked)} 
+                />
+                <label htmlFor="agreeTerms">
+                  I agree to the <span onClick={() => setPolicyModalContent('TERMS')} style={{ color: '#5C5C99', fontWeight: 600, textDecoration: 'underline' }}>Terms & Conditions</span> and <span onClick={() => setPolicyModalContent('PRIVACY')} style={{ color: '#5C5C99', fontWeight: 600, textDecoration: 'underline' }}>Privacy Policy</span>
+                </label>
               </div>
 
               <button 

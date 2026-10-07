@@ -12,11 +12,13 @@ import { getLawyerRatingData } from '../utils/ratingUtils';
 import apiClient from '../api/apiClient';
 import { formatImageUrl } from '../utils/imageUrl';
 import ImagePreviewModal from './ImagePreviewModal';
+import BookConsultationModal from './BookConsultationModal';
 
 const LawyerCard = ({ lawyer, onViewProfile }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
 
   const ratingInfo = getLawyerRatingData(lawyer.lawyerId || lawyer.id || 1);
 
@@ -57,21 +59,9 @@ const LawyerCard = ({ lawyer, onViewProfile }) => {
     return name;
   };
 
-  const handleConsult = async (e) => {
+  const handleConsult = (e) => {
     e.stopPropagation();
-    try {
-      setLoading(true);
-      await apiClient.post('/api/customer/consultations', {
-        lawyerId: lawyer.lawyerId || lawyer.id || 1,
-        caseSummary: 'Consultation requested from advocate directory'
-      });
-      navigate('/customer/consultations');
-    } catch (err) {
-      console.error('Failed to create consultation request:', err);
-      navigate(`/customer/consultations?lawyerId=${lawyer.lawyerId || lawyer.id || 1}`);
-    } finally {
-      setLoading(false);
-    }
+    setShowBookModal(true);
   };
 
   const getDisplayRating = () => {
@@ -216,6 +206,11 @@ const LawyerCard = ({ lawyer, onViewProfile }) => {
         imageUrl={lawyerImgUrl}
         title={displayName}
         subtitle={lawyer.barEnrollmentNumber ? `Bar Reg: ${lawyer.barEnrollmentNumber} • ${categoryLabel}` : categoryLabel}
+      />
+      <BookConsultationModal
+        isOpen={showBookModal}
+        onClose={() => setShowBookModal(false)}
+        lawyer={lawyer}
       />
     </>
   );

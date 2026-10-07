@@ -57,7 +57,7 @@ const AdminVerificationsPage = () => {
       return url;
     }
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8082${cleanPath}`;
+    return `http://${window.location.hostname}:8082${cleanPath}`;
   };
 
   useEffect(() => {
@@ -95,7 +95,7 @@ const AdminVerificationsPage = () => {
   useEffect(() => {
     if (showDetailsModal && fetchedDocs.length > 0) {
       const currentDoc = fetchedDocs[activeDocIndex] || fetchedDocs[0];
-      const url = currentDoc ? (currentDoc.fileUrl || currentDoc.file_url || currentDoc.dataUrl || (currentDoc.filePath ? `http://localhost:8082/uploads/lawyers/${currentDoc.filePath}` : null)) : null;
+      const url = currentDoc ? (currentDoc.fileUrl || currentDoc.file_url || currentDoc.dataUrl || (currentDoc.filePath ? `http://${window.location.hostname}:8082/uploads/lawyers/${currentDoc.filePath}` : null)) : null;
 
       if (url) {
         if (url.startsWith('data:') || url.startsWith('blob:')) {
@@ -766,7 +766,7 @@ const AdminVerificationsPage = () => {
                       {/* File preview */}
                       {(() => {
                         const currentDoc = fetchedDocs[activeDocIndex] || fetchedDocs[0];
-                        const fileUrl = currentDoc ? (currentDoc.fileUrl || currentDoc.file_url || currentDoc.dataUrl || (currentDoc.filePath ? `http://localhost:8082/uploads/lawyers/${currentDoc.filePath}` : null)) : null;
+                        const fileUrl = currentDoc ? (currentDoc.fileUrl || currentDoc.file_url || currentDoc.dataUrl || (currentDoc.filePath ? `http://${window.location.hostname}:8082/uploads/lawyers/${currentDoc.filePath}` : null)) : null;
                         const fileName = currentDoc ? (currentDoc.originalFilename || currentDoc.original_filename || currentDoc.fileName || currentDoc.name || currentDoc.documentType || 'Document.pdf') : 'Document';
                         const fileType = currentDoc ? (currentDoc.fileType || currentDoc.file_type || currentDoc.type || (fileUrl && fileUrl.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg')) : '';
 

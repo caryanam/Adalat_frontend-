@@ -29,8 +29,8 @@ const LawyerRequestsPage = () => {
   const [expandedSummary, setExpandedSummary] = useState(null);
   const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'PENDING' | 'SCHEDULED' | 'DECLINED'
 
-  const fetchRequests = () => {
-    setLoading(true);
+  const fetchRequests = (silent = false) => {
+    if (!silent) setLoading(true);
     consultationApi.getLawyerRequests()
       .then(res => {
         const raw = res && res.data ? (res.data.data || res.data) : [];
@@ -46,6 +46,13 @@ const LawyerRequestsPage = () => {
 
   useEffect(() => {
     fetchRequests();
+    
+    // Auto-refresh/poll every 5 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchRequests(true);
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleOpenAssignModal = (req) => {
@@ -158,7 +165,7 @@ const LawyerRequestsPage = () => {
                   Consultation Booking Requests
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-300/90 mt-1 max-w-2xl leading-relaxed">
-                  Review verified customer briefs, evaluate AI case summaries, and allocate appointment dates & times.
+                  Review verified customer briefs, evaluate case summaries, and allocate appointment dates & times.
                 </p>
               </div>
 
@@ -355,33 +362,41 @@ const LawyerRequestsPage = () => {
 
                           <td className="py-4 px-4 align-top max-w-md">
                             <div className="space-y-1.5">
-                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                                <Sparkles size={13} className="text-amber-500 shrink-0" />
-                                <span>AI Case Brief:</span>
-                              </div>
-                              <p className="text-xs text-slate-600 leading-relaxed">
-                                {(req.caseSummary || req.message || 'Customer requested consultation.').substring(0, 120)}...
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => setExpandedSummary(isExpanded ? null : reqId)}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-                              >
-                                {isExpanded ? (
-                                  <>
-                                    <ChevronUp size={12} />
-                                    <span>Collapse Brief</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown size={12} />
-                                    <span>View Full AI Brief</span>
-                                  </>
-                                )}
-                              </button>
-                              {isExpanded && (
-                                <div className="mt-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-slate-700 text-xs leading-relaxed whitespace-pre-wrap font-sans max-h-72 overflow-y-auto shadow-inner">
-                                  {req.caseSummary || req.message}
+                              {(req.caseSummary || req.message) ? (
+                                <>
+                                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                                    <Sparkles size={13} className="text-amber-500 shrink-0" />
+                                    <span>Case Summary:</span>
+                                  </div>
+                                  <p className="text-xs text-slate-600 leading-relaxed">
+                                    {(req.caseSummary || req.message).substring(0, 120)}...
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedSummary(isExpanded ? null : reqId)}
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        <ChevronUp size={12} />
+                                        <span>Collapse Brief</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown size={12} />
+                                        <span>View Full Case Brief</span>
+                                      </>
+                                    )}
+                                  </button>
+                                  {isExpanded && (
+                                    <div className="mt-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-slate-700 text-xs leading-relaxed whitespace-pre-wrap font-sans max-h-72 overflow-y-auto shadow-inner">
+                                      {req.caseSummary || req.message}
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="text-xs text-slate-500 italic">
+                                  Direct consultation request.
                                 </div>
                               )}
 

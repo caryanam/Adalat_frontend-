@@ -17,6 +17,30 @@ export const consultationApi = {
   getRequestsForCustomer: () => {
     if (customerRequestsPromise) return customerRequestsPromise;
     customerRequestsPromise = apiClient.get('/api/customer/consultations')
+      .then(res => {
+        const currentUserStr = sessionStorage.getItem('adalat_user') || localStorage.getItem('adalat_user');
+        if (currentUserStr && res && res.data) {
+          try {
+            const user = JSON.parse(currentUserStr);
+            const currentCustomerId = user.customerId || user.id;
+            if (currentCustomerId) {
+              let rawData = res.data.data || res.data;
+              if (Array.isArray(rawData)) {
+                rawData = rawData.filter(r => {
+                  const rId = r.customerId || r.customer?.id || r.customer?.customerId;
+                  return !rId || String(rId) === String(currentCustomerId);
+                });
+                if (res.data.data) {
+                  res.data.data = rawData;
+                } else {
+                  res.data = rawData;
+                }
+              }
+            }
+          } catch (e) {}
+        }
+        return res;
+      })
       .catch(() => ({ status: 'SUCCESS', data: [] }))
       .finally(() => { customerRequestsPromise = null; });
     return customerRequestsPromise;
@@ -61,6 +85,46 @@ export const consultationApi = {
   getLawyerRequests: () => {
     if (lawyerRequestsPromise) return lawyerRequestsPromise;
     lawyerRequestsPromise = apiClient.get('/api/lawyer/consultation-requests')
+      .then(res => {
+        let currentLawyerId = sessionStorage.getItem('adalat_lawyer_id') || localStorage.getItem('adalat_lawyer_id');
+        
+        // Fallback: try to extract from user object if ID string is empty
+        if (!currentLawyerId) {
+          try {
+            const userStr = sessionStorage.getItem('adalat_user') || localStorage.getItem('adalat_user');
+            if (userStr) {
+              const user = JSON.parse(userStr);
+              currentLawyerId = user.lawyerId || user.id || user.userId;
+            }
+          } catch (e) {}
+        }
+
+        if (res && res.data) {
+          if (!currentLawyerId) {
+            // CRITICAL: If no lawyer ID is found, NEVER show other lawyers' requests!
+            if (res.data.data) {
+              res.data.data = [];
+            } else {
+              res.data = [];
+            }
+            return res;
+          }
+
+          let rawData = res.data.data || res.data;
+          if (Array.isArray(rawData)) {
+            rawData = rawData.filter(r => {
+              const rId = r.lawyerId || r.lawyer?.id || r.lawyer?.lawyerId;
+              return String(rId) === String(currentLawyerId);
+            });
+            if (res.data.data) {
+              res.data.data = rawData;
+            } else {
+              res.data = rawData;
+            }
+          }
+        }
+        return res;
+      })
       .catch(() => ({ status: 'SUCCESS', data: [] }))
       .finally(() => { lawyerRequestsPromise = null; });
     return lawyerRequestsPromise;

@@ -87,7 +87,7 @@ const CustomerConsultationPage = () => {
       return url;
     }
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8082${cleanPath}`;
+    return `http://${window.location.hostname}:8082${cleanPath}`;
   };
 
   // Convert PDF URLs to local blob URLs to guarantee smooth inline rendering
@@ -180,8 +180,8 @@ const CustomerConsultationPage = () => {
     };
   };
 
-  const fetchCustomerConsultations = () => {
-    setLoading(true);
+  const fetchCustomerConsultations = (silent = false) => {
+    if (!silent) setLoading(true);
     consultationApi.getRequestsForCustomer()
       .then(res => {
         const requests = res && res.data ? (res.data.data || res.data) : [];
@@ -214,12 +214,27 @@ const CustomerConsultationPage = () => {
 
         setConsultationsList(formatted);
         if (formatted.length > 0) {
-          const selected = paramLawyerId 
-            ? formatted.find(c => String(c.lawyerId) === String(paramLawyerId)) || formatted[0]
-            : formatted[0];
-          setActiveConsultation(selected);
-          setMessages(getChatMessages(selected.id));
-          if (selected.isFreeChatTimeOver) setIsFreeExpired(true);
+          setActiveConsultation(prevActive => {
+            let selected;
+            if (prevActive) {
+              selected = formatted.find(c => String(c.id) === String(prevActive.id)) || formatted[0];
+            } else if (paramLawyerId) {
+              selected = formatted.find(c => String(c.lawyerId) === String(paramLawyerId)) || formatted[0];
+            } else {
+              selected = formatted[0];
+            }
+            
+            // Note: We only need to set messages and isFreeExpired when the active consultation actually changes
+            // but for simplicity, we'll let the existing logic update them if needed.
+            if (!prevActive || prevActive.id !== selected.id) {
+              setMessages(getChatMessages(selected.id));
+              if (selected.isFreeChatTimeOver) setIsFreeExpired(true);
+            } else {
+              // Just update the free expired flag if it changed on the same chat
+              if (selected.isFreeChatTimeOver) setIsFreeExpired(true);
+            }
+            return selected;
+          });
         }
         setLoading(false);
       })
@@ -232,6 +247,13 @@ const CustomerConsultationPage = () => {
 
   useEffect(() => {
     fetchCustomerConsultations();
+    
+    // Auto-refresh/poll every 5 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchCustomerConsultations(true);
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, [paramLawyerId]);
 
   // Real-time Chat Subscription

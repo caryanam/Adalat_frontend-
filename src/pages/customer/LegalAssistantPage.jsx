@@ -3,6 +3,7 @@ import Sidebar from '../../components/Sidebar';
 import CustomerHeader from '../../components/CustomerHeader';
 import apiClient from '../../api/apiClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import BookConsultationModal from '../../components/BookConsultationModal';
 import { 
   Bot, 
   Send, 
@@ -46,6 +47,7 @@ const LegalAssistantPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState(null);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
+  const [bookLawyer, setBookLawyer] = useState(null);
   const messagesEndRef = useRef(null);
   const chatScrollContainerRef = useRef(null);
   const navigate = useNavigate();
@@ -387,21 +389,10 @@ const LegalAssistantPage = () => {
     );
   };
 
-  const handleConsultLawyer = async (lawyer) => {
-    try {
-      // 1. Create the consultation request in the backend
-      await apiClient.post('/api/customer/consultations', {
-        lawyerId: lawyer.lawyerId || lawyer.id,
-        caseSummary: 'Consultation requested from AI Legal Assistant'
-      });
-      // 2. Navigate to the consultations page (which will now fetch the newly created request)
-      navigate('/customer/consultations');
-    } catch (err) {
-      console.error('Failed to create consultation request:', err);
-      // Fallback: just navigate and let the user handle it
-      navigate(`/customer/consultations?lawyerId=${lawyer.lawyerId || lawyer.id}`);
-    }
-  };  const renderMessages = () => {
+  const handleConsultLawyer = (lawyer) => {
+    setBookLawyer(lawyer);
+  };
+  const renderMessages = () => {
     return messages.map((msg, index) => {
       const isAI = msg.senderType === 'AI';
       if (isSummaryMode && !isEditing && isAI && msg.message && (msg.message.startsWith('Case Category:') || msg.message.includes('Based on your description, here are the key facts'))) {
@@ -1151,6 +1142,31 @@ const LegalAssistantPage = () => {
           </div>
         </div>
       )}
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        isOpen={showPhotoPreview}
+        onClose={() => setShowPhotoPreview(false)}
+        imageUrl={formatImageUrl(selectedLawyer)}
+        title={selectedLawyer?.fullName ? formatName(selectedLawyer.fullName) : 'Advocate'}
+        subtitle={selectedLawyer?.barEnrollmentNumber ? `Bar Reg: ${selectedLawyer.barEnrollmentNumber}` : 'Verified Legal Advocate'}
+      />
+
+      {/* Book Consultation Modal */}
+      <BookConsultationModal
+        isOpen={!!bookLawyer}
+        onClose={() => setBookLawyer(null)}
+        lawyer={bookLawyer}
+        initialCaseSummary={session?.summary || ''}
+        initialCategory={session?.category || null}
+        onSuccess={() => {
+          // Clear current session
+          setSession(null);
+          setMessages([]);
+          localStorage.removeItem('adalat_ai_session');
+          // Navigate
+          navigate('/customer/consultations');
+        }}
+      />
     </div>
   );
 };

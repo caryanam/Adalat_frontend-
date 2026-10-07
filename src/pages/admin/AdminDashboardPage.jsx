@@ -69,7 +69,7 @@ const AdminDashboardPage = () => {
       return url;
     }
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8082${cleanPath}`;
+    return `http://${window.location.hostname}:8082${cleanPath}`;
   };
 
   const totalLawyers = approvedLawyers.length + pendingLawyers.length;

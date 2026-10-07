@@ -27,6 +27,7 @@ import EmptyState from '../../components/EmptyState';
 import { getLawyerRatingData } from '../../utils/ratingUtils';
 import { formatImageUrl } from '../../utils/imageUrl';
 import ImagePreviewModal from '../../components/ImagePreviewModal';
+import BookConsultationModal from '../../components/BookConsultationModal';
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All Specializations' },
@@ -51,6 +52,7 @@ const CustomerFindLawyersPage = () => {
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState(null);
+  const [bookLawyer, setBookLawyer] = useState(null);
 
   useEffect(() => {
     fetchLawyers();
@@ -169,20 +171,8 @@ const CustomerFindLawyersPage = () => {
     return name;
   };
 
-  const handleConsult = async (lawyer) => {
-    try {
-      setModalLoading(true);
-      await apiClient.post('/api/customer/consultations', {
-        lawyerId: lawyer.lawyerId || lawyer.id || 1,
-        caseSummary: 'Consultation requested from advocate directory'
-      });
-      navigate('/customer/consultations');
-    } catch (err) {
-      console.error('Failed to create consultation request:', err);
-      navigate(`/customer/consultations?lawyerId=${lawyer.lawyerId || lawyer.id || 1}`);
-    } finally {
-      setModalLoading(false);
-    }
+  const handleConsult = (lawyer) => {
+    setBookLawyer(lawyer);
   };
 
   return (
@@ -614,6 +604,13 @@ const CustomerFindLawyersPage = () => {
         imageUrl={previewPhoto?.url}
         title={previewPhoto?.title}
         subtitle={previewPhoto?.subtitle}
+      />
+
+      {/* Book Consultation Modal */}
+      <BookConsultationModal
+        isOpen={!!bookLawyer}
+        onClose={() => setBookLawyer(null)}
+        lawyer={bookLawyer}
       />
     </div>
   );

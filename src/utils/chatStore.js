@@ -391,17 +391,27 @@ export const resetConsultationTimer = (consultationId) => {
 
 export const getSharedTimerSeconds = (consultationId, totalDurationSeconds = 120) => {
   if (!consultationId) return totalDurationSeconds;
-  const key = `${TIMER_PREFIX}${consultationId}`;
+  
   try {
-    let startTime = localStorage.getItem(key);
-    if (!startTime) {
-      startTime = String(Date.now());
-      localStorage.setItem(key, startTime);
+    const raw = localStorage.getItem(`${CHAT_PREFIX}${consultationId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Find the earliest message in the chat
+        const firstMsg = parsed[0];
+        const startTime = new Date(firstMsg.createdAt).getTime();
+        
+        if (!isNaN(startTime)) {
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          const remaining = totalDurationSeconds - elapsedSeconds;
+          return remaining > 0 ? remaining : 0;
+        }
+      }
     }
-    const elapsedSeconds = Math.floor((Date.now() - parseInt(startTime, 10)) / 1000);
-    const remaining = totalDurationSeconds - elapsedSeconds;
-    return remaining > 0 ? remaining : 0;
   } catch (e) {
-    return totalDurationSeconds;
+    console.warn('Error calculating shared timer from messages:', e);
   }
+
+  // Timer hasn't started yet (no messages sent) or backend didn't provide chatStartedAt
+  return totalDurationSeconds;
 };

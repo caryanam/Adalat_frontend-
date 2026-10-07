@@ -148,14 +148,14 @@ const LawyerDocumentsPage = () => {
 
   const formatDocUrl = (doc) => {
     if (!doc) return null;
-    const rawUrl = doc.fileUrl || doc.file_url || doc.dataUrl || (doc.filePath ? (doc.filePath.startsWith('http') ? doc.filePath : `http://localhost:8082/uploads/lawyers/${doc.filePath}`) : null);
+    const rawUrl = doc.fileUrl || doc.file_url || doc.dataUrl || (doc.filePath ? (doc.filePath.startsWith('http') ? doc.filePath.replace(/https?:\/\/localhost:\d+/i, `http://${window.location.hostname}:8082`) : `http://${window.location.hostname}:8082/uploads/lawyers/${doc.filePath}`) : null);
     if (!rawUrl || typeof rawUrl !== 'string') return null;
     const url = rawUrl.trim();
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
       return url;
     }
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8082${cleanPath}`;
+    return `http://${window.location.hostname}:8082${cleanPath}`;
   };
 
   const isImageFile = (doc, url) => {
@@ -192,6 +192,24 @@ const LawyerDocumentsPage = () => {
       toast.success(`Downloading ${fileName || 'document'}...`);
     } catch (e) {
       window.open(url, '_blank');
+    }
+  };
+
+  const handleResubmit = async () => {
+    const lawyerId = user?.lawyerId || user?.id;
+    if (!lawyerId) return;
+    try {
+      setLoading(true);
+      await lawyerApi.submitForVerification(lawyerId);
+      toast.success('Application re-submitted for admin verification!');
+      if (typeof window !== 'undefined' && window.updateUserContext) {
+        window.updateUserContext({ verificationStatus: 'PENDING' });
+      }
+      fetchProfile();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to resubmit application.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -250,6 +268,20 @@ const LawyerDocumentsPage = () => {
                   <p className="text-xs sm:text-sm font-semibold text-slate-800">
                     "{advocate?.rejectionReason || 'Uploaded Bar Council certificate was unclear or invalid. Please upload a clear photo or PDF.'}"
                   </p>
+                </div>
+                
+                <div className="mt-4 pt-3 border-t border-rose-200/80 flex items-center gap-4">
+                  <p className="text-xs text-rose-800 font-medium flex-1">
+                    Once you have uploaded the correct documents using the form below, you can resubmit your application for verification.
+                  </p>
+                  <button 
+                    onClick={handleResubmit}
+                    disabled={loading}
+                    className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white shadow-sm shadow-rose-600/20 transition-all duration-150 active:scale-95 cursor-pointer"
+                  >
+                    <Upload size={14} />
+                    <span>{loading ? 'Submitting...' : 'Resubmit for Verification'}</span>
+                  </button>
                 </div>
               </div>
             </div>

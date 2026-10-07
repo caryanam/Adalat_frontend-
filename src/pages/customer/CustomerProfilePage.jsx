@@ -122,7 +122,7 @@ const CustomerProfilePage = () => {
             amountNum: 116.82,
             baseAmount: '99.00',
             gstAmount: '17.82',
-            date: '17 Sep 2026, 11:30 AM',
+            date: (user?.createdAt || user?.createdDate || user?.registrationDate || user?.registeredAt) ? new Date(user?.createdAt || user?.createdDate || user?.registrationDate || user?.registeredAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 11:30 AM' : new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 11:30 AM',
             status: 'PAID'
           }
         ];
@@ -143,7 +143,7 @@ const CustomerProfilePage = () => {
           amountNum: 116.82,
           baseAmount: '99.00',
           gstAmount: '17.82',
-          date: '17 Sep 2026, 11:30 AM',
+          date: (user?.createdAt || user?.createdDate || user?.registrationDate || user?.registeredAt) ? new Date(user?.createdAt || user?.createdDate || user?.registrationDate || user?.registeredAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 11:30 AM' : new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 11:30 AM',
           status: 'PAID'
         }
       ]);
@@ -191,6 +191,16 @@ const CustomerProfilePage = () => {
   const userEmail = user?.email || 'customer@adalat.com';
   const userMobile = user?.mobileNumber || '+91 98765 43210';
   const initial = (userName.charAt(0) || 'C').toUpperCase();
+
+  const rawDate = user?.createdAt || user?.createdDate || user?.registrationDate || user?.registeredAt || new Date().toISOString();
+  
+  const joinedDateStr = new Date(rawDate).toLocaleDateString('en-US', { 
+    month: 'short', day: 'numeric', year: 'numeric' 
+  });
+  
+  const registrationDateStr = new Date(rawDate).toLocaleDateString('en-US', { 
+    month: 'long', day: 'numeric', year: 'numeric' 
+  });
 
   const handleOpenEditModal = () => {
     setEditName(user?.fullName || '');
@@ -551,7 +561,7 @@ const CustomerProfilePage = () => {
                     </span>
                     <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-slate-300 bg-white/10 backdrop-blur-xs px-2.5 py-0.5 rounded-lg border border-white/10">
                       <Calendar size={12} className="text-indigo-300" />
-                      Joined Sep 17, 2026
+                      Joined {joinedDateStr}
                     </span>
                   </div>
                 </div>
@@ -747,7 +757,7 @@ const CustomerProfilePage = () => {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Registration Date</span>
                   <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Calendar size={14} className="text-indigo-600" />
-                    <span>September 17, 2026</span>
+                    <span>{registrationDateStr}</span>
                   </div>
                   <span className="text-[11px] text-slate-500 block">Active Member</span>
                 </div>
@@ -980,7 +990,7 @@ const CustomerProfilePage = () => {
                                 <>
                                   {p.lawyerProfileImageUrl ? (
                                     <img 
-                                      src={p.lawyerProfileImageUrl.startsWith('http') ? p.lawyerProfileImageUrl : `http://localhost:8082${p.lawyerProfileImageUrl}`}
+                                      src={p.lawyerProfileImageUrl.startsWith('http') ? p.lawyerProfileImageUrl.replace(/https?:\/\/localhost:\d+/i, `http://${window.location.hostname}:8082`) : `http://${window.location.hostname}:8082${p.lawyerProfileImageUrl}`}
                                       alt={p.lawyerName}
                                       className="w-8 h-8 rounded-full object-cover border border-indigo-200 shrink-0"
                                       onError={(e) => {
