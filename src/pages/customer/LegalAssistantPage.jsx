@@ -1142,14 +1142,7 @@ const LegalAssistantPage = () => {
           </div>
         </div>
       )}
-      {/* Image Preview Modal */}
-      <ImagePreviewModal
-        isOpen={showPhotoPreview}
-        onClose={() => setShowPhotoPreview(false)}
-        imageUrl={formatImageUrl(selectedLawyer)}
-        title={selectedLawyer?.fullName ? formatName(selectedLawyer.fullName) : 'Advocate'}
-        subtitle={selectedLawyer?.barEnrollmentNumber ? `Bar Reg: ${selectedLawyer.barEnrollmentNumber}` : 'Verified Legal Advocate'}
-      />
+
 
       {/* Book Consultation Modal */}
       <BookConsultationModal
