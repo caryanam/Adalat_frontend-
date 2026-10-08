@@ -80,6 +80,12 @@ export const sendChatMessage = async (consultationId, sender, text, file = null,
 
   // 3. Build real message object with initial status SENT (1 grey tick ✓)
   const current = getChatMessages(cId);
+  const parseDate = (d) => {
+    if (!d) return new Date();
+    if (Array.isArray(d)) return new Date(d[0], d[1]-1, d[2], d[3]||0, d[4]||0, d[5]||0);
+    return new Date(d);
+  };
+
   const newMsg = {
     id: savedDto?.id || Date.now(),
     sender: savedDto?.senderType || sender,
@@ -95,9 +101,7 @@ export const sendChatMessage = async (consultationId, sender, text, file = null,
     createdAt: savedDto?.createdAt || new Date().toISOString(),
     deliveredAt: savedDto?.deliveredAt || null,
     seenAt: savedDto?.seenAt || null,
-    timestamp: savedDto?.createdAt 
-      ? new Date(savedDto.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    timestamp: parseDate(savedDto?.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
 
   const updated = [...current.filter(m => m.id !== newMsg.id), newMsg];
@@ -182,6 +186,11 @@ export const subscribeToChat = (consultationId, onUpdate, isLawyer = false, isCh
               unreadIncomingIds.push(m.id);
             }
 
+            const parseDate = (d) => {
+              if (!d) return new Date();
+              if (Array.isArray(d)) return new Date(d[0], d[1]-1, d[2], d[3]||0, d[4]||0, d[5]||0);
+              return new Date(d);
+            };
             return {
               id: m.id,
               sender: m.senderType || 'CUSTOMER',
@@ -198,7 +207,7 @@ export const subscribeToChat = (consultationId, onUpdate, isLawyer = false, isCh
               deliveredAt: m.deliveredAt,
               seenAt: m.seenAt,
               timestamp: m.createdAt 
-                ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                ? parseDate(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
                 : 'Just now'
             };
           });
@@ -274,9 +283,16 @@ export const subscribeToChat = (consultationId, onUpdate, isLawyer = false, isCh
       createdAt: msgDto.createdAt || new Date().toISOString(),
       deliveredAt: msgDto.deliveredAt,
       seenAt: msgDto.seenAt,
-      timestamp: msgDto.createdAt 
-        ? new Date(msgDto.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-        : 'Just now'
+      timestamp: (() => {
+        const parseDate = (d) => {
+          if (!d) return new Date();
+          if (Array.isArray(d)) return new Date(d[0], d[1]-1, d[2], d[3]||0, d[4]||0, d[5]||0);
+          return new Date(d);
+        };
+        return msgDto.createdAt 
+          ? parseDate(msgDto.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+          : 'Just now';
+      })()
     };
 
     const exists = current.some(m => m.id === incoming.id);

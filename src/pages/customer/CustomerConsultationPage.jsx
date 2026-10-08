@@ -188,7 +188,7 @@ const CustomerConsultationPage = () => {
         const formatted = requests.map(r => {
           const rawRate = r.lawyerRate != null ? r.lawyerRate : (r.consultationRate || r.consultationFee || '₹99/10 min');
           const normalizedRate = typeof rawRate === 'object' ? `₹${rawRate.amount || 99}/10 min` : String(rawRate);
-          const lawyerImg = formatImageUrl(r.lawyerProfileImageUrl || r.profilePhotoUrl || r.lawyerPhotoUrl || r.lawyerImage);
+          const lawyerImg = formatImageUrl(r.profileImage || r.lawyerProfileImageUrl || r.profilePhotoUrl || r.lawyerPhotoUrl || r.lawyerImage);
 
           return {
             id: r.id || r.requestId,
@@ -204,6 +204,8 @@ const CustomerConsultationPage = () => {
             assignedTime: r.assignedTime || null,
             remainingSeconds: r.remainingSeconds != null ? r.remainingSeconds : 120,
             chatStartedAt: r.chatStartedAt || null,
+            paidChatStartedAt: r.paidChatStartedAt || null,
+            paidDurationMinutes: r.paidDurationMinutes || null,
             paymentStatus: r.paymentStatus,
             isFreeChatTimeOver: r.isFreeChatTimeOver || false,
             caseSummary: r.caseSummary || '',
@@ -313,12 +315,30 @@ const CustomerConsultationPage = () => {
   const handlePaymentSuccess = async (paymentRef) => {
     if (activeConsultation) {
       try {
-        await consultationApi.unlockPaidConsultation(activeConsultation.id, paymentRef?.gatewayPaymentId, paymentRef?.amount);
+        await consultationApi.unlockPaidConsultation(activeConsultation.id, paymentRef?.gatewayPaymentId, paymentRef?.amount, activeConsultation.lawyerDuration);
+        
+        let rateStr = '';
+        if (typeof activeConsultation.lawyerRate === 'object') {
+           rateStr = activeConsultation.lawyerRate?.description || activeConsultation.lawyerRate?.amount || '';
+        } else {
+           rateStr = String(activeConsultation.lawyerRate || '');
+        }
+        const match = rateStr.match(/\/(\d+)\s*min/i);
+        let durationMins = match ? parseInt(match[1], 10) : 10; // Default 10 if not specified
+        if (activeConsultation.paidDurationMinutes) {
+          durationMins = activeConsultation.paidDurationMinutes;
+        } else if (activeConsultation.lawyerDuration) {
+          durationMins = activeConsultation.lawyerDuration;
+        }
+        await sendChatMessage(activeConsultation.id, 'CUSTOMER', `[SYSTEM_PAYMENT_SUCCESS] Duration: ${durationMins * 60}`);
       } catch (err) {}
     }
     setIsPaidActive(true);
     setIsFreeExpired(false);
     setShowPaymentModal(false);
+    
+    // Fetch latest data immediately to sync timer with backend DB
+    fetchCustomerConsultations(true);
   };
 
   const handleSendMessage = async (e) => {
@@ -786,8 +806,10 @@ const CustomerConsultationPage = () => {
                       {!isChatLocked(activeConsultation) ? (
                         <ConsultationTimer 
                           consultationId={activeConsultation.id}
-                          initialSeconds={activeConsultation.remainingSeconds != null ? activeConsultation.remainingSeconds : 120}
+                          initialSeconds={activeConsultation.remainingSeconds != null ? activeConsultation.remainingSeconds : 180}
                           chatStartedAt={activeConsultation.chatStartedAt}
+                          paidChatStartedAt={activeConsultation.paidChatStartedAt}
+                          paidDurationMinutes={activeConsultation.paidDurationMinutes}
                           isFreeChatOver={activeConsultation.isFreeChatTimeOver}
                           onTimerExpired={handleTimerExpired}
                           isPaid={isPaidActive}
@@ -977,7 +999,7 @@ const CustomerConsultationPage = () => {
                     )}
 
                     {/* Chat Messages */}
-                    {messages.filter(msg => msg && ((msg.text || msg.message || '').trim().length > 0 || msg.attachmentUrl)).map(msg => {
+                    {messages.filter(msg => msg && ((msg.text || msg.message || '').trim().length > 0 || msg.attachmentUrl) && !(msg.text || msg.message || '').startsWith('[SYSTEM_PAYMENT_SUCCESS]')).map(msg => {
                       const msgText = msg.text || msg.message || '';
                       const isCustomer = msg.sender === 'CUSTOMER' || msg.senderType === 'CUSTOMER';
                       const attachment = getAttachmentDetails(msg);

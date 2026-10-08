@@ -404,7 +404,11 @@ const LawyerRegisterWizardPage = () => {
     try {
       if (lawyerId) {
         const customAmount = parseInt(pricingData.chatFee, 10) || 99;
-        await lawyerApi.updateStep4(lawyerId, customAmount);
+        let finalDuration = parseInt(pricingData.durationValue, 10) || 5;
+        if (pricingData.durationUnit === 'Hours') {
+            finalDuration = finalDuration * 60;
+        }
+        await lawyerApi.updateStep4(lawyerId, customAmount, finalDuration);
       }
       setCurrentStep(4);
     } catch (err) {
@@ -448,7 +452,11 @@ const LawyerRegisterWizardPage = () => {
       if (lawyerId) {
         if (pricingData.chatFee) {
           const customAmount = parseInt(pricingData.chatFee, 10) || 99;
-          await lawyerApi.updateStep4(lawyerId, customAmount).catch(() => {});
+          let finalDuration = parseInt(pricingData.durationValue, 10) || 5;
+          if (pricingData.durationUnit === 'Hours') {
+              finalDuration = finalDuration * 60;
+          }
+          await lawyerApi.updateStep4(lawyerId, customAmount, finalDuration).catch(() => {});
         }
         if (upiData.upiId) {
           await lawyerApi.updateStep5(lawyerId, upiData.upiId).catch(() => {});
@@ -888,12 +896,7 @@ const LawyerRegisterWizardPage = () => {
             {/* Step 3: Pricing Information */}
             {currentStep === 3 && (
               <form onSubmit={handleStep3Next} className="wizard-step-body">
-                <div className="form-group-wiz">
-                  <label className="form-label-wiz">Consultation Mode</label>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#F0F0FC', border: '1.5px solid #1C1C4A', padding: '0.45rem 1rem', borderRadius: '20px', color: '#1C1C4A', fontWeight: 700, fontSize: '0.85rem' }}>
-                    <span>💬 Legal Chat Counselling Only</span>
-                  </div>
-                </div>
+
 
                 <div className="input-grid-3col">
                   <div className="form-group-wiz">
@@ -937,11 +940,7 @@ const LawyerRegisterWizardPage = () => {
                   </div>
                 </div>
 
-                {/* Rate Preview Badge */}
-                <div style={{ background: '#F0FDF4', border: '1.5px solid #10B981', padding: '0.6rem 1rem', borderRadius: '10px', color: '#065F46', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0.4rem 0 0.85rem 0' }}>
-                  <span>Active Rate Preview:</span>
-                  <span style={{ fontSize: '0.95rem', color: '#047857' }}>₹{pricingData.chatFee || '0'} / {pricingData.durationValue || '0'} {pricingData.durationUnit}</span>
-                </div>
+
 
                 <div className="input-grid-2col">
                   <div className="form-group-wiz">

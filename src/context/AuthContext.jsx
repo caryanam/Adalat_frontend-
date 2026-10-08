@@ -115,11 +115,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear all session storage
     sessionStorage.clear();
-    localStorage.removeItem('adalat_token');
-    localStorage.removeItem('adalat_user');
-    localStorage.removeItem('adalat_role');
-    localStorage.removeItem('adalat_lawyer_id');
+
+    // Remove ALL adalat-prefixed keys from localStorage (covers dynamic keys
+    // like adalat_chat_msgs_*, adalat_timer_start_*, adalat_lawyer_docs_*, etc.)
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('adalat_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
     setToken(null);
     setUser(null);
     setRole(null);

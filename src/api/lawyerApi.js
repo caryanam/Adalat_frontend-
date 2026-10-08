@@ -31,14 +31,17 @@ export const lawyerApi = {
     });
   },
 
-  // Step 4: Pricing setup (Accepts numeric amount or consultationRate enum)
-  updateStep4: (lawyerId, amountOrRate) => {
+  // Step 4: Pricing setup (Accepts numeric amount or consultationRate enum and duration)
+  updateStep4: (lawyerId, amountOrRate, duration) => {
     const validId = lawyerId || 1;
     let payload = {};
     if (typeof amountOrRate === 'number' || (!isNaN(amountOrRate) && !String(amountOrRate).startsWith('RATE_'))) {
       payload = { amount: parseInt(amountOrRate, 10) || 99 };
     } else {
       payload = { consultationRate: amountOrRate || 'RATE_99' };
+    }
+    if (duration) {
+      payload.consultationDuration = parseInt(duration, 10);
     }
     return apiClient.put(`/api/lawyers/register/${validId}/step4`, payload);
   },

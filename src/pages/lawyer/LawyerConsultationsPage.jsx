@@ -168,7 +168,13 @@ const LawyerConsultationsPage = () => {
       .then(res => {
         const raw = res && res.data ? (res.data.data || res.data) : [];
         if (Array.isArray(raw)) {
-          const accepted = raw.filter(r => r.status === 'ACCEPTED' || r.status === 'ACTIVE' || r.status === 'COMPLETED');
+          const accepted = raw.filter(r => 
+            r.status === 'ACCEPTED' || 
+            r.status === 'ACTIVE' || 
+            r.status === 'COMPLETED' || 
+            r.status === 'PAYMENT_COMPLETED' || 
+            r.status === 'PAID'
+          );
           const pending = raw.filter(r => r.status === 'REQUESTED' || r.status === 'PENDING');
           setConsultations(accepted);
           setPendingRequests(pending);
@@ -208,9 +214,9 @@ const LawyerConsultationsPage = () => {
     setIsRejectModalOpen(true);
   };
 
-  const handleAssignSuccess = async (consultationId, date, time) => {
+  const handleAssignSuccess = async (consultationId, date, time, duration) => {
     try {
-      await consultationApi.acceptLawyerRequest(consultationId, date, time);
+      await consultationApi.acceptLawyerRequest(consultationId, date, time, duration);
       toast.success('Consultation request accepted and scheduled!');
       fetchLawyerConsultations();
     } catch (err) {
@@ -506,8 +512,10 @@ const LawyerConsultationsPage = () => {
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <ConsultationTimer 
                     consultationId={activeChatConsultation.id || activeChatConsultation.requestId}
-                    initialSeconds={activeChatConsultation.remainingSeconds != null ? activeChatConsultation.remainingSeconds : 120} 
+                    initialSeconds={activeChatConsultation.remainingSeconds != null ? activeChatConsultation.remainingSeconds : 180} 
                     chatStartedAt={activeChatConsultation.chatStartedAt}
+                    paidChatStartedAt={activeChatConsultation.paidChatStartedAt}
+                    paidDurationMinutes={activeChatConsultation.paidDurationMinutes}
                     isFreeChatOver={activeChatConsultation.isFreeChatTimeOver}
                     onTimerExpired={() => setIsFreeExpired(true)}
                     isPaid={activeChatConsultation.paymentStatus === 'PAID'} 
@@ -570,7 +578,7 @@ const LawyerConsultationsPage = () => {
 
               {/* Chat Messages Body */}
               <div className="flex-1 p-4 sm:p-5 overflow-y-auto bg-[#f8fafc] flex flex-col gap-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-                {chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl)).length === 0 ? (
+                {chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl) && !(m.text || m.message || '').startsWith('[SYSTEM_PAYMENT_SUCCESS]')).length === 0 ? (
                   <div className="max-w-xl mx-auto my-6 p-6 rounded-2xl bg-white border border-slate-200/80 shadow-2xs text-center space-y-3">
                     <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto shadow-2xs">
                       <Sparkles size={22} />
@@ -585,7 +593,7 @@ const LawyerConsultationsPage = () => {
                     </div>
                   </div>
                 ) : (
-                  chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl)).map((msg, index) => {
+                  chatMessages.filter(m => m && ((m.text || m.message || '').trim().length > 0 || m.attachmentUrl) && !(m.text || m.message || '').startsWith('[SYSTEM_PAYMENT_SUCCESS]')).map((msg, index) => {
                     const isLawyerMsg = msg.sender === 'LAWYER' || msg.senderType === 'LAWYER';
                     const msgText = msg.text || msg.message || '';
                     const attachment = getAttachmentDetails(msg);

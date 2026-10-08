@@ -4,19 +4,20 @@ import { X, Calendar, Clock, CheckCircle } from 'lucide-react';
 const AssignTimeModal = ({ isOpen, onClose, consultation, onAssignSuccess }) => {
   const [assignedDate, setAssignedDate] = useState('');
   const [assignedTime, setAssignedTime] = useState('');
+  const [duration, setDuration] = useState(10);
   const [loading, setLoading] = useState(false);
 
   if (!isOpen || !consultation) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!assignedDate || !assignedTime) return;
+    if (!assignedDate || !assignedTime || !duration) return;
 
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       if (onAssignSuccess) {
-        onAssignSuccess(consultation.id, assignedDate, assignedTime);
+        onAssignSuccess(consultation.id, assignedDate, assignedTime, parseInt(duration, 10));
       }
       onClose();
     }, 800);
@@ -87,6 +88,21 @@ const AssignTimeModal = ({ isOpen, onClose, consultation, onAssignSuccess }) => 
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs sm:text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 font-medium transition-all"
               value={assignedTime}
               onChange={(e) => setAssignedTime(e.target.value)}
+              required 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Consultation Duration (Minutes) <span className="text-rose-500">*</span>
+            </label>
+            <input 
+              type="number" 
+              min="1"
+              step="1"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs sm:text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 font-medium transition-all"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
               required 
             />
           </div>

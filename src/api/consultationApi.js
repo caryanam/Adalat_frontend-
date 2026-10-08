@@ -60,8 +60,8 @@ export const consultationApi = {
     return apiClient.post(`/api/customer/consultations/${requestId}/payment/verify`, verifyData);
   },
 
-  unlockPaidConsultation: (consultationId, paymentId, amount) => {
-    return apiClient.post(`/api/customer/consultations/${consultationId}/unlock`, { paymentId, amount });
+  unlockPaidConsultation: (consultationId, paymentId, amount, durationMinutes) => {
+    return apiClient.post(`/api/customer/consultations/${consultationId}/unlock`, { paymentId, amount, durationMinutes });
   },
 
   // 5. Complete Consultation
@@ -130,8 +130,8 @@ export const consultationApi = {
     return lawyerRequestsPromise;
   },
 
-  acceptLawyerRequest: (requestId, assignedDate, assignedTime) => {
-    return apiClient.post(`/api/lawyer/consultation-requests/${requestId}/accept`, { assignedDate, assignedTime }).catch(() => {
+  acceptLawyerRequest: (requestId, assignedDate, assignedTime, duration) => {
+    return apiClient.post(`/api/lawyer/consultation-requests/${requestId}/accept`, { assignedDate, assignedTime, duration, paidDurationMinutes: duration, lawyerDuration: duration }).catch(() => {
       return { status: 'SUCCESS', data: { requestId } };
     });
   },

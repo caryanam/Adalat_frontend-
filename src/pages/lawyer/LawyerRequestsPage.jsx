@@ -65,16 +65,16 @@ const LawyerRequestsPage = () => {
     setIsRejectModalOpen(true);
   };
 
-  const handleAssignSuccess = async (consultationId, date, time) => {
+  const handleAssignSuccess = async (consultationId, date, time, duration) => {
     setRequests(prev => prev.map(r => {
       if (String(r.id) === String(consultationId) || String(r.requestId) === String(consultationId)) {
-        return { ...r, status: 'ACCEPTED', assignedDate: date, assignedTime: time };
+        return { ...r, status: 'ACCEPTED', assignedDate: date, assignedTime: time, paidDurationMinutes: duration, lawyerDuration: duration };
       }
       return r;
     }));
 
     try {
-      await consultationApi.acceptLawyerRequest(consultationId, date, time);
+      await consultationApi.acceptLawyerRequest(consultationId, date, time, duration);
       toast.success('Consultation request accepted and scheduled!');
       fetchRequests();
     } catch (err) {

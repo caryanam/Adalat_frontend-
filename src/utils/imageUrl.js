@@ -11,6 +11,9 @@ export const formatImageUrl = (raw) => {
     url = raw.trim();
   } else if (typeof raw === 'object') {
     url = (
+      raw.profileImage ||
+      raw.profile?.profileImage ||
+      raw.profile?.profilePhotoUrl ||
       raw.profilePhotoUrl ||
       raw.photoUrl ||
       raw.lawyerProfileImageUrl ||

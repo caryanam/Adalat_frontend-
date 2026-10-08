@@ -79,7 +79,7 @@ const AdminLawyersPage = () => {
 
   const formatImageUrl = (lawyer) => {
     if (!lawyer) return null;
-    const rawUrl = lawyer.profilePhotoUrl || lawyer.photoUrl || lawyer.profilePictureUrl || lawyer.profilePicture || lawyer.profilePhoto || lawyer.avatar || lawyer.avatarUrl || lawyer.lawyerProfileImageUrl || lawyer.imageUrl || lawyer.image;
+    const rawUrl = lawyer.profileImage || lawyer.profilePhotoUrl || lawyer.photoUrl || lawyer.profilePictureUrl || lawyer.profilePicture || lawyer.profilePhoto || lawyer.avatar || lawyer.avatarUrl || lawyer.lawyerProfileImageUrl || lawyer.imageUrl || lawyer.image;
     if (!rawUrl || typeof rawUrl !== 'string') return null;
     const url = rawUrl.trim();
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {

@@ -31,19 +31,26 @@ apiClient.interceptors.response.use((response) => {
 
     // Only trigger session expired modal if it is NOT a regular login credential attempt
     if (!isLoginAttempt) {
-      sessionStorage.removeItem('adalat_token');
-      localStorage.removeItem('adalat_token');
-
+      // Capture role & path BEFORE clearing storage
       const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
-      const savedRole = (typeof sessionStorage !== 'undefined' && (sessionStorage.getItem('adalat_role') || localStorage.getItem('adalat_role'))) || '';
-      
+      const savedRole = (sessionStorage.getItem('adalat_role') || localStorage.getItem('adalat_role')) || '';
+
+      // Now clear all session data
+      sessionStorage.clear();
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('adalat_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+
       let detectedRole = 'CUSTOMER';
       if (currentPath.startsWith('/admin') || savedRole === 'ADMIN' || reqUrl.includes('/api/admin')) {
         detectedRole = 'ADMIN';
       } else if (currentPath.startsWith('/lawyer') || savedRole === 'LAWYER' || reqUrl.includes('/api/lawyer')) {
         detectedRole = 'LAWYER';
-      } else {
-        detectedRole = 'CUSTOMER';
       }
 
       if (typeof window !== 'undefined') {

@@ -42,7 +42,7 @@ const CustomerAppointmentsPage = () => {
       id: r.id || r.requestId,
       lawyerId: r.lawyerId || 1,
       lawyerName: r.lawyerName || 'Advocate',
-      lawyerProfileImageUrl: formatImageUrl(r.lawyerProfileImageUrl || r.profilePhotoUrl || r.lawyerPhotoUrl || r.lawyerImage),
+      lawyerProfileImageUrl: formatImageUrl(r.profileImage || r.lawyerProfileImageUrl || r.profilePhotoUrl || r.lawyerPhotoUrl || r.lawyerImage),
       category: r.categoryDisplayName || r.category || 'Legal Consultation',
       scheduledTime: r.assignedDate ? `${r.assignedDate} at ${r.assignedTime || 'Scheduled Time'}` : (r.scheduledAt || 'Scheduled'),
       assignedDate: r.assignedDate,
@@ -475,7 +475,7 @@ const CustomerAppointmentsPage = () => {
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
                         <span className="flex items-center gap-1">
-                          <Clock size={11} className="text-slate-400" /> Standard 10 Min Session
+                          <Clock size={11} className="text-slate-400" /> Standard {app.lawyerDuration || 10} Min Session
                         </span>
                         <span className="font-semibold text-emerald-700">₹{app.fee} Paid</span>
                       </div>

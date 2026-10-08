@@ -988,9 +988,9 @@ const CustomerProfilePage = () => {
                             <div className="flex items-center gap-2.5">
                               {p.lawyerName ? (
                                 <>
-                                  {p.lawyerProfileImageUrl ? (
+                                  {(p.profileImage || p.lawyerProfileImageUrl) ? (
                                     <img 
-                                      src={p.lawyerProfileImageUrl.startsWith('http') ? p.lawyerProfileImageUrl.replace(/https?:\/\/localhost:\d+/i, `http://${window.location.hostname}:8082`) : `http://${window.location.hostname}:8082${p.lawyerProfileImageUrl}`}
+                                      src={(p.profileImage || p.lawyerProfileImageUrl).startsWith('http') ? (p.profileImage || p.lawyerProfileImageUrl).replace(/https?:\/\/localhost:\d+/i, `http://${window.location.hostname}:8082`) : `http://${window.location.hostname}:8082${p.profileImage || p.lawyerProfileImageUrl}`}
                                       alt={p.lawyerName}
                                       className="w-8 h-8 rounded-full object-cover border border-indigo-200 shrink-0"
                                       onError={(e) => {
@@ -1002,7 +1002,8 @@ const CustomerProfilePage = () => {
                                     />
                                   ) : null}
                                   <div 
-                                    className={`w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold items-center justify-center text-xs shrink-0 ${p.lawyerProfileImageUrl ? 'hidden' : 'flex'}`}
+                                    className={`w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold items-center justify-center text-xs shrink-0 ${(p.profileImage || p.lawyerProfileImageUrl) ? 'hidden' : 'flex'}`}
+
                                   >
                                     {p.lawyerName.charAt(0).toUpperCase()}
                                   </div>
